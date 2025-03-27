@@ -1,9 +1,11 @@
 const bcrypt = require('bcrypt');
 const UserModel = require('../models/user.model');
+const BlackList = require('../models/blacklist.model');
 const { use } = require('express/lib/router');
 const authMethod = require('../methods/auth.method');
 const randToken  = require('rand-token');
 const jwtVariable = require('../../variables/jwt');
+const e = require('express');
 
 const SALT_ROUNDS = 10;
 
@@ -139,3 +141,23 @@ exports.refreshToken = async (req, res) => {
 		accessToken,
 	});
 };
+
+exports.logout = async (req, res) => {
+    const { username } = req.body;
+    const accessToken = req.headers.authorization?.split(' ')[1];
+    if (!accessToken) {
+        return res.status(400).send({ message: 'Access token không hợp lệ' });
+    }
+
+    const user = await UserModel.getUser(username);
+    if (!user) {
+        return res.status(403).send({ message: 'Không tồn tại tài khoản' });
+    }
+
+    await BlackList.create(accessToken);
+    console.log('Blacklist: ', accessToken);
+
+    await UserModel.updateRefreshToken(user.username, null);
+
+    return res.send({ message: 'Đăng xuất thành công' });
+}

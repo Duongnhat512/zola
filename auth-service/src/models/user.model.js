@@ -44,17 +44,6 @@ const UserModel = {
 
         await dynamodb.update(params).promise();
     },
-    getUserByRefreshToken: async refreshToken => {
-        const params = {
-            TableName: tableName,
-            Key: {
-                refreshToken
-            }
-        };
-
-        const data = await dynamodb.get(params).promise();
-        return data.Item;
-    }
 }
 
 module.exports = UserModel;
