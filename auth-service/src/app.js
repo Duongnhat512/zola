@@ -1,6 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const dotenv = require('dotenv'); 
+const dotenv = require('dotenv');
 const createError = require('http-errors');
 require("express-async-errors");
 const morgan = require('morgan');
@@ -10,10 +10,6 @@ dotenv.config();
 
 const app = express();
 
-// Routes
-const authRoutes = require('./routes/auth.routes');
-const userRoutes = require('./routes/user.routes');
-
 // Middleware
 app.use(morgan('dev'));
 app.use(
@@ -22,14 +18,22 @@ app.use(
     })
 )
 app.use(bodyParser.json());
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:3000', // Địa chỉ của API Gateway
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Routes
+const authRoutes = require('./routes/auth.routes');
+const userRoutes = require('./routes/user.routes');
 
 // 
 app.get('/', (req, res) => {
-    res.send('API is running...');
+    res.send('Auth service is running...');
 });
 app.use('/auth', authRoutes);
-app.use('/users', userRoutes);
+app.use('/me', userRoutes);
 
 // Bỏ qua yêu cầu favicon
 app.get('/favicon.ico', (req, res) => res.status(204));
@@ -47,7 +51,4 @@ app.use((err, req, res) => {
     });
 });
 
-const server = app.listen(process.env.PORT, () => {
-    console.log(`Server started on port ${process.env.PORT}`);
-});
-
+module.exports = app;

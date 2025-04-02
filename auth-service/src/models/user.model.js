@@ -44,6 +44,15 @@ const UserModel = {
 
         await dynamodb.update(params).promise();
     },
+    // updateUser: async (username, userData) => {
+    //     const params = {
+    //         TableName: tableName,
+    //         Key: {
+    //             username
+    //         },
+    //         UpdateExpression: "set name"
+    //     }
+    // }
 }
 
 module.exports = UserModel;
