@@ -16,7 +16,7 @@ export default function QRForm({ setIsQR, isQR }) {
           className="w-40 h-40"
         />
         <div className="text-center text-blue-600">Chỉ dùng để đăng nhập</div>
-        <div className="text-center text-gray-600">T1 Chat trên máy tính</div>
+        <div className="text-center text-gray-600">T1 Zola trên máy tính</div>
       </div>
       <div className="text-center">
         <button
