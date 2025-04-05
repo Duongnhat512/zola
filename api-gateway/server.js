@@ -4,7 +4,10 @@ const cors = require('cors');
 
 
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:5173', // Địa chỉ của API Gateway
+    credentials: true, // Cho phép cookie được gửi từ client
+}));
 app.use(express.json());
 
 const services = {

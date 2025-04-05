@@ -19,9 +19,8 @@ app.use(
 )
 app.use(bodyParser.json());
 app.use(cors({
-    origin: 'http://localhost:3000', // Địa chỉ của API Gateway
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 // Routes
