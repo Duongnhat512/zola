@@ -1,11 +1,9 @@
 const bcrypt = require('bcrypt');
 const UserModel = require('../models/user.model');
 const BlackList = require('../models/blacklist.model');
-const { use } = require('express/lib/router');
 const authMethod = require('../methods/auth.method');
 const randToken  = require('rand-token');
 const jwtVariable = require('../../variables/jwt');
-const e = require('express');
 
 const SALT_ROUNDS = 10;
 
@@ -19,10 +17,10 @@ exports.register = async (req, res) => {
         const newUser = {
             username: username,
             password: hashPassword,
-            // fullname: req.body.fullname,
-            // dob: req.body.dob,
-            // gender: req.body.gender,
-            // avt: req.body.avt,
+            fullname: req.body.fullname,
+            dob: req.body.dob,
+            gender: req.body.gender,
+            status: req.body.status,
         };
         const createUser = await UserModel.createUser(newUser);
         if (!createUser) {
@@ -53,11 +51,11 @@ exports.login = async (req, res) => {
     const accessTokenLife = process.env.ACCESS_TOKEN_LIFE;
     const accessTokenSecret = process.env.ACCESS_TOKEN_SECRET;
 
-    const dateForAccessToken = {
+    const dataForAccessToken = {
         username: user.username,
     };
     const accessToken = await authMethod.generateToken(
-        dateForAccessToken,
+        dataForAccessToken,
         accessTokenSecret,
         accessTokenLife,
     )
