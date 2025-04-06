@@ -1,7 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons, Ionicons, FontAwesome } from '@expo/vector-icons';
-import styles from '../styles/TabNavigator.styles';
+  import styles from '../styles/TabNavigator.styles';
 
 // Import the actual MessagesScreen
 import MessagesScreen from '../screens/MessagesScreen';

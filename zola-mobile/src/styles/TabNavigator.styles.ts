@@ -12,6 +12,9 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 12,
   },
+  tabIcon:{
+    marginBottom: -3,
+  }
 });
 
 export default styles; 

@@ -7,6 +7,7 @@ import WelcomeScreen from '../screens/WelcomeScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import TabNavigator from './TabNavigator';
+import OTPScreen from '../screens/OTPScreen';
 
 // Define navigation types
 export type RootStackParamList = {
@@ -30,6 +31,7 @@ const AuthStack: React.FC = () => {
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="OTP" component={OTPScreen} />
     </Stack.Navigator>
   );
 };
@@ -46,13 +48,13 @@ const AppNavigator: React.FC = () => {
   
   return (
     <NavigationContainer>
-      {/* {isLoggedIn ? ( */}
+      {isLoggedIn ? (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Main" component={TabNavigator} />
         </Stack.Navigator>
-      {/* ) : (
+      ) : (
         <AuthStack />
-      )} */}
+      )}
     </NavigationContainer>
   );
 };
