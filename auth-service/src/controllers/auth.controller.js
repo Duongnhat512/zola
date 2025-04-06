@@ -28,7 +28,9 @@ exports.register = async (req, res) => {
                 .status(400)
                 .send({ message: 'Có lỗi trong quá trình tạo tài khoản, vui lòng thử lại.' });
         }
-        return res.send({
+        return res.json({
+            status: 'success',
+            message: 'Tạo tài khoản thành công',
             username
         });
     }
@@ -75,7 +77,8 @@ exports.login = async (req, res) => {
     }
 
     return res.json({
-		msg: 'Đăng nhập thành công.',
+        status: "success",
+		message: 'Đăng nhập thành công.',
 		accessToken,
 		refreshToken,
 		user,
@@ -136,6 +139,8 @@ exports.refreshToken = async (req, res) => {
 			.send('Tạo access token không thành công, vui lòng thử lại.');
 	}
 	return res.json({
+        status: 'success',
+        message: 'Cấp lại access token thành công.',
 		accessToken,
 	});
 };
@@ -157,5 +162,29 @@ exports.logout = async (req, res) => {
 
     await UserModel.updateRefreshToken(user.username, null);
 
-    return res.send({ message: 'Đăng xuất thành công' });
+    return res.json({status: "success", message: 'Đăng xuất thành công' });
+}
+
+exports.changePassword = async (req, res) => {
+    const username = req.user.username.toLowerCase();
+    const password = req.body.password;
+    const newPassword = req.body.newPassword;
+
+    const user = await UserModel.getUser(username);
+    if (!user) {
+        return res.status(404).send({ message: 'Tài khoản không tồn tại' });
+    }
+    const isMatch = bcrypt.compareSync(password, user.password);
+    if (!isMatch) {
+        return res.status(401).send({ message: 'Sai mật khẩu' });
+    }
+
+    const hashPassword = bcrypt.hashSync(newPassword, SALT_ROUNDS);
+    await UserModel.updatePassword(username, hashPassword);
+
+    return res.json({
+        status: 'success',
+        message: 'Đổi mật khẩu thành công',
+        username
+    });
 }

@@ -1,4 +1,4 @@
-const { dynamodb } = require("../config/aws-helper");
+const { dynamodb } = require("../utils/aws.helper");
 require("dotenv").config();
 
 const tableName = "users";
@@ -93,6 +93,28 @@ const UserModel = {
             throw error;
         }
     },
+    updatePassword: async (username, password) => {
+        const params = {
+            TableName: tableName,
+            Key: {
+                username
+            },
+            UpdateExpression: "set password = :password",
+            ExpressionAttributeValues: {
+                ":password": password
+            },
+            ReturnValues: "ALL_NEW",
+        }
+
+        try {
+            const data = await dynamodb.update(params).promise();
+            return data.Attributes;
+        }
+        catch (error) {
+            console.error("Error updating user: ", error);
+            throw error;
+        }
+    }
 }
 
 module.exports = UserModel;
