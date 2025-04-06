@@ -3,6 +3,7 @@ import { PhoneIcon, LockClosedIcon } from "@heroicons/react/outline"; // Import 
 import QRForm from "./QRForm";
 import { LoginForm } from "./LoginForm";
 import { LoginUser } from "../../services/UserService";
+import { useNavigate } from "react-router-dom";
 
 function Login() {
   const [isQR, setIsQR] = useState(true); // State to toggle between QR and password login
@@ -10,10 +11,10 @@ function Login() {
   const [phoneNumber, setPhoneNumber] = useState(""); // State to manage phone number input
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
     try {
       const data = {
         username: phoneNumber,
@@ -27,6 +28,8 @@ function Login() {
         console.log("Đăng nhập thành công");
         localStorage.setItem("accessToken", res.accessToken);
         localStorage.setItem("refreshToken", res.refreshToken);
+        navigate("/");
+        window.location.reload();
       } else {
         setError("Đăng nhập thất bại. Vui lòng thử lại sau.");
       }
@@ -34,6 +37,7 @@ function Login() {
       setError("Đăng nhập thất bại. Vui lòng thử lại sau.", err);
     }
   };
+
   return (
     <div className="min-h-screen bg-blue-50 flex items-center justify-center">
       <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
