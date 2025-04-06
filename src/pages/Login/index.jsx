@@ -4,7 +4,8 @@ import QRForm from "./QRForm";
 import { LoginForm } from "./LoginForm";
 import { LoginUser } from "../../services/UserService";
 import { useNavigate } from "react-router-dom";
-
+import { useDispatch } from 'react-redux';
+import { login } from '../../redux/UserSlice'; // Import the login action from UserSlice
 function Login() {
   const [isQR, setIsQR] = useState(true); // State to toggle between QR and password login
   const [isLoading, setIsLoading] = useState(false); // State to manage loading state
@@ -12,6 +13,8 @@ function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -25,11 +28,11 @@ function Login() {
       setIsLoading(false);
 
       if (res) {
+        dispatch(login(res.user));
         console.log("Đăng nhập thành công");
         localStorage.setItem("accessToken", res.accessToken);
         localStorage.setItem("refreshToken", res.refreshToken);
         navigate("/");
-        window.location.reload();
       } else {
         setError("Đăng nhập thất bại. Vui lòng thử lại sau.");
       }

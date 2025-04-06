@@ -1,190 +1,144 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  AntCloudOutlined,
-  CloudFilled,
-  CloudSyncOutlined,
-  CloudTwoTone,
-  DesktopOutlined,
-  DownOutlined,
-  FileOutlined,
   MessageOutlined,
-  PieChartOutlined,
-  SettingFilled,
-  SettingTwoTone,
   TeamOutlined,
+  FileOutlined,
+  CloudSyncOutlined,
+  CloudFilled,
   ToolFilled,
-  ToolTwoTone,
+  SettingFilled,
   UserOutlined,
 } from "@ant-design/icons";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { Avatar, Dropdown, Layout, Menu } from "antd";
 
-import { Avatar, Breadcrumb, Dropdown, Layout, Menu, Space, theme } from "antd";
-const { Header, Content, Footer, Sider } = Layout;
-function getItem(label, key, icon, children) {
-  return {
-    key,
-    icon,
-    children,
-    label,
-  };
-}
-const itemss = [
-  getItem("Tin nhắn", "1", <MessageOutlined />),
-  getItem("Team", "sub2", <TeamOutlined />),
-  getItem("Files", "9", <FileOutlined />),
-];
-const items2 = [
-  getItem("Zola Cloud", "1", <CloudSyncOutlined />),
-  getItem("Cloud của tôi", "2", <CloudFilled />),
-  getItem("Công cụ", "3", <ToolFilled />),
-  getItem("Cài đặt", "4", <SettingFilled />),
-];
-const contentStyle = {
-  textAlign: "center",
-  minHeight: 120,
-  lineHeight: "120px",
-  color: "#fff",
-  backgroundColor: "#ebecf0",
-};
-const siderStyle = {
-  textAlign: "center",
-  lineHeight: "120px",
-  color: "#fff",
-  backgroundColor: "#fff",
-};
-const items = [
-  {
-    label: (
-      <a
-        href="https://www.antgroup.com"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Hiệp Võ
-      </a>
-    ),
-    key: "0",
-  },
-  {
-    type: "divider",
-  },
-  {
-    label: (
-      <a
-        href="https://www.antgroup.com"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Nâng cấp tài khoản
-      </a>
-    ),
-    key: "1",
-  },
-  {
-    label: (
-      <a
-        href="https://www.aliyun.com"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Hồ sơ của bạn
-      </a>
-    ),
-    key: "2",
-  },
-  {
-    label: (
-      <a
-        href="https://www.aliyun.com"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Cài đặt
-      </a>
-    ),
-    key: "3",
-  },
-  {
-    type: "divider",
-  },
-  {
-    label: (
-      <a
-        href="https://www.aliyun.com"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Đăng xuất
-      </a>
-    ),
-    key: "4",
-  },
-];
+const { Content, Sider } = Layout;
+
 const Home = () => {
   const [collapsed, setCollapsed] = useState(false);
-  const {
-    token: { colorBgContainer, borderRadiusLG },
-  } = theme.useToken();
+  const navigate = useNavigate();
+
+  // Redux state
+  const isAuthenticated = useSelector((state) => state.user.authenticated);
+  const user = useSelector((state) => state.user.user);
+
+  // Kiểm tra trạng thái đăng nhập
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/login");
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Menu items
+  const menuItemsTop = [
+    { label: "Tin nhắn", key: "1", icon: <MessageOutlined /> },
+    { label: "Team", key: "2", icon: <TeamOutlined /> },
+    { label: "Files", key: "3", icon: <FileOutlined /> },
+  ];
+
+  const menuItemsBottom = [
+    { label: "Zola Cloud", key: "1", icon: <CloudSyncOutlined /> },
+    { label: "Cloud của tôi", key: "2", icon: <CloudFilled /> },
+    { label: "Công cụ", key: "3", icon: <ToolFilled /> },
+    { label: "Cài đặt", key: "4", icon: <SettingFilled /> },
+  ];
+
+  const dropdownItems = [
+    { label: user?.fullname || "Người dùng", key: "0" },
+    { type: "divider" },
+    { label: "Nâng cấp tài khoản", key: "1" },
+    { label: "Hồ sơ của bạn", key: "2" },
+    { label: "Cài đặt", key: "3" },
+    { type: "divider" },
+    { label: "Đăng xuất", key: "4" },
+  ];
+
   return (
     <Layout style={{ minHeight: "100vh" }}>
+      {/* Sidebar */}
       <Sider
-        collapsed={!collapsed}
+        collapsible
+        collapsed={collapsed}
+        onCollapse={(value) => setCollapsed(value)}
         style={{
           background: "#005ae0",
           color: "#fff",
         }}
       >
+        {/* Dropdown Avatar */}
         <Dropdown
-          menu={{ items }}
+          menu={{ items: dropdownItems }}
           trigger={["click"]}
-          placement="bottomRight" // Điều chỉnh menu xuống dưới
-          overlayStyle={{ top: 20, left: 75, right: "auto" }} // Đẩy menu ra bên phải
+          placement="bottomRight"
         >
           <a onClick={(e) => e.preventDefault()}>
             <Avatar
+              src={user?.avt || ""}
               style={{
-                marginLeft: "10px",
-                marginBottom: "20px",
-                marginTop: "10px",
+                margin: "10px auto",
+                display: "block",
               }}
               size={64}
-              icon={<UserOutlined />}
+              icon={!user?.avt && <UserOutlined />}
             />
           </a>
         </Dropdown>
 
-        <div className="demo-logo-vertical" />
-
-        <div className="flex justify-between flex-col gap-64">
-          <Menu
-            theme="dark"
-            defaultSelectedKeys={["1"]}
-            mode="inline"
-            items={itemss}
-            className="custom-menu"
-            style={{
-              background: "#005ae0",
-            }}
-          />
-
-          <Menu
-            theme="dark"
-            defaultSelectedKeys={["1"]}
-            mode="inline"
-            items={items2}
-            className="custom-menu"
-            style={{
-              background: "#005ae0",
-            }}
-          />
+        {/* User Info */}
+        <div
+          style={{
+            textAlign: "center",
+            color: "#fff",
+            marginTop: "10px",
+            fontSize: "14px",
+          }}
+        >
+          <div>{user?.fullname || "Người dùng"}</div>
+          <div style={{ fontSize: "12px", opacity: 0.8 }}>
+            {user?.status || "Offline"}
+          </div>
         </div>
+
+        {/* Menu Items */}
+        <Menu
+          theme="dark"
+          defaultSelectedKeys={["1"]}
+          mode="inline"
+          items={menuItemsTop}
+          style={{
+            background: "#005ae0",
+          }}
+        />
+        <Menu
+          theme="dark"
+          defaultSelectedKeys={["1"]}
+          mode="inline"
+          items={menuItemsBottom}
+          style={{
+            background: "#005ae0",
+            marginTop: "auto",
+          }}
+        />
       </Sider>
+
+      {/* Main Layout */}
       <Layout>
-        <Sider width="25%" style={siderStyle}>
-          Sider
+        <Sider width="25%" style={{ background: "#fff" }}>
+          <div style={{ padding: "20px", textAlign: "center" }}>Sider</div>
         </Sider>
-        <Content style={contentStyle}>Content</Content>
+        <Content
+          style={{
+            padding: "20px",
+            background: "#ebecf0",
+            minHeight: "100vh",
+          }}
+        >
+          <h1 style={{ textAlign: "center" }}>Content</h1>
+        </Content>
       </Layout>
     </Layout>
   );
 };
+
 export default Home;
