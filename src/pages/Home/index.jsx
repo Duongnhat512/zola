@@ -56,7 +56,6 @@ const Home = () => {
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
-      {/* Sidebar */}
       <Sider
         collapsible
         collapsed={collapsed}
@@ -66,60 +65,71 @@ const Home = () => {
           color: "#fff",
         }}
       >
-        {/* Dropdown Avatar */}
-        <Dropdown
-          menu={{ items: dropdownItems }}
-          trigger={["click"]}
-          placement="bottomRight"
-        >
-          <a onClick={(e) => e.preventDefault()}>
-            <Avatar
-              src={user?.avt || ""}
-              style={{
-                margin: "10px auto",
-                display: "block",
-              }}
-              size={64}
-              icon={!user?.avt && <UserOutlined />}
-            />
-          </a>
-        </Dropdown>
-
-        {/* User Info */}
         <div
           style={{
-            textAlign: "center",
-            color: "#fff",
-            marginTop: "10px",
-            fontSize: "14px",
+            display: "flex",
+            flexDirection: "column",
+            height: "100%", // Quan trọng để flex hoạt động
           }}
         >
-          <div>{user?.fullname || "Người dùng"}</div>
-          <div style={{ fontSize: "12px", opacity: 0.8 }}>
-            {user?.status || "Offline"}
-          </div>
-        </div>
+          {/* Dropdown Avatar */}
+          <Dropdown
+            menu={{ items: dropdownItems }}
+            trigger={["click"]}
+            placement="bottomRight"
+          >
+            <a onClick={(e) => e.preventDefault()}>
+              <Avatar
+                src={user?.avt || ""}
+                style={{
+                  margin: "10px auto",
+                  display: "block",
+                }}
+                size={64}
+                icon={!user?.avt && <UserOutlined />}
+              />
+            </a>
+          </Dropdown>
 
-        {/* Menu Items */}
-        <Menu
-          theme="dark"
-          defaultSelectedKeys={["1"]}
-          mode="inline"
-          items={menuItemsTop}
-          style={{
-            background: "#005ae0",
-          }}
-        />
-        <Menu
-          theme="dark"
-          defaultSelectedKeys={["1"]}
-          mode="inline"
-          items={menuItemsBottom}
-          style={{
-            background: "#005ae0",
-            marginTop: "auto",
-          }}
-        />
+          {/* User Info */}
+          <div
+            style={{
+              textAlign: "center",
+              color: "#fff",
+              marginTop: "10px",
+              fontSize: "14px",
+            }}
+          >
+            <div>{user?.fullname || "Người dùng"}</div>
+            <div style={{ fontSize: "12px", opacity: 0.8 }}>
+              {user?.status || "Offline"}
+            </div>
+          </div>
+
+          {/* Menu Items Top */}
+          <Menu
+            theme="dark"
+            defaultSelectedKeys={["1"]}
+            mode="inline"
+            items={menuItemsTop}
+            style={{
+              background: "#005ae0",
+              marginTop: "20px",
+              flexGrow: 1, // Đẩy phần dưới xuống
+            }}
+          />
+
+          {/* Menu Items Bottom */}
+          <Menu
+            theme="dark"
+            defaultSelectedKeys={["1"]}
+            mode="inline"
+            items={menuItemsBottom}
+            style={{
+              background: "#005ae0",
+            }}
+          />
+        </div>
       </Sider>
 
       {/* Main Layout */}
