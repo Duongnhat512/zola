@@ -1,29 +1,33 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
 
 const app = express();
-app.use(cors({
-    origin: 'http://localhost:5173', // Địa chỉ của API Gateway
+app.use(
+  cors({
+    origin: "http://localhost:5173", // Địa chỉ của API Gateway
     credentials: true, // Cho phép cookie được gửi từ client
-}));
+  })
+);
 app.use(express.json());
 
+// Service URL
 const services = {
-    authService: process.env.AUTH_SERVICE_URL || 'http://localhost:5001',
-    chatService: process.env.CHAT_SERVICE_URL || 'http://localhost:5002',
+  authService: process.env.AUTH_SERVICE_URL || "http://localhost:5001",
+  chatService: process.env.CHAT_SERVICE_URL || "http://localhost:5002",
 };
 
-// Create proxy middleware
-const { createProxyMiddleware } = require('./src/middlewares/gateway.middleware');
+// Proxy Middleware
+const {
+  createProxyMiddleware,
+} = require("./src/middlewares/gateway.middleware");
 
-// Routes
-app.use('/api/v1/auth-service', createProxyMiddleware(services.authService));
-app.use('/api/v1/chat', createProxyMiddleware(services.chatService));
+// ✅ Route Proxy
+app.use("/api/v1/auth-service", createProxyMiddleware(services.authService));
+app.use("/api/v1/chat", createProxyMiddleware(services.chatService));
 
-// Health Check
-app.get('/', (req, res) => res.send('API Gateway is running...'));
+// Health check
+app.get("/", (req, res) => res.send("API Gateway is running..."));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`API Gateway is running on port ${PORT}`));

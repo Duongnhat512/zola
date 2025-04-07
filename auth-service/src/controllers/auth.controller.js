@@ -38,45 +38,44 @@ exports.register = async (req, res) => {
     }
 };
 
-
 exports.login = async (req, res) => {
-    const username = req.body.username.toLowerCase();
-    const password = req.body.password;
+  const username = req.body.username.toLowerCase();
+  const password = req.body.password;
 
-    const user = await UserModel.getUser(username);
-    if (!user) {
-        return res.status(404).send({ message: 'Tài khoản không tồn tại' });
-    }
-    const isMatch = bcrypt.compareSync(req.body.password, user.password);
-    if (!isMatch) {
-        return res.status(401).send({ message: 'Sai mật khẩu' });
-    }
+  const user = await UserModel.getUser(username);
+  if (!user) {
+    return res.status(404).send({ message: "Tài khoản không tồn tại" });
+  }
+  const isMatch = bcrypt.compareSync(req.body.password, user.password);
+  if (!isMatch) {
+    return res.status(401).send({ message: "Sai mật khẩu" });
+  }
 
-    const accessTokenLife = process.env.ACCESS_TOKEN_LIFE;
-    const accessTokenSecret = process.env.ACCESS_TOKEN_SECRET;
+  const accessTokenLife = process.env.ACCESS_TOKEN_LIFE;
+  const accessTokenSecret = process.env.ACCESS_TOKEN_SECRET;
 
-    const dataForAccessToken = {
-        username: user.username,
-    };
-    const accessToken = await authMethod.generateToken(
-        dataForAccessToken,
-        accessTokenSecret,
-        accessTokenLife,
-    )
-    if (!accessToken) {
-        return res
-            .status(401)
-            .send('Đăng nhập không thành công, vui lòng thử lại.');
-    }
+  const dataForAccessToken = {
+    username: user.username,
+  };
+  const accessToken = await authMethod.generateToken(
+    dataForAccessToken,
+    accessTokenSecret,
+    accessTokenLife
+  );
+  if (!accessToken) {
+    return res
+      .status(401)
+      .send("Đăng nhập không thành công, vui lòng thử lại.");
+  }
 
-    let refreshToken = randToken.generate(jwtVariable.refreshTokenSize); // tạo 1 refresh token ngẫu nhiên
-    if (!user.refreshToken) {
-        // Nếu user này chưa có refresh token thì lưu refresh token đó vào database
-        await UserModel.updateRefreshToken(user.username, refreshToken);
-    } else {
-        // Nếu user này đã có refresh token thì lấy refresh token đó từ database
-        refreshToken = user.refreshToken;
-    }
+  let refreshToken = randToken.generate(jwtVariable.refreshTokenSize); // tạo 1 refresh token ngẫu nhiên
+  if (!user.refreshToken) {
+    // Nếu user này chưa có refresh token thì lưu refresh token đó vào database
+    await UserModel.updateRefreshToken(user.username, refreshToken);
+  } else {
+    // Nếu user này đã có refresh token thì lấy refresh token đó từ database
+    refreshToken = user.refreshToken;
+  }
 
     return res.json({
         status: "success",
@@ -148,21 +147,21 @@ exports.refreshToken = async (req, res) => {
 };
 
 exports.logout = async (req, res) => {
-    const { username } = req.body;
-    const accessToken = req.headers.authorization?.split(' ')[1];
-    if (!accessToken) {
-        return res.status(400).send({ message: 'Access token không hợp lệ' });
-    }
+  const { username } = req.body;
+  const accessToken = req.headers.authorization?.split(" ")[1];
+  if (!accessToken) {
+    return res.status(400).send({ message: "Access token không hợp lệ" });
+  }
 
-    const user = await UserModel.getUser(username);
-    if (!user) {
-        return res.status(403).send({ message: 'Không tồn tại tài khoản' });
-    }
+  const user = await UserModel.getUser(username);
+  if (!user) {
+    return res.status(403).send({ message: "Không tồn tại tài khoản" });
+  }
 
-    await BlackList.create(accessToken);
-    console.log('Blacklist: ', accessToken);
+  await BlackList.create(accessToken);
+  console.log("Blacklist: ", accessToken);
 
-    await UserModel.updateRefreshToken(user.username, null);
+  await UserModel.updateRefreshToken(user.username, null);
 
     return res.json({ status: "success", message: 'Đăng xuất thành công' });
 }
