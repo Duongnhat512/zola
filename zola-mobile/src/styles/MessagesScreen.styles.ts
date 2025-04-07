@@ -67,6 +67,12 @@ const styles = StyleSheet.create({
   filterButton: {
     padding: 5,
   },
+  chatItem: {
+   
+  },
+  chatList:{
+    padding: 16,
+  }
 });
 
 export default styles; 

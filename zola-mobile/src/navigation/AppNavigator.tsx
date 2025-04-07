@@ -8,6 +8,7 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import TabNavigator from './TabNavigator';
 import { useSelector } from 'react-redux';
+import OTPScreen from '../screens/OTPScreen';
 
 // Define navigation types
 export type RootStackParamList = {
@@ -31,6 +32,7 @@ const AuthStack: React.FC = () => {
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="OTP" component={OTPScreen} />
     </Stack.Navigator>
   );
 };
