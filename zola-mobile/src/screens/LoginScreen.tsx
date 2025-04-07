@@ -11,24 +11,43 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import styles from '../styles/LoginScreen.styles';
+import { useDispatch } from 'react-redux';
+import { LoginUser } from '../services/UserService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { login } from '../redux/slices/UserSlice';
 
-type LoginScreenProps = {
-  navigation: any;
-};
-
-const LoginScreen = ({ navigation }: LoginScreenProps) => {
+const LoginScreen = ({ navigation }) => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [passwordHidden, setPasswordHidden] = useState(true);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleLogin = () => {
-    // In a real app, you would validate credentials here
-    if (phoneNumber && password) {
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Main' }],
-      });
+  const dispatch = useDispatch();
+
+  const handleLogin = async () => {
+    try {
+      const data = {
+        phoneNumber,
+        password
+      };
+      setIsLoading(true);
+      const res = await LoginUser(data);
+      console.log("Login response:", res);
+      if (res) {
+        dispatch(login(res.user));
+        setIsLoading(false);
+        console.log("Đăng nhập thành công");
+        await AsyncStorage.setItem("accessToken", res.accessToken);
+        await AsyncStorage.setItem("refreshToken", res.refreshToken);
+        navigation.replace('Main');
+      } else {
+        setError("Đăng nhập thất bại. Vui lòng thử lại sau.");
+      }
+    } catch (err) {
+      setError("Đăng nhập thất bại. Vui lòng thử lại sau.");
+      console.error("Login error:", err);
     }
   };
 
@@ -75,7 +94,7 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
                 placeholder='Số điện thoại'
               />
               <View style={[
-                styles.underline, 
+                styles.underline,
                 focusedInput === 'phone' && styles.activeUnderline
               ]} />
             </View>
@@ -102,7 +121,7 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
                 </TouchableOpacity>
               </View>
               <View style={[
-                styles.underline, 
+                styles.underline,
                 focusedInput === 'password' && styles.activeUnderline
               ]} />
             </View>
