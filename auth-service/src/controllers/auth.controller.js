@@ -1,37 +1,39 @@
-const bcrypt = require("bcrypt");
-const UserModel = require("../models/user.model");
-const BlackList = require("../models/blacklist.model");
-const authMethod = require("../methods/auth.method");
-const randToken = require("rand-token");
-const jwtVariable = require("../../variables/jwt");
+const bcrypt = require('bcrypt');
+const UserModel = require('../models/user.model');
+const BlackList = require('../models/blacklist.model');
+const authMethod = require('../methods/auth.method');
+const randToken = require('rand-token');
+const jwtVariable = require('../../variables/jwt');
 
 const SALT_ROUNDS = 10;
 
 exports.register = async (req, res) => {
-  const username = req.body.username.toLowerCase();
-  const user = await UserModel.getUser(username);
-  if (user) {
-    return res.status(409).send({ message: "Tài khoản đã tồn tại" });
-  } else {
-    const hashPassword = bcrypt.hashSync(req.body.password, SALT_ROUNDS);
-    const newUser = {
-      username: username,
-      password: hashPassword,
-      fullname: req.body.fullname,
-      dob: req.body.dob,
-      gender: req.body.gender,
-      status: req.body.status,
-    };
-    const createUser = await UserModel.createUser(newUser);
-    if (!createUser) {
-      return res.status(400).send({
-        message: "Có lỗi trong quá trình tạo tài khoản, vui lòng thử lại.",
-      });
+    const username = req.body.username.toLowerCase();
+    const user = await UserModel.getUser(username);
+    if (user) {
+        return res.status(409).send({ message: 'Tài khoản đã tồn tại' });
+    } else {
+        const hashPassword = bcrypt.hashSync(req.body.password, SALT_ROUNDS);
+        const newUser = {
+            username: username,
+            password: hashPassword,
+            fullname: req.body.fullname,
+            dob: req.body.dob,
+            gender: req.body.gender,
+            status: req.body.status,
+        };
+        const createUser = await UserModel.createUser(newUser);
+        if (!createUser) {
+            return res
+                .status(400)
+                .send({ message: 'Có lỗi trong quá trình tạo tài khoản, vui lòng thử lại.' });
+        }
+        return res.json({
+            status: 'success',
+            message: 'Tạo tài khoản thành công',
+            username
+        });
     }
-    return res.send({
-      username,
-    });
-  }
 };
 
 exports.login = async (req, res) => {
@@ -73,68 +75,73 @@ exports.login = async (req, res) => {
     refreshToken = user.refreshToken;
   }
 
-  return res.json({
-    msg: "Đăng nhập thành công.",
-    accessToken,
-    refreshToken,
-    user,
-  });
+    return res.json({
+        status: "success",
+        message: 'Đăng nhập thành công.',
+        accessToken,
+        refreshToken,
+        user,
+    });
 };
 
 exports.refreshToken = async (req, res) => {
-  // Lấy access token từ header
-  const accessTokenFromHeader = req.headers.authorization?.split(" ")[1];
-  if (!accessTokenFromHeader) {
-    return res.status(400).send("Không tìm thấy access token.");
-  }
+    // Lấy access token từ header
+    const accessTokenFromHeader = req.headers.authorization?.split(' ')[1];
+    if (!accessTokenFromHeader) {
+        return res.status(400).send('Không tìm thấy access token.');
+    }
 
-  // Lấy refresh token từ body
-  const refreshTokenFromBody = req.body.refreshToken;
-  if (!refreshTokenFromBody) {
-    return res.status(400).send("Không tìm thấy refresh token.");
-  }
+    // Lấy refresh token từ body
+    const refreshTokenFromBody = req.body.refreshToken;
+    if (!refreshTokenFromBody) {
+        return res.status(400).send('Không tìm thấy refresh token.');
+    }
 
-  const accessTokenSecret = process.env.ACCESS_TOKEN_SECRET;
-  const accessTokenLife = process.env.ACCESS_TOKEN_LIFE;
+    const accessTokenSecret =
+        process.env.ACCESS_TOKEN_SECRET;
+    const accessTokenLife =
+        process.env.ACCESS_TOKEN_LIFE;
 
-  // Decode access token đó
-  const decoded = await authMethod.decodeToken(
-    accessTokenFromHeader,
-    accessTokenSecret
-  );
-  if (!decoded) {
-    return res.status(400).send("Access token không hợp lệ.");
-  }
+    // Decode access token đó
+    const decoded = await authMethod.decodeToken(
+        accessTokenFromHeader,
+        accessTokenSecret,
+    );
+    if (!decoded) {
+        return res.status(400).send('Access token không hợp lệ.');
+    }
 
-  const username = decoded.payload.username; // Lấy username từ payload
+    const username = decoded.payload.username; // Lấy username từ payload
 
-  const user = await UserModel.getUser(username);
-  if (!user) {
-    return res.status(401).send("User không tồn tại.");
-  }
+    const user = await UserModel.getUser(username);
+    if (!user) {
+        return res.status(401).send('User không tồn tại.');
+    }
 
-  if (refreshTokenFromBody !== user.refreshToken) {
-    return res.status(400).send("Refresh token không hợp lệ.");
-  }
+    if (refreshTokenFromBody !== user.refreshToken) {
+        return res.status(400).send('Refresh token không hợp lệ.');
+    }
 
-  // Tạo access token mới
-  const dataForAccessToken = {
-    username,
-  };
+    // Tạo access token mới
+    const dataForAccessToken = {
+        username,
+    };
 
-  const accessToken = await authMethod.generateToken(
-    dataForAccessToken,
-    accessTokenSecret,
-    accessTokenLife
-  );
-  if (!accessToken) {
-    return res
-      .status(400)
-      .send("Tạo access token không thành công, vui lòng thử lại.");
-  }
-  return res.json({
-    accessToken,
-  });
+    const accessToken = await authMethod.generateToken(
+        dataForAccessToken,
+        accessTokenSecret,
+        accessTokenLife,
+    );
+    if (!accessToken) {
+        return res
+            .status(400)
+            .send('Tạo access token không thành công, vui lòng thử lại.');
+    }
+    return res.json({
+        status: 'success',
+        message: 'Cấp lại access token thành công.',
+        accessToken,
+    });
 };
 
 exports.logout = async (req, res) => {
@@ -154,5 +161,83 @@ exports.logout = async (req, res) => {
 
   await UserModel.updateRefreshToken(user.username, null);
 
-  return res.send({ message: "Đăng xuất thành công" });
-};
+    return res.json({ status: "success", message: 'Đăng xuất thành công' });
+}
+
+// exports.sendOTP = async (req, res) => {
+//     const username = req.body.username.toLowerCase();
+
+//     const otp = otpMethod.generateOTP() // Tạo mã OTP ngẫu nhiên 6 chữ số
+//     const expiryTime = new Date().getTime() + 2 * 60 * 1000; // Thời gian hết hạn là 2 phút sau
+//     await otpMethod.sendOTP(username, otp); // Gửi mã OTP đến số điện thoại của người dùng
+
+//     return res.json({
+//         status: 'success',
+//         message: 'Mã OTP đã được gửi đến số điện thoại của bạn.',
+//         username
+//     });
+// }
+
+// exports.verifyOTP = async (req, res) => {
+//     const username = req.body.username.toLowerCase();
+//     const otp = req.body.otp;
+
+//     const user = await UserModel.getUser(username);
+//     if (!user) {
+//         return res.status(404).send({ message: 'Tài khoản không tồn tại' });
+//     }
+//     if (user.otp !== otp) {
+//         return res.status(401).send({ message: 'Mã OTP không hợp lệ' });
+//     }
+
+//     await UserModel.updateOTP(username, null); // Xóa mã OTP sau khi xác thực thành công
+
+//     return res.json({
+//         status: 'success',
+//         message: 'Xác thực thành công',
+//         username
+//     });
+// }
+
+exports.changePassword = async (req, res) => {
+    const username = req.user.username.toLowerCase();
+    const password = req.body.password;
+    const newPassword = req.body.newPassword;
+
+    const user = await UserModel.getUser(username);
+    if (!user) {
+        return res.status(404).send({ message: 'Tài khoản không tồn tại' });
+    }
+    const isMatch = bcrypt.compareSync(password, user.password);
+    if (!isMatch) {
+        return res.status(401).send({ message: 'Sai mật khẩu' });
+    }
+
+    const hashPassword = bcrypt.hashSync(newPassword, SALT_ROUNDS);
+    await UserModel.updatePassword(username, hashPassword);
+
+    return res.json({
+        status: 'success',
+        message: 'Đổi mật khẩu thành công',
+        username
+    });
+}
+
+// exports.forgotPassword = async (req, res) => {
+//     const username = req.body.username.toLowerCase();
+//     const user = await UserModel.getUser(username);
+//     if (!user) {
+//         return res.status(404).send({ message: 'Tài khoản không tồn tại' });
+//     }
+//     const otp = otpMethod.generateOTP() // Tạo mã OTP ngẫu nhiên 6 chữ số
+//     const expiryTime = new Date().getTime() + 2 * 60 * 1000; // Thời gian hết hạn là 2 phút sau
+//     await UserModel.updateOTP(username, otp, expiryTime); // Cập nhật mã OTP và thời gian hết hạn vào database
+
+//     await otpMethod.sendOTP(username, otp); // Gửi mã OTP đến số điện thoại của người dùng
+
+//     return res.json({
+//         status: 'success',
+//         message: 'Mã OTP đã được gửi đến số điện thoại của bạn.',
+//         username
+//     });
+// }

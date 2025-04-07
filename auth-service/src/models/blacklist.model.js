@@ -1,4 +1,4 @@
-const { dynamodb } = require('../config/aws-helper');
+const { dynamodb } = require('../utils/aws.helper');
 
 const tableName = 'blacklist';
 

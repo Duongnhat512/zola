@@ -1,4 +1,3 @@
-require("dotenv").config();
 const AWS = require("aws-sdk");
 
 AWS.config.update({
@@ -7,8 +6,4 @@ AWS.config.update({
     secretAccessKey: process.env.SECRET_ACCESS_KEY
 })
 
-const s3 = new AWS.S3()
-
-const dynamodb = new AWS.DynamoDB.DocumentClient();
-
-module.exports = { dynamodb, s3 };
+module.exports = AWS;
