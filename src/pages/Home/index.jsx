@@ -12,7 +12,7 @@ import {
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { Avatar, Dropdown, Layout, Menu } from "antd";
-import Profile from "../Profile/profile";
+import Profile from "../Profile/Profile";
 
 const { Content, Sider } = Layout;
 

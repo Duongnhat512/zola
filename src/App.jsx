@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
-import Profile from "./pages/Profile/profile";
+import Profile from "./pages/Profile/Profile";
+import { setAuthToken } from "./utils/customize-axios";
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
@@ -28,7 +29,14 @@ function App() {
       document.documentElement.classList.remove("dark");
     }
   };
-
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      console.log(1);
+      
+      setAuthToken(token);
+    }
+  }, []);
   return (
     <Router>
       {/* <div className="min-h-screen bg-white dark:bg-gray-900 text-black dark:text-white"> */}
