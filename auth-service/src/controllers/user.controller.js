@@ -22,19 +22,19 @@ UserController.updateUser = async (req, res) => {
 
 
 UserController.updateAvt = async (req, res) => {
-            const username = req.params.username.toLowerCase();
-            const file = req.file;
-            const avt = await s3.uploadFile(file);
+    const username = req.params.username.toLowerCase();
+    const file = req.file;
+    const avt = await s3.uploadFile(file);
 
-            if (!avt) {
-                return res.status(400).send({ message: 'Có lỗi trong quá trình cập nhật ảnh đại diện, vui lòng thử lại.' });
-            }
+    if (!avt) {
+        return res.status(400).send({ message: 'Có lỗi trong quá trình cập nhật ảnh đại diện, vui lòng thử lại.' });
+    }
 
-            const data = await UserModel.updateAvt(username, avt);
+    const data = await UserModel.updateAvt(username, avt);
 
-            return res.send({
-                avt: avt
-            });
-        }
+    return res.send({
+        avt: avt
+    });
+}
 
 exports.UserController = UserController;

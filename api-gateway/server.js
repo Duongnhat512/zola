@@ -3,17 +3,12 @@ const express = require("express");
 const cors = require("cors");
 
 const app = express();
-
-// ✅ CORS cấu hình đầy đủ — đặt ở đầu
 app.use(
   cors({
     origin: "http://localhost:5173", // Địa chỉ của API Gateway
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true, // Cho phép cookie được gửi từ client
   })
 );
-
-// Middleware JSON
 app.use(express.json());
 
 // Service URL
