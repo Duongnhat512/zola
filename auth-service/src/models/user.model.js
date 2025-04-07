@@ -53,9 +53,11 @@ const UserModel = {
             Key: {
                 username
             },
-            UpdateExpression: "set fullname = :fullname",
+            UpdateExpression: "set fullname = :fullname, dob = :dob, gender = :gender",
             ExpressionAttributeValues: {
                 ":fullname": userData.fullname,
+                ":dob": userData.dob,
+                ":gender": userData.gender
             },
             ReturnValues: "ALL_NEW",
         }

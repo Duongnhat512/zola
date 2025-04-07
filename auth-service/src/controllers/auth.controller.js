@@ -167,7 +167,7 @@ exports.logout = async (req, res) => {
 }
 
 exports.sendOTP = async (req, res) => {
-    const username = req.body.username.toLowerCase();
+    const username = req.body.username;
 
     const otp = otpMethod.generateOTP() // Tạo mã OTP ngẫu nhiên 6 chữ số
     const expiryTime = new Date().getTime() + 2 * 60 * 1000; // Thời gian hết hạn là 2 phút sau
