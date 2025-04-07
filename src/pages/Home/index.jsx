@@ -12,6 +12,7 @@ import {
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { Avatar, Dropdown, Layout, Menu } from "antd";
+import Profile from "../Profile/profile";
 
 const { Content, Sider } = Layout;
 
@@ -22,6 +23,7 @@ const Home = () => {
   // Redux state
   const isAuthenticated = useSelector((state) => state.user.authenticated);
   const user = useSelector((state) => state.user.user);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Kiểm tra trạng thái đăng nhập
   useEffect(() => {
@@ -29,7 +31,9 @@ const Home = () => {
       navigate("/login");
     }
   }, [isAuthenticated, navigate]);
-
+  const showModal = () => {
+    setIsModalOpen(true);
+  };
   // Menu items
   const menuItemsTop = [
     { label: "Tin nhắn", key: "1", icon: <MessageOutlined /> },
@@ -48,7 +52,13 @@ const Home = () => {
     { label: user?.fullname || "Người dùng", key: "0" },
     { type: "divider" },
     { label: "Nâng cấp tài khoản", key: "1" },
-    { label: "Hồ sơ của bạn", key: "2" },
+    {
+      label: "Hồ sơ của bạn",
+      key: "2",
+      onClick: () => {
+        showModal();
+      },
+    },
     { label: "Cài đặt", key: "3" },
     { type: "divider" },
     { label: "Đăng xuất", key: "4" },
@@ -56,10 +66,9 @@ const Home = () => {
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
+      <Profile isModalOpen={isModalOpen} setModalOpen={setIsModalOpen} />
       <Sider
-        collapsible
         collapsed={collapsed}
-        onCollapse={(value) => setCollapsed(value)}
         style={{
           background: "#005ae0",
           color: "#fff",
@@ -77,6 +86,7 @@ const Home = () => {
             menu={{ items: dropdownItems }}
             trigger={["click"]}
             placement="bottomRight"
+            align={{ offset: [140, -50] }} // Điều chỉnh khoảng cách menu so với avatar
           >
             <a onClick={(e) => e.preventDefault()}>
               <Avatar
