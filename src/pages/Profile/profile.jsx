@@ -38,6 +38,12 @@ const Profile = ({ isModalOpen, setModalOpen }) => {
     });
   };
 
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const options = { year: "numeric", month: "2-digit", day: "2-digit" };
+    return date.toLocaleDateString("en-GB", options);
+  };
+
   const handleModalClose = () => {
     setModalOpen(false);
     setModalContent("profile"); // Reset to profile content
@@ -46,7 +52,9 @@ const Profile = ({ isModalOpen, setModalOpen }) => {
   const handleUpdateSubmit = async (values) => {
     let username = user.username;
     let fullname = values.fullname;
-    let dob = `${values.year}-${String(values.month).padStart(2, "0")}-${String(values.day).padStart(2, "0")}`;
+    let dob = `${values.year}-${String(values.month).padStart(2, "0")}-${String(
+      values.day
+    ).padStart(2, "0")}`;
     let gender = values.gender;
     
     const res = await updateUser(username,fullname,dob,gender);
@@ -106,7 +114,10 @@ const Profile = ({ isModalOpen, setModalOpen }) => {
                 <h1 className="font-sans text-xl">
                   {user?.fullname || "Người dùng"}{" "}
                 </h1>
-                <Button className="border-0 text-sm">
+                <Button
+                  className="border-0 text-sm"
+                  onClick={handleUpdateClick}
+                >
                   <EditTwoTone />
                 </Button>
               </div>
@@ -122,7 +133,7 @@ const Profile = ({ isModalOpen, setModalOpen }) => {
                   </tr>
                   <tr className="border-b">
                     <td className="px-4 py-2 font-medium">Ngày sinh</td>
-                    <td className="px-4 py-2">{user?.dob}</td>
+                    <td className="px-4 py-2">{formatDate(user?.dob)}</td>
                   </tr>
                   <tr className="border-b">
                     <td className="px-4 py-2 font-medium">Điện thoại</td>

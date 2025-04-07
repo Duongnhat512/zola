@@ -15,7 +15,8 @@ function Login() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const isLoading = useSelector((state) => state.user.isLoading); // Lấy trạng thái loading từ Redux
-  const user = useSelector((state) => state.user.user); // Lấy thông tin người dùng từ Redux
+  const authenticated = useSelector((state) => state.user.authenticated); // Lấy thông tin người dùng từ Redux
+  console.log(authenticated);
   
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -43,7 +44,7 @@ function Login() {
     }
   };
   useEffect(() => {
-    if(user){
+    if(authenticated){
       navigate("/"); // Chuyển hướng về trang Home nếu đã đăng nhập
     }
   }
