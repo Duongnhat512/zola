@@ -10,14 +10,15 @@ import {
   Pressable,
 } from 'react-native';
 import { MaterialIcons, Entypo, Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 const COVER_HEIGHT = 200;
 const AVATAR_SIZE = 100;
 
-const ProfileCaNhanScreen = () => {
+const Profile = () => {
   const [modalVisible, setModalVisible] = useState(false);
-
+  const navigation = useNavigation();
   return (
     <View style={styles.container}>
       {/* Ảnh bìa */}
@@ -31,7 +32,7 @@ const ProfileCaNhanScreen = () => {
         <TouchableOpacity style={styles.iconButton}>
           <MaterialIcons name="access-time" size={24} color="#fff" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.iconButton} onPress={() => setModalVisible(true)}>
+        <TouchableOpacity style={styles.iconButton} onPress={() =>navigation.navigate("Edit")}>
           <Entypo name="dots-three-horizontal" size={20} color="#fff" />
         </TouchableOpacity>
       </View>
@@ -140,4 +141,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ProfileCaNhanScreen;
+export default Profile;

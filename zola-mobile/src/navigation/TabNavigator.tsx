@@ -2,7 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons, Ionicons, FontAwesome } from '@expo/vector-icons';
   import styles from '../styles/TabNavigator.styles';
-
+  import { useNavigation } from '@react-navigation/native';
 // Import the actual MessagesScreen
 import MessagesScreen from '../screens/MessagesScreen';
 
@@ -21,10 +21,28 @@ const GroupsScreen = () => (
   </View>
 );
 
-const ProfileScreen = () => (
+const ProfileScreen = () =>
+{ 
+  const navigation = useNavigation();
+  return(
 <View style={{gap:10}}>  
+<View style={styles.row3}>
+      <Image
+        source={require("../assets/zalo-icon/search.png")}
+        style={styles.icon2}
+      />
+      <View style={styles.middle}>
+        <Text style={styles.text3}>Tìm kiếm</Text>
+      </View>
+      <TouchableOpacity onPress={()=>navigation.navigate('Setting')}>
+      <Image
+        source={require("../assets/zalo-icon/setting.png")}
+        style={styles.icon2}
+      />
+      </TouchableOpacity>
+      </View>
   <View>
-      <TouchableOpacity style={styles.row2}>
+      <TouchableOpacity style={styles.row2} onPress={() => navigation.navigate('ProfileScreen')}>
       <Image
         source={{ uri: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTMOe6Q-vOkWM1GspqtgGfXURvu8QToE6a6mA&s' }}
         style={styles.avatar}
@@ -135,6 +153,7 @@ const ProfileScreen = () => (
       </View>
   </View>
 );
+}
 
 const Tab = createBottomTabNavigator();
 
@@ -150,6 +169,7 @@ const TabNavigator = () => {
         tabBarLabelStyle: styles.tabLabel,
       }}
     >
+      
       <Tab.Screen
         name="Messages"
         component={MessagesScreen}

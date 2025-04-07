@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity,Modal,Pressable,TextInput } from 'react-native';
 import { Icon } from 'react-native-elements';
 
-const ProfileScreen = () => {
+const EditProfile = () => {
   const [profile, setProfile] = useState({
   name: 'Võ Phước Hậu',
   dob: '30/10/2002',
@@ -229,4 +229,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ProfileScreen;
+export default EditProfile;

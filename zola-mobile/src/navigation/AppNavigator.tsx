@@ -12,6 +12,9 @@ import OTPScreen from '../screens/OTPScreen';
 import NameScreen from '../screens/RegisterNameScreen';
 import PrivateInformationScreen from '../screens/PrivateInformationScreen';
 import PasswordScreen from '../screens/PasswordScreen';
+import Setting  from '../screens/Setting';
+import EditProfile from '../screens/EditProfile';
+import Profile from '../screens/Profile';
 
 // Define navigation types
 export type RootStackParamList = {
@@ -19,6 +22,9 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   Main: undefined;
+  Setting: undefined;
+  ProfileScreen:undefined;
+  Edit:undefined;
 };
 
 // Create navigators
@@ -39,6 +45,9 @@ const AuthStack: React.FC = () => {
       <Stack.Screen name="Name" component={NameScreen} />
       <Stack.Screen name="PrivateInformation" component={PrivateInformationScreen} />
       <Stack.Screen name="Password" component={PasswordScreen} />
+      <Stack.Screen name="ProfileScreen" component={Profile} />
+      <Stack.Screen name="Edit" component={EditProfile} />
+      <Stack.Screen name="Setting" component={Setting} />
     </Stack.Navigator>
   );
 };
@@ -57,6 +66,11 @@ const AppNavigator: React.FC = () => {
       {user ? (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Main" component={TabNavigator} />
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="ProfileScreen" component={Profile} />
+          <Stack.Screen name="Edit" component={EditProfile} />
+          <Stack.Screen name="Setting" component={Setting} />
+          <Stack.Screen name="Welcome" component={WelcomeScreen} />
         </Stack.Navigator>
       ) : (
         <AuthStack />

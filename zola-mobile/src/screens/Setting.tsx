@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { useDispatch } from 'react-redux';
 import styles from '../styles/TabNavigator.styles';
-
+import { logout } from '../redux/slices/UserSlice';
 import {
   View,
   StyleSheet,
@@ -12,6 +13,7 @@ import {
   Pressable,ScrollView
 } from 'react-native';
 import { MaterialIcons, Entypo, Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 const COVER_HEIGHT = 200;
@@ -19,34 +21,39 @@ const AVATAR_SIZE = 100;
 
 const Setting = () => {
   const [modalVisible, setModalVisible] = useState(false);
-
+  const dispatch = useDispatch();
+  const navigation = useNavigation();
+  const handleLogout = () => {
+    dispatch(logout()); // gọi logout trong Redux
+    navigation.navigate('Welcome'); // chuyển sang trang Welcome
+  };
   return (
  <ScrollView>
  <View style={{gap:10}}>  
   <View>
       <View style={styles.row}>
       <Image
-        source={require('./zalo-icon/shield.png')}
+        source={require('../assets/zalo-icon/shield.png')}
         style={styles.icon2}
       />
       <View style={styles.middle}>
         <Text style={styles.text}>Dữ liệu trên máy</Text>
               </View>
      <Image
-        source={require("./ic_back_modal.png")}
+        source={require("../assets/zalo-icon/ic_back_modal.png")}
         style={styles.icon}
       />
       </View>
        <View style={styles.row}>
       <Image
-        source={require('./zalo-icon/shield.png')}
+        source={require('../assets/zalo-icon/shield.png')}
         style={styles.icon2}
       />
       <View style={styles.middle}>
         <Text style={styles.text}>Sao lưu và khôi phục</Text>
               </View>
      <Image
-        source={require("./ic_back_modal.png")}
+        source={require("../assets/zalo-icon/ic_back_modal.png")}
         style={styles.icon}
       />
       </View>
@@ -54,14 +61,14 @@ const Setting = () => {
       <View>
        <View style={styles.row2}>
       <Image
-        source={require("./zalo-icon/clouldZ.png")}
+        source={require("../assets/zalo-icon/clouldZ.png")}
         style={styles.icon2}
       />
       <View style={styles.middle}>
         <Text style={styles.text}>Thông báo</Text>
       </View>
       <Image
-        source={require("./ic_back_modal.png")}
+        source={require("../assets/zalo-icon/ic_back_modal.png")}
         style={styles.icon}
       />
       </View>
@@ -78,33 +85,33 @@ const Setting = () => {
       <View>
        <View style={styles.row2}>
       <Image
-        source={require("./zalo-icon/cloud.png")}
+        source={require("../assets/zalo-icon/cloud.png")}
         style={styles.icon2}
       />
       <View style={styles.middle}>
         <Text style={styles.text}>Thông báo</Text>
       </View>
       <Image
-        source={require("./ic_back_modal.png")}
+        source={require("../assets/zalo-icon/ic_back_modal.png")}
         style={styles.icon}
       />
       </View>
        <View style={styles.row2}>
       <Image
-        source={require("./zalo-icon/pie.png")}
+        source={require("../assets/zalo-icon/pie.png")}
         style={styles.icon2}
       />
       <View style={styles.middle}>
         <Text style={styles.text}>Tin nhắn</Text>
       </View>
       <Image
-        source={require("./ic_back_modal.png")}
+        source={require("../assets/zalo-icon/ic_back_modal.png")}
         style={styles.icon}
       />
       </View>
        <View style={styles.row2}>
       <Image
-        source={require("./zalo-icon/qr.png")}
+        source={require("../assets/zalo-icon/qr.png")}
         style={styles.icon2}
       />
       <View style={styles.middle}>
@@ -113,40 +120,40 @@ const Setting = () => {
       </View>
        <View style={styles.row}>
       <Image
-        source={require('./zalo-icon/shield.png')}
+        source={require('../assets/zalo-icon/shield.png')}
         style={styles.icon2}
       />
       <View style={styles.middle}>
         <Text style={styles.text}>Nhật ký</Text>
               </View>
      <Image
-        source={require("./ic_back_modal.png")}
+        source={require("../assets/zalo-icon/ic_back_modal.png")}
         style={styles.icon}
       />
       </View>
        <View style={styles.row}>
       <Image
-        source={require('./zalo-icon/shield.png')}
+        source={require('../assets/zalo-icon/shield.png')}
         style={styles.icon2}
       />
       <View style={styles.middle}>
         <Text style={styles.text}>Danh bạ</Text>
               </View>
      <Image
-        source={require("./ic_back_modal.png")}
+        source={require("../assets/zalo-icon/ic_back_modal.png")}
         style={styles.icon}
       />
       </View>
        <View style={styles.row}>
       <Image
-        source={require('./zalo-icon/shield.png')}
+        source={require('../assets/zalo-icon/shield.png')}
         style={styles.icon2}
       />
       <View style={styles.middle}>
         <Text style={styles.text}>Giao diện và ngôn ngữ</Text>
               </View>
      <Image
-        source={require("./ic_back_modal.png")}
+        source={require("../assets/zalo-icon/ic_back_modal.png")}
         style={styles.icon}
       />
       </View>
@@ -154,33 +161,33 @@ const Setting = () => {
       <View>
        <View style={styles.row}>
       <Image
-        source={require("./zalo-icon/shield.png")}
+        source={require("../assets/zalo-icon/shield.png")}
         style={styles.icon2}
       />
       <View style={styles.middle}>
         <Text style={styles.text}>Thông tin về Zalo</Text>
       </View>
       <Image
-        source={require("./ic_back_modal.png")}
+        source={require("../assets/zalo-icon/ic_back_modal.png")}
         style={styles.icon}
       />
       </View>
        <View style={styles.row}>
       <Image
-        source={require("./zalo-icon/lock.png")}
+        source={require("../assets/zalo-icon/lock.png")}
         style={styles.icon2}
       />
       <View style={styles.middle}>
         <Text style={styles.text}>Liên hệ hỗ trợ</Text>
       </View>
       <Image
-        source={require("./ic_back_modal.png")}
+        source={require("../assets/zalo-icon/ic_back_modal.png")}
         style={styles.icon}
       />
       </View>
       </View>
       <View>
-      <TouchableOpacity style={styles.logoutButton} onPress={() => console.log('Đăng xuất')}>
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
   <Text style={styles.logoutText}>Đăng xuất</Text>
 </TouchableOpacity>
       </View>
