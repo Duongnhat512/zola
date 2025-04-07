@@ -1,19 +1,40 @@
 import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity, Modal, Pressable, TextInput } from 'react-native';
 import { Icon } from 'react-native-elements';
+import { updateUserRedux } from '../redux/slices/UserSlice';
+import { updateUser } from '../services/UserService';
+import { MaterialIcons, Entypo, Ionicons } from '@expo/vector-icons';
+import { useSelector, useDispatch } from 'react-redux';
+import { useNavigation } from '@react-navigation/native';
 
 const EditProfile = () => {
+    const navigation = useNavigation();
+  const user = useSelector((state: any) => state.user.user);
   const [profile, setProfile] = useState({
     name: 'Võ Phước Hậu',
     dob: '30/10/2002',
     gender: 'Nam',
   });
-  const [form, setForm] = useState({ ...profile });
+  const dispatch = useDispatch();
+  const [form, setForm] = useState({
+    fullname: user.fullname,
+    dob: user.dob,
+    gender: user.gender,
+    status: user.status,
+    avt: user.avt, // hiện avatar hiện tại
+  });
+  const handleChange = (key: string, value: string) => {
+    setForm({ ...form, [key]: value });
+  };
   const [modalVisible, setModalVisible] = useState(false);
-  const [name, setName] = useState('Võ Phước Hậu');
-  const [dob, setDob] = useState('30/10/2002');
-  const [gender, setGender] = useState('Nam');
-  const handleSave = () => {
+  const handleSave = async() => {
+    try {
+      await updateUser(user.username,form.fullname,form.dob,form.gender);
+      dispatch(updateUserRedux(form)); // update redux
+      alert('Cập nhật thành công!');
+    } catch (err) {
+      console.error('Lỗi cập nhật user:', err);
+    }
     // Gửi dữ liệu cập nhật tại đây nếu cần
     toggleModal();
   };
@@ -28,12 +49,17 @@ const EditProfile = () => {
           source={{ uri: 'https://i.imgur.com/jl1L3Km.jpg' }} // Placeholder ảnh nền
           style={styles.headerImage}
         />
+          <View style={styles.topLeftIcons}>
+        <TouchableOpacity style={styles.iconButton} onPress={() =>navigation.goBack()}>
+        <MaterialIcons name="arrow-back" size={24} color="#fff" />
+        </TouchableOpacity>
+      </View>
         <View style={styles.avatarWrapper}>
           <Image
-            source={{ uri: 'https://i.imgur.com/4QfKuz1.png' }} // Placeholder avatar
+            source={{uri: user?.avt  }} // Placeholder avatar
             style={styles.avatar}
           />
-          <Text style={styles.name}>{name}</Text>
+          <Text style={styles.name}>{form.fullname}</Text>
         </View>
       </View>
       <Modal
@@ -44,7 +70,8 @@ const EditProfile = () => {
       >
         <View style={styles.modalContainer}>
           {/* Nút đóng */}
-          <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>X
+          <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+            <Text>X</Text>
           </TouchableOpacity>
 
           {/* Nội dung trong modal */}
@@ -54,33 +81,29 @@ const EditProfile = () => {
               style={styles.modalAvatar}
             />
             <TextInput
-              value={name}
-              onChangeText={setName}
+              value={form.fullname}
+              onChangeText={(text) => handleChange('fullname', text)}
               style={styles.input}
               placeholder="Họ tên"
             />
             <TextInput
-              value={dob}
-              onChangeText={setDob}
+              value={form.dob}
+              onChangeText={(text) => handleChange('dob', text)}
               style={styles.input}
               placeholder="Ngày sinh"
             />
 
             {/* Giới tính */}
             <View style={styles.genderRow}>
-              <Pressable
-                style={styles.radio}
-                onPress={() => setGender('Nam')}>
-                <View style={gender === 'Nam' ? styles.checkedCircle : styles.circle} />
-                <Text style={styles.radioLabel}>Nam</Text>
-              </Pressable>
+            <Pressable style={styles.radio} onPress={() => handleChange('gender', 'Nam')}>
+            <View style={form.gender === 'Nam' ? styles.checkedCircle : styles.circle} />
+            <Text style={styles.radioLabel}>Nam</Text>
+            </Pressable>
 
-              <Pressable
-                style={styles.radio}
-                onPress={() => setGender('Nữ')}>
-                <View style={gender === 'Nữ' ? styles.checkedCircle : styles.circle} />
-                <Text style={styles.radioLabel}>Nữ</Text>
-              </Pressable>
+            <Pressable style={styles.radio} onPress={() => handleChange('gender', 'Nữ')}>
+            <View style={form.gender === 'Nữ' ? styles.checkedCircle : styles.circle} />
+            <Text style={styles.radioLabel}>Nữ</Text>
+            </Pressable>
             </View>
             <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
               <Text style={styles.saveText}>LƯU</Text>
@@ -93,11 +116,11 @@ const EditProfile = () => {
         <Text style={styles.sectionTitle}>Thông tin cá nhân</Text>
         <View style={styles.infoRow}>
           <Text style={styles.label}>Giới tính</Text>
-          <Text style={styles.value}>{gender}</Text>
+          <Text style={styles.value}>{form.gender}</Text>
         </View>
         <View style={styles.infoRow}>
           <Text style={styles.label}>Ngày sinh</Text>
-          <Text style={styles.value}>{dob}</Text>
+          <Text style={styles.value}>{form.dob}</Text>
         </View>
         <View style={styles.infoRow}>
           <Text style={styles.label}>Điện thoại</Text>
@@ -140,6 +163,9 @@ const styles = StyleSheet.create({
     position: 'relative',
     height: 160,
   },
+  iconButton: {
+    padding: 6,
+  },
   headerImage: {
     width: '100%',
     height: '100%',
@@ -168,6 +194,14 @@ const styles = StyleSheet.create({
     marginTop: 0,
     padding: 20,
     backgroundColor: '#fff',
+  },
+  topLeftIcons: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    flexDirection: 'row',
+    gap: 12,
+    zIndex: 20,
   },
   sectionTitle: {
     fontSize: 14,

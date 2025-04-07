@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import styles from '../styles/TabNavigator.styles';
 import { logout } from '../redux/slices/UserSlice';
+import { useNavigation } from '@react-navigation/native';
 import {
   View,
   StyleSheet,
@@ -13,7 +14,6 @@ import {
   Pressable, ScrollView
 } from 'react-native';
 import { MaterialIcons, Entypo, Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 const COVER_HEIGHT = 200;
@@ -28,6 +28,13 @@ const Setting = () => {
   };
   return (
     <ScrollView>
+            <View style={styles.topLeftIcons}>
+              <TouchableOpacity style={styles.iconButton} onPress={() =>navigation.goBack()}>
+              <MaterialIcons name="arrow-back" size={24} color="#000000" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.row}>
+              </View>
       <View style={{ gap: 10 }}>
         <View>
           <View style={styles.row}>

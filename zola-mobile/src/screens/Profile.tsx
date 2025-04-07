@@ -21,7 +21,6 @@ const Profile = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const navigation = useNavigation();
   const user = useSelector((state: any) => state.user.user);
-
   return (
     <View style={styles.container}>
       {/* Ảnh bìa */}
@@ -29,7 +28,11 @@ const Profile = () => {
         source={{ uri: 'https://images.unsplash.com/photo-1503264116251-35a269479413' }}
         style={styles.coverPhoto}
       />
-
+      <View style={styles.topLeftIcons}>
+        <TouchableOpacity style={styles.iconButton} onPress={() =>navigation.goBack()}>
+        <MaterialIcons name="arrow-back" size={24} color="#fff" />
+        </TouchableOpacity>
+      </View>
       {/* Góc phải: icon đồng hồ và ... */}
       <View style={styles.topRightIcons}>
         <TouchableOpacity style={styles.iconButton}>
@@ -88,6 +91,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 12,
     right: 12,
+    flexDirection: 'row',
+    gap: 12,
+    zIndex: 20,
+  },
+  topLeftIcons: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
     flexDirection: 'row',
     gap: 12,
     zIndex: 20,

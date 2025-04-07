@@ -110,6 +110,15 @@ logoutText: {
   color: '#fff',
   fontSize: 16,
   fontWeight: '500',
+},  iconButton: {
+  padding: 6,
+},topLeftIcons: {
+  position: 'absolute',
+  top: 12,
+  left: 12,
+  flexDirection: 'row',
+  gap: 12,
+  zIndex: 20,
 },
 });
 

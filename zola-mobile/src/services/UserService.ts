@@ -8,10 +8,22 @@ export const LoginUser = async (data) => {
     });
     return response;
   } catch (error) {
+    console.log(error);
     throw error;
   }
 };
+export const Update = async (data)=>
+{ 
+  console.log("🔄 Updating user with data:", data);
 
+  const response = await axios.post("/auth-service/me/update", {
+    username: data.username,
+    fullname: data.fullname,
+    dob: data.dob,
+    gender: data.gender,    // ảnh đại diện (URL)
+    status: data.status  // trạng thái (bio/status)
+  });
+}
 export const LoginToken = async () => {
   try {
     const response = await axios.get("/auth-service/auth/token");
