@@ -57,13 +57,13 @@ const AppNavigator: React.FC = () => {
   // const [isLoggedIn, setIsLoggedIn] = useState(user);
   const user = useSelector((state: any) => state.user);
 
-  const handleLoginChange = (status: boolean) => {
-    setIsLoggedIn(status);
-  };
+  // const handleLoginChange = (status: boolean) => {
+  //   setIsLoggedIn(status);
+  // };
   
   return (
     <NavigationContainer>
-      {user ? (
+      {/* {user ? (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Main" component={TabNavigator} />
           <Stack.Screen name="Login" component={LoginScreen} />
@@ -72,9 +72,9 @@ const AppNavigator: React.FC = () => {
           <Stack.Screen name="Setting" component={Setting} />
           <Stack.Screen name="Welcome" component={WelcomeScreen} />
         </Stack.Navigator>
-      ) : (
+      ) : ( */}
         <AuthStack />
-      )}
+      {/* )} */}
     </NavigationContainer>
   );
 };

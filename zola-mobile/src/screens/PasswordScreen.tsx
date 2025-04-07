@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, KeyboardAvo
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
-
+import {registerUser} from '../services/UserService'; // Import hàm gọi API từ UserService
 type PasswordScreenProps = {
   route: any;  // Thêm route để lấy params
   navigation: any;
@@ -48,16 +48,18 @@ const PasswordScreen = ({ route, navigation }: PasswordScreenProps) => {
     } else {
       // Tiến hành gọi API tạo tài khoản
       try {
-        const response = await axios.post('http://your-api-endpoint/register', {
-          username: userName,
+        const data = {
+          userName: phoneNumber,
           password: password,
-          fullname: route.params.fullname, // Pass the fullname to API
+          fullname: userName, // Pass the fullname to API
           dob: birthday,
-          gender: gender,
+          gender:gender,
           status: 'active', // Or whatever status you want to set
-        });
+        };
 
-        if (response.data.status === 'success') {
+        const response = await registerUser(data); // Gọi hàm registerUser từ UserService
+
+        if (response) { // Assuming 200 is the success status code
           Alert.alert('Thông báo', 'Tạo tài khoản thành công!');
           navigation.navigate('Welcome'); // Navigate to the next screen
         } else {

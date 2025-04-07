@@ -39,3 +39,21 @@ export const updateUser = async (username,fullname,dob,gender) => {
     throw error;
   }
 };
+export const registerUser = async (data) => {
+  try {
+    console.log("Registering user with data:", data);
+    const response = await axios.post("/auth-service/auth/register", {
+      username: data.userName,
+      password: data.password,
+      fullname: data.fullname,
+      dob: data.dob,
+      gender: data.gender,
+      status: data.status
+    });
+    return response;
+  } catch (error) {
+    console.error("Registration failed", error);
+    throw error;
+  }
+};
+
