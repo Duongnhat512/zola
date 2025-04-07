@@ -21,6 +21,10 @@ const NO_RETRY_HEADER = "x-no-retry";
 // Add a request interceptor
 instance.interceptors.request.use(
   function (config) {
+    const token = localStorage.getItem("accessToken"); // hoặc sessionStorage
+    if (token) {
+      config.headers["Authorization"] = `Bearer ${token}`;
+    }
     return config;
   },
   function (error) {
