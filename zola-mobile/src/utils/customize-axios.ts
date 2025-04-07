@@ -1,5 +1,5 @@
 import axios from "axios";
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const baseURL = process.env.BASE_URL || "http://192.168.2.5:8888/api/v1/";
 const instance = axios.create({
@@ -20,7 +20,11 @@ const NO_RETRY_HEADER = "x-no-retry";
 
 // Add a request interceptor
 instance.interceptors.request.use(
-  function (config) {
+  async function (config) {
+    const token = await AsyncStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   function (error) {
@@ -33,13 +37,11 @@ instance.interceptors.response.use(
     return response && response.data ? response.data : response;
   },
   async function (error) {
-    if (
-      error.config &&
-      error.response &&
-      error.response.status === 401 &&
-      !error.config.headers[NO_RETRY_HEADER]
-    ) {
-      console.error("Unauthorized! Token có thể đã hết hạn.");
+    if (error.response?.status === 401) {
+      await AsyncStorage.removeItem('accessToken');
+      setAuthToken(null);
+      
+      return Promise.reject(error);
     }
     return Promise.reject(error);
   }

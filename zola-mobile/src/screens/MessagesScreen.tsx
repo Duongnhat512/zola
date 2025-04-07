@@ -7,6 +7,7 @@ import {
   FlatList,
   StatusBar,
   SafeAreaView,
+  Image,
 } from 'react-native';
 import { MaterialIcons, Feather, Ionicons } from '@expo/vector-icons';
 import styles from '../styles/MessagesScreen.styles';
@@ -37,12 +38,11 @@ const MessagesScreen = () => {
       {/* Header with search bar */}
       <View style={styles.header}>
         <View style={styles.searchContainer}>
-          <Feather name="search" size={22} color="#FFFFFF" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Tìm kiếm"
-            placeholderTextColor="#FFFFFF"
+          <Image
+            source={require("../assets/zalo-icon/search.png")}
+            style={styles.icon2}
           />
+            <Text style={{color:"#FFFFFF", fontSize:15}}>Tìm kiếm</Text>
         </View>
 
         <View style={styles.headerIcons}>

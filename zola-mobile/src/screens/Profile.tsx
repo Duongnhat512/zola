@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { MaterialIcons, Entypo, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 
 const { width, height } = Dimensions.get('window');
 const COVER_HEIGHT = 200;
@@ -19,6 +20,8 @@ const AVATAR_SIZE = 100;
 const Profile = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const navigation = useNavigation();
+  const user = useSelector((state: any) => state.user.user);
+
   return (
     <View style={styles.container}>
       {/* Ảnh bìa */}
@@ -40,14 +43,14 @@ const Profile = () => {
       {/* Avatar */}
       <View style={styles.avatarContainer}>
         <Image
-          source={{ uri: 'https://i.pravatar.cc/300' }}
+          source={{ uri: user?.avt }}
           style={styles.avatar}
         />
       </View>
 
       {/* Phần dưới */}
       <View style={styles.bottomSection}>
-        <Text style={styles.username}>Nguyễn Văn A</Text>
+        <Text style={styles.username}>{user.fullname}</Text>
       </View>
 
       {/* Modal full màn hình */}

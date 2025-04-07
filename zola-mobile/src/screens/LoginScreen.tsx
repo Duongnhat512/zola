@@ -7,7 +7,8 @@ import {
   Platform,
   KeyboardAvoidingView,
   TouchableWithoutFeedback,
-  Keyboard
+  Keyboard,
+  Alert
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import styles from '../styles/LoginScreen.styles';
@@ -34,20 +35,18 @@ const LoginScreen = ({ navigation }) => {
       };
       setIsLoading(true);
       const res = await LoginUser(data);
-      console.log("Login response:", res);
       if (res) {
+        console.log(res)
         dispatch(login(res.user));
         setIsLoading(false);
-        console.log("Đăng nhập thành công");
         await AsyncStorage.setItem("accessToken", res.accessToken);
         await AsyncStorage.setItem("refreshToken", res.refreshToken);
-        navigation.replace('Main');
       } else {
-        setError("Đăng nhập thất bại. Vui lòng thử lại sau.");
+        setError("Thông tin tài khoản hoặc mật khẩu không chính xác.");
       }
     } catch (err) {
-      setError("Đăng nhập thất bại. Vui lòng thử lại sau.");
-      console.error("Login error:", err);
+      setError("Thông tin tài khoản hoặc mật khẩu không chính xác.");
+      Alert.alert("Thông báo", "Thông tin tài khoản hoặc mật khẩu không chính xác.");
     }
   };
 

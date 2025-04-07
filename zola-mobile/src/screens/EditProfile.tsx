@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
-import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity,Modal,Pressable,TextInput } from 'react-native';
+import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity, Modal, Pressable, TextInput } from 'react-native';
 import { Icon } from 'react-native-elements';
 
 const EditProfile = () => {
   const [profile, setProfile] = useState({
-  name: 'Võ Phước Hậu',
-  dob: '30/10/2002',
-  gender: 'Nam',
-});
-const [form, setForm] = useState({ ...profile });
-    const [modalVisible, setModalVisible] = useState(false);
-      const [name, setName] = useState('Võ Phước Hậu');
+    name: 'Võ Phước Hậu',
+    dob: '30/10/2002',
+    gender: 'Nam',
+  });
+  const [form, setForm] = useState({ ...profile });
+  const [modalVisible, setModalVisible] = useState(false);
+  const [name, setName] = useState('Võ Phước Hậu');
   const [dob, setDob] = useState('30/10/2002');
   const [gender, setGender] = useState('Nam');
-    const handleSave = () => {
+  const handleSave = () => {
     // Gửi dữ liệu cập nhật tại đây nếu cần
     toggleModal();
   };
@@ -49,7 +49,7 @@ const [form, setForm] = useState({ ...profile });
 
           {/* Nội dung trong modal */}
           <View style={styles.modalContent}>
-              <Image
+            <Image
               source={{ uri: 'https://i.imgur.com/4QfKuz1.png' }}
               style={styles.modalAvatar}
             />
@@ -66,7 +66,7 @@ const [form, setForm] = useState({ ...profile });
               placeholder="Ngày sinh"
             />
 
-                {/* Giới tính */}
+            {/* Giới tính */}
             <View style={styles.genderRow}>
               <Pressable
                 style={styles.radio}
@@ -81,8 +81,8 @@ const [form, setForm] = useState({ ...profile });
                 <View style={gender === 'Nữ' ? styles.checkedCircle : styles.circle} />
                 <Text style={styles.radioLabel}>Nữ</Text>
               </Pressable>
-              </View>
-             <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+            </View>
+            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
               <Text style={styles.saveText}>LƯU</Text>
             </TouchableOpacity>
           </View>
@@ -107,33 +107,33 @@ const [form, setForm] = useState({ ...profile });
               Số điện thoại chỉ hiển thị với người có lưu số bạn trong danh bạ máy
             </Text>
           </View>
-            <TouchableOpacity style={styles.editButton}  onPress={() => setModalVisible(true)}>
-        <Icon name="edit" type="feather" color="#000" size={20} />
-        <Text style={styles.editText}>Chỉnh sửa</Text>
-      </TouchableOpacity>
+          <TouchableOpacity style={styles.editButton} onPress={() => setModalVisible(true)}>
+            <Icon name="edit" type="feather" color="#000" size={20} />
+            <Text style={styles.editText}>Chỉnh sửa</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
       {/* Nút chỉnh sửa */}
-    
+
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-    modalContainer: {
-        flex: 1,
-        backgroundColor: '#fff',
-        paddingTop: 48,
-      },
-      closeButton: {
-        position: 'absolute',
-        top: 40,
-        right: 20,
-        zIndex: 20,
-      },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+    paddingTop: 48,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    zIndex: 20,
+  },
   container: {
-    
+
     backgroundColor: '#f4f4f4',
   },
   header: {
@@ -191,22 +191,22 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   editButton: {
-    marginTop:10,
+    marginTop: 10,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#e0e0e0',
-    height:32,
+    height: 32,
     borderRadius: 16,
   },
-   genderRow: {
+  genderRow: {
     flexDirection: 'row', justifyContent: 'center', marginBottom: 30,
   },
   editText: {
     fontSize: 14,
     marginLeft: 8,
   },
-    radio: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20 },
+  radio: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20 },
   circle: {
     height: 20, width: 20, borderRadius: 10,
     borderWidth: 2, borderColor: '#aaa', marginRight: 8,
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#00aaff', padding: 12, borderRadius: 30,
     alignItems: 'center',
   },
-   modalTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  modalTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
   modalContent: { padding: 20 },
   saveText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   modalAvatar: { width: 80, height: 80, borderRadius: 40, alignSelf: 'center', marginBottom: 20 },

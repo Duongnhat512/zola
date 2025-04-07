@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSelector } from 'react-redux';
 
 // Screens
 import WelcomeScreen from '../screens/WelcomeScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import TabNavigator from './TabNavigator';
-import { useSelector } from 'react-redux';
 import OTPScreen from '../screens/OTPScreen';
 import NameScreen from '../screens/RegisterNameScreen';
 import PrivateInformationScreen from '../screens/PrivateInformationScreen';
@@ -45,36 +46,71 @@ const AuthStack: React.FC = () => {
       <Stack.Screen name="Name" component={NameScreen} />
       <Stack.Screen name="PrivateInformation" component={PrivateInformationScreen} />
       <Stack.Screen name="Password" component={PasswordScreen} />
-      <Stack.Screen name="ProfileScreen" component={Profile} />
-      <Stack.Screen name="Edit" component={EditProfile} />
-      <Stack.Screen name="Setting" component={Setting} />
     </Stack.Navigator>
   );
 };
 
 // Root Navigator
 const AppNavigator: React.FC = () => {
-  // const [isLoggedIn, setIsLoggedIn] = useState(user);
   const user = useSelector((state: any) => state.user);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const navigationRef = useRef(null);
 
-  // const handleLoginChange = (status: boolean) => {
-  //   setIsLoggedIn(status);
-  // };
-  
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        console.log('User state:', user);
+        const authenticated = user?.authenticated === true;
+        console.log('Is authenticated:', authenticated);
+        setIsAuthenticated(authenticated);
+      } catch (error) {
+        console.error('Error checking auth:', error);
+        setIsAuthenticated(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, [user]);
+
+  // Reset navigation state when auth changes
+  useEffect(() => {
+    if (!isLoading) {
+      if (isAuthenticated && navigationRef.current) {
+        // Reset to Main when authenticated
+        navigationRef.current.reset({
+          index: 0,
+          routes: [{ name: 'Main' }],
+        });
+      } else if (!isAuthenticated && navigationRef.current) {
+        // Reset to Welcome when not authenticated
+        navigationRef.current.reset({
+          index: 0,
+          routes: [{ name: 'Welcome' }],
+        });
+      }
+    }
+  }, [isAuthenticated, isLoading]);
+
+  if (isLoading) {
+    return null;
+  }
+
   return (
-    <NavigationContainer>
-      {/* {user ? (
+    <NavigationContainer ref={navigationRef}>
+      {isAuthenticated ? (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Main" component={TabNavigator} />
-          <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="ProfileScreen" component={Profile} />
           <Stack.Screen name="Edit" component={EditProfile} />
           <Stack.Screen name="Setting" component={Setting} />
           <Stack.Screen name="Welcome" component={WelcomeScreen} />
         </Stack.Navigator>
-      ) : ( */}
+      ) : (
         <AuthStack />
-      {/* )} */}
+      )}
     </NavigationContainer>
   );
 };

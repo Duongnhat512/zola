@@ -1,13 +1,14 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons, Ionicons, FontAwesome } from '@expo/vector-icons';
-  import styles from '../styles/TabNavigator.styles';
-  import { useNavigation } from '@react-navigation/native';
+import styles from '../styles/TabNavigator.styles';
+import { useNavigation } from '@react-navigation/native';
 // Import the actual MessagesScreen
 import MessagesScreen from '../screens/MessagesScreen';
 
 // Placeholder screens
-import { View, Text,Image,TouchableOpacity } from 'react-native';
+import { View, Text, Image, TouchableOpacity } from 'react-native';
+import { useSelector } from 'react-redux';
 
 const ContactsScreen = () => (
   <View style={styles.container}>
@@ -21,138 +22,138 @@ const GroupsScreen = () => (
   </View>
 );
 
-const ProfileScreen = () =>
-{ 
+const ProfileScreen = () => {
   const navigation = useNavigation();
-  return(
-<View style={{gap:10}}>  
-<View style={styles.row3}>
-      <Image
-        source={require("../assets/zalo-icon/search.png")}
-        style={styles.icon2}
-      />
-      <View style={styles.middle}>
-        <Text style={styles.text3}>Tìm kiếm</Text>
-      </View>
-      <TouchableOpacity onPress={()=>navigation.navigate('Setting')}>
-      <Image
-        source={require("../assets/zalo-icon/setting.png")}
-        style={styles.icon2}
-      />
-      </TouchableOpacity>
-      </View>
-  <View>
-      <TouchableOpacity style={styles.row2} onPress={() => navigation.navigate('ProfileScreen')}>
-      <Image
-        source={{ uri: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTMOe6Q-vOkWM1GspqtgGfXURvu8QToE6a6mA&s' }}
-        style={styles.avatar}
-      />
-      <View style={styles.middle}>
-        <Text style={styles.text}>Võ Phước Hậu</Text>
-        <Text style={styles.text2}>Xem trang cá nhân</Text>
-      </View>
-      <Image
-        source={require("../assets/zalo-icon/avatar.png")}
-        style={styles.icon2}
-      />
-      </TouchableOpacity>
+  const user = useSelector((state: any) => state.user.user);
+  return (
+    <View style={{ gap: 10 }}>
+      <View style={styles.row3}>
+        <Image
+          source={require("../assets/zalo-icon/search.png")}
+          style={styles.icon2}
+        />
+        <View style={styles.middle}>
+          <Text style={styles.text3}>Tìm kiếm</Text>
+        </View>
+        <TouchableOpacity onPress={() => navigation.navigate('Setting')}>
+          <Image
+            source={require("../assets/zalo-icon/setting.png")}
+            style={styles.icon2}
+          />
+        </TouchableOpacity>
       </View>
       <View>
-       <View style={styles.row2}>
-      <Image
-        source={require("../assets/zalo-icon/clouldZ.png")}
-        style={styles.icon2}
-      />
-      <View style={styles.middle}>
-        <Text style={styles.text}>zCloud</Text>
-        <Text style={styles.text2}>không gian lưu trữ dữ liệu trên đám mây</Text>
-      </View>
-      <Image
-        source={require("../assets/zalo-icon/ic_back_modal.png")}
-        style={styles.icon}
-      />
-      </View>
-       <View style={styles.row2}>
-      <Image
-        source={{ uri: 'https://img.icons8.com/ios-filled/50/user.png' }}
-        style={styles.icon}
-      />
-      <View style={styles.middle}>
-        <Text style={styles.text}>zStyle - Nổi bật trên Zalo</Text>
-        <Text style={styles.text2}>Hình nền và nhạc cho cuộc gọi Zalo</Text>
-      </View>
-      </View>
+        <TouchableOpacity style={styles.row2} onPress={() => navigation.navigate('ProfileScreen')}>
+          <Image
+            source={{ uri: user?.avt }}
+            style={styles.avatar}
+          />
+          <View style={styles.middle}>
+            <Text style={styles.text}>{user?.fullname}</Text>
+            <Text style={styles.text2}>Xem trang cá nhân</Text>
+          </View>
+          <Image
+            source={require("../assets/zalo-icon/avatar.png")}
+            style={styles.icon2}
+          />
+        </TouchableOpacity>
       </View>
       <View>
-       <View style={styles.row2}>
-      <Image
-        source={require("../assets/zalo-icon/cloud.png")}
-        style={styles.icon2}
-      />
-      <View style={styles.middle}>
-        <Text style={styles.text}>Cloud của tôi</Text>
-        <Text style={styles.text2}>Lưu trữ các tin nhắn quan trọng</Text>
-      </View>
-      <Image
-        source={require("../assets/zalo-icon/ic_back_modal.png")}
-        style={styles.icon}
-      />
-      </View>
-       <View style={styles.row2}>
-      <Image
-        source={require("../assets/zalo-icon/pie.png")}
-        style={styles.icon2}
-      />
-      <View style={styles.middle}>
-        <Text style={styles.text}>Dữ liệu trên máy</Text>
-        <Text style={styles.text2}>Quản lý dữ liệu Zalo của bạn</Text>
-      </View>
-      <Image
-        source={require("../assets/zalo-icon/ic_back_modal.png")}
-        style={styles.icon}
-      />
-      </View>
-       <View style={styles.row2}>
-      <Image
-        source={require("../assets/zalo-icon/qr.png")}
-        style={styles.icon2}
-      />
-      <View style={styles.middle}>
-        <Text style={styles.text}>Ví QR</Text>
-        <Text style={styles.text2}>Lưu trữ và xuất trình các mã QR quan trọng</Text>
-      </View>
-      </View>
+        <View style={styles.row2}>
+          <Image
+            source={require("../assets/zalo-icon/clouldZ.png")}
+            style={styles.icon2}
+          />
+          <View style={styles.middle}>
+            <Text style={styles.text}>zCloud</Text>
+            <Text style={styles.text2}>không gian lưu trữ dữ liệu trên đám mây</Text>
+          </View>
+          <Image
+            source={require("../assets/zalo-icon/ic_back_modal.png")}
+            style={styles.icon}
+          />
+        </View>
+        <View style={styles.row2}>
+          <Image
+            source={{ uri: 'https://img.icons8.com/ios-filled/50/user.png' }}
+            style={styles.icon}
+          />
+          <View style={styles.middle}>
+            <Text style={styles.text}>zStyle - Nổi bật trên Zalo</Text>
+            <Text style={styles.text2}>Hình nền và nhạc cho cuộc gọi Zalo</Text>
+          </View>
+        </View>
       </View>
       <View>
-       <View style={styles.row}>
-      <Image
-        source={require("../assets/zalo-icon/shield.png")}
-        style={styles.icon2}
-      />
-      <View style={styles.middle}>
-        <Text style={styles.text}>Tài khoản và bảo mật</Text>
+        <View style={styles.row2}>
+          <Image
+            source={require("../assets/zalo-icon/cloud.png")}
+            style={styles.icon2}
+          />
+          <View style={styles.middle}>
+            <Text style={styles.text}>Cloud của tôi</Text>
+            <Text style={styles.text2}>Lưu trữ các tin nhắn quan trọng</Text>
+          </View>
+          <Image
+            source={require("../assets/zalo-icon/ic_back_modal.png")}
+            style={styles.icon}
+          />
+        </View>
+        <View style={styles.row2}>
+          <Image
+            source={require("../assets/zalo-icon/pie.png")}
+            style={styles.icon2}
+          />
+          <View style={styles.middle}>
+            <Text style={styles.text}>Dữ liệu trên máy</Text>
+            <Text style={styles.text2}>Quản lý dữ liệu Zalo của bạn</Text>
+          </View>
+          <Image
+            source={require("../assets/zalo-icon/ic_back_modal.png")}
+            style={styles.icon}
+          />
+        </View>
+        <View style={styles.row2}>
+          <Image
+            source={require("../assets/zalo-icon/qr.png")}
+            style={styles.icon2}
+          />
+          <View style={styles.middle}>
+            <Text style={styles.text}>Ví QR</Text>
+            <Text style={styles.text2}>Lưu trữ và xuất trình các mã QR quan trọng</Text>
+          </View>
+        </View>
       </View>
-      <Image
-        source={require("../assets/zalo-icon/ic_back_modal.png")}
-        style={styles.icon}
-      />
+      <View>
+        <View style={styles.row}>
+          <Image
+            source={require("../assets/zalo-icon/shield.png")}
+            style={styles.icon2}
+          />
+          <View style={styles.middle}>
+            <Text style={styles.text}>Tài khoản và bảo mật</Text>
+          </View>
+          <Image
+            source={require("../assets/zalo-icon/ic_back_modal.png")}
+            style={styles.icon}
+          />
+        </View>
+        <View style={styles.row}>
+          <Image
+            source={require("../assets/zalo-icon/lock.png")}
+            style={styles.icon2}
+          />
+          <View style={styles.middle}>
+            <Text style={styles.text}>Quyền riêng tư</Text>
+          </View>
+          <Image
+            source={require("../assets/zalo-icon/ic_back_modal.png")}
+            style={styles.icon}
+          />
+        </View>
       </View>
-       <View style={styles.row}>
-      <Image
-        source={require("../assets/zalo-icon/lock.png")}
-        style={styles.icon2}
-      />
-      <View style={styles.middle}>
-        <Text style={styles.text}>Quyền riêng tư</Text>
-      </View>
-      <Image
-        source={require("../assets/zalo-icon/ic_back_modal.png")}
-        style={styles.icon}
-      />
-      </View>
-      </View>
-  </View>
-);
+    </View>
+  );
 }
 
 const Tab = createBottomTabNavigator();
@@ -169,7 +170,7 @@ const TabNavigator = () => {
         tabBarLabelStyle: styles.tabLabel,
       }}
     >
-      
+
       <Tab.Screen
         name="Messages"
         component={MessagesScreen}

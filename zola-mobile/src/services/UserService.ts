@@ -8,7 +8,6 @@ export const LoginUser = async (data) => {
     });
     return response;
   } catch (error) {
-    console.error("Login failed", error);
     throw error;
   }
 };

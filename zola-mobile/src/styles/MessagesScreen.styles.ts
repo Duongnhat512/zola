@@ -6,15 +6,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   header: {
-    backgroundColor: '#07a6e6',
+    backgroundColor: "#006AF5",
+    height: 48,
+    width: '100%',
+    padding: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#ccc',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    gap: 8, // Nếu bạn dùng React Native >= 0.71
   },
   searchContainer: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    height: 50,
+    gap: 15,
+  },
+  icon2: {
+    width: 18,
+    height: 18,
+    resizeMode: 'contain',
   },
   searchIcon: {
     marginRight: 8,
@@ -68,9 +80,9 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   chatItem: {
-   
+
   },
-  chatList:{
+  chatList: {
     padding: 16,
   }
 });
