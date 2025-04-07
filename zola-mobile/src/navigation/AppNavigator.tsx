@@ -7,6 +7,7 @@ import WelcomeScreen from '../screens/WelcomeScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import TabNavigator from './TabNavigator';
+import { useSelector } from 'react-redux';
 import OTPScreen from '../screens/OTPScreen';
 import NameScreen from '../screens/RegisterNameScreen';
 import PrivateInformationScreen from '../screens/PrivateInformationScreen';
@@ -44,17 +45,16 @@ const AuthStack: React.FC = () => {
 
 // Root Navigator
 const AppNavigator: React.FC = () => {
-  // For demo purposes, you can change this to true to show the main screen directly
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  
-  // Automatically get login status from login screen
+  // const [isLoggedIn, setIsLoggedIn] = useState(user);
+  const user = useSelector((state: any) => state.user);
+
   const handleLoginChange = (status: boolean) => {
     setIsLoggedIn(status);
   };
   
   return (
     <NavigationContainer>
-      {isLoggedIn ? (
+      {user ? (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Main" component={TabNavigator} />
         </Stack.Navigator>
