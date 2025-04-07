@@ -14,10 +14,14 @@ const OTPScreen = ({ route, navigation }: OTPScreenProps) => {
 
   const inputsRef = React.useRef<(TextInput | null)[]>([]);
 
+  const OTP = 123456; // Mã OTP giả định, có thể thay thế bằng mã thực tế từ server
   const handleVerify = () => {
     const otp = otpCode.join('');
-    alert(`Xác nhận thành công! Mã OTP là: ${otp} - Số điện thoại: ${phoneNumber}`);
-    // Tiến hành xử lý xác nhận mã OTP hoặc chuyển sang màn hình tiếp theo nếu cần
+    if (otp !== String(OTP)) {
+      alert('Mã OTP không chính xác!');
+      return;
+    }
+    navigation.navigate('Name', { phoneNumber });
   };
 
   const handleChange = (text: string, index: number) => {
