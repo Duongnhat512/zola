@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile/Profile";
 import { setAuthToken } from "./utils/customize-axios";
+
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // State để quản lý trạng thái loading
 
   useEffect(() => {
     const storedMode = localStorage.getItem("darkMode") === "true";
@@ -29,32 +31,32 @@ function App() {
       document.documentElement.classList.remove("dark");
     }
   };
+
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
     if (token) {
-      console.log(1);
-      
+      console.log("Setting auth token...");
       setAuthToken(token);
     }
+    setIsLoading(false); // Kết thúc loading sau khi xử lý xong
   }, []);
+
+  if (isLoading) {
+    // Hiển thị hiệu ứng loading khi đang xử lý
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
+        <div className="text-center">
+          <div className="loader"></div> {/* Thêm hiệu ứng loader */}
+          <p className="mt-4 text-lg text-gray-700 dark:text-gray-300">
+            Đang tải...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Router>
-      {/* <div className="min-h-screen bg-white dark:bg-gray-900 text-black dark:text-white"> */}
-      {/* <nav className="p-4 flex justify-between bg-gray-200 dark:bg-gray-800">
-          <div>
-            <Link to="/" className="mr-4">
-              Home
-            </Link>
-            <Link to="/about">About</Link>
-          </div>
-          <button
-            onClick={() => setIsDarkMode(!isDarkMode)}
-            className="p-2 bg-gray-300 dark:bg-gray-700 text-black dark:text-white rounded-md"
-          >
-            {isDarkMode ? "Light Mode" : "Dark Mode"}
-          </button>
-        </nav> */}
-      {/* </div> */}
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />

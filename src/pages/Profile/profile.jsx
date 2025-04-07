@@ -10,16 +10,15 @@ const Profile = ({ isModalOpen, setModalOpen }) => {
 
   const [modalContent, setModalContent] = useState("profile"); // State to manage modal content
   const [form] = Form.useForm(); // Ant Design form instance
-
-  // Handle update modal open/close
+  
   const handleUpdateClick = () => {
     setModalContent("update"); // Switch to update content
     form.setFieldsValue({
       fullname: user?.fullname,
       gender: user?.gender,
-      day: user?.dob?.split("/")[0],
-      month: user?.dob?.split("/")[1],
-      year: user?.dob?.split("/")[2],
+      day: user?.dob?.split("-")[2],
+      month: user?.dob?.split("-")[1],
+      year: user?.dob?.split("-")[0],
     });
   };
 
@@ -33,6 +32,7 @@ const Profile = ({ isModalOpen, setModalOpen }) => {
     let fullname = values.fullname;
     let dob = `${values.year}-${String(values.month).padStart(2, "0")}-${String(values.day).padStart(2, "0")}`;
     let gender = values.gender;
+    
     const res = await updateUser(username,fullname,dob,gender);
     console.log(res);
     
