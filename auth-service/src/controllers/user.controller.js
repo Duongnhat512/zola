@@ -1,12 +1,11 @@
 const e = require('express');
 const { s3, dynamoDB } = require('../utils/aws.helper');
-const { UserModel } = require('../models/user.model');
+const UserModel = require('../models/user.model');
 
 const UserController = {}
 
 UserController.updateUser = async (req, res) => {
-    const username = req.params.username.toLowerCase();
-    const { fullname, dob, gender } = req.body;
+    const { username, fullname, dob, gender } = req.body;
 
     const data = await UserModel.updateUser(username, { fullname, dob, gender });
     if (!data) {
@@ -25,7 +24,7 @@ UserController.updateUser = async (req, res) => {
 
 
 UserController.updateAvt = async (req, res) => {
-    const username = req.params.username.toLowerCase();
+    const username = req.body.username;
     const file = req.file;
     const avt = await s3.uploadFile(file);
 

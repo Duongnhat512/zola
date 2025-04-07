@@ -53,15 +53,13 @@ const UserModel = {
             Key: {
                 username
             },
-            UpdateExpression: "set #fullname = :fullname, #dob = :dob, #gender = :gender",
+            UpdateExpression: "set fullname = :fullname",
             ExpressionAttributeValues: {
                 ":fullname": userData.fullname,
-                ":dob": userData.dob,
-                ":gender": userData.gender
             },
             ReturnValues: "ALL_NEW",
         }
-
+    
         try {
             const data = await dynamodb.update(params).promise();
             return data.Attributes;
