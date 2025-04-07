@@ -1,16 +1,32 @@
 import { EditTwoTone } from "@ant-design/icons";
 import { Button, Image, Modal, Input, Radio, Select, Form } from "antd";
 import React, { useState } from "react";
-import { useSelector } from "react-redux";
-import { updateUser } from "../../services/UserService";
+import { useDispatch, useSelector } from "react-redux";
+import { decodedToken, updateUser } from "../../services/UserService";
+import { login, setLoading } from "../../redux/UserSlice";
 
 const Profile = ({ isModalOpen, setModalOpen }) => {
   const isAuthenticated = useSelector((state) => state.user.authenticated);
   const user = useSelector((state) => state.user.user);
-
+  const dispatch = useDispatch(); // Redux dispatch function
   const [modalContent, setModalContent] = useState("profile"); // State to manage modal content
   const [form] = Form.useForm(); // Ant Design form instance
-  
+  const initAuth = async () => {
+        const token = localStorage.getItem("accessToken");
+        if (token) {
+          try {
+            const res = await decodedToken();
+            if (res?.user) {
+              dispatch(login(res.user));
+            }
+          } catch (err) {
+            console.error("Token không hợp lệ hoặc đã hết hạn.");
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("refreshToken");
+          }
+        }
+        dispatch(setLoading(false)); // Kết thúc loading
+      };
   const handleUpdateClick = () => {
     setModalContent("update"); // Switch to update content
     form.setFieldsValue({
@@ -34,7 +50,7 @@ const Profile = ({ isModalOpen, setModalOpen }) => {
     let gender = values.gender;
     
     const res = await updateUser(username,fullname,dob,gender);
-    console.log(res);
+    initAuth(); // Refresh user data after update
     
     setModalContent("profile"); // Switch back to profile content
   };

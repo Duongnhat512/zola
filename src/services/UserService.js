@@ -35,3 +35,13 @@ export const updateUser = async (username,fullname,dob,gender) => {
     throw error;
   }
 };
+
+export const decodedToken = async () => {
+  try {
+    const response = await axios.post("/auth-service/auth/decode-token");
+    return response;
+  } catch (error) {
+    console.error("Decoded token failed", error);
+    throw error;
+  }
+}
