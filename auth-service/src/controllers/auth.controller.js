@@ -228,7 +228,7 @@ exports.changePassword = async (req, res) => {
 }
 
 exports.forgotPassword = async (req, res) => {
-    const username = req.body.username.toLowerCase();
+    const username = req.body.username;
     const user = await UserModel.getUser(username);
     if (!user) {
         return res.status(404).send({ message: 'Tài khoản không tồn tại' });
@@ -247,6 +247,30 @@ exports.forgotPassword = async (req, res) => {
     return res.json({
         status: 'success',
         message: 'Mã OTP đã được gửi đến số điện thoại của bạn.',
+        username
+    });
+}
+
+exports.resetPassword = async (req, res) => {
+    const username = req.body.username;
+    const otp = req.body.otp;
+    const newPassword = req.body.newPassword;
+
+    const user = await UserModel.getUser(username);
+    if (!user) {
+        return res.status(404).send({ message: 'Tài khoản không tồn tại' });
+    }
+    if (user.otp !== otp) {
+        return res.status(401).send({ message: 'Mã OTP không hợp lệ' });
+    }
+
+    const hashPassword = bcrypt.hashSync(newPassword, SALT_ROUNDS);
+    await UserModel.updatePassword(username, hashPassword);
+    await UserModel.updateOTP(username, null, null); // Xóa mã OTP sau khi xác thực thành công
+
+    return res.json({
+        status: 'success',
+        message: 'Đặt lại mật khẩu thành công',
         username
     });
 }
