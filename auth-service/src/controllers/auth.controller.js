@@ -1,9 +1,11 @@
-const bcrypt = require("bcrypt");
-const UserModel = require("../models/user.model");
-const BlackList = require("../models/blacklist.model");
-const authMethod = require("../methods/auth.method");
-const randToken = require("rand-token");
-const jwtVariable = require("../../variables/jwt");
+const bcrypt = require('bcrypt');
+const UserModel = require('../models/user.model');
+const BlackList = require('../models/blacklist.model');
+const authMethod = require('../methods/auth.method');
+const randToken = require('rand-token');
+const jwtVariable = require('../../variables/jwt');
+const vonageMethod = require('../methods/vonage.method');
+const otpMethod = require('../methods/otp.method');
 
 const SALT_ROUNDS = 10;
 
@@ -161,83 +163,114 @@ exports.logout = async (req, res) => {
 
   await UserModel.updateRefreshToken(user.username, null);
 
-  return res.json({ status: "success", message: "Đăng xuất thành công" });
-};
+    return res.json({ status: "success", message: 'Đăng xuất thành công' });
+}
 
-// exports.sendOTP = async (req, res) => {
-//     const username = req.body.username.toLowerCase();
+exports.sendOTP = async (req, res) => {
+    const username = req.body.username;
 
-//     const otp = otpMethod.generateOTP() // Tạo mã OTP ngẫu nhiên 6 chữ số
-//     const expiryTime = new Date().getTime() + 2 * 60 * 1000; // Thời gian hết hạn là 2 phút sau
-//     await otpMethod.sendOTP(username, otp); // Gửi mã OTP đến số điện thoại của người dùng
+    const otp = otpMethod.generateOTP() // Tạo mã OTP ngẫu nhiên 6 chữ số
+    const expiryTime = new Date().getTime() + 2 * 60 * 1000; // Thời gian hết hạn là 2 phút sau
 
-//     return res.json({
-//         status: 'success',
-//         message: 'Mã OTP đã được gửi đến số điện thoại của bạn.',
-//         username
-//     });
-// }
+    await UserModel.updateOTP(username, otp, expiryTime); // Cập nhật mã OTP và thời gian hết hạn vào database
+    await vonageMethod.sendOTP(username, otp); // Gửi mã OTP đến số điện thoại của người dùng
 
-// exports.verifyOTP = async (req, res) => {
-//     const username = req.body.username.toLowerCase();
-//     const otp = req.body.otp;
+    return res.json({
+        status: 'success',
+        message: 'Mã OTP đã được gửi đến số điện thoại của bạn.',
+        username
+    });
+}
 
-//     const user = await UserModel.getUser(username);
-//     if (!user) {
-//         return res.status(404).send({ message: 'Tài khoản không tồn tại' });
-//     }
-//     if (user.otp !== otp) {
-//         return res.status(401).send({ message: 'Mã OTP không hợp lệ' });
-//     }
+exports.verifyOTP = async (req, res) => {
+    const username = req.body.username.toLowerCase();
+    const otp = req.body.otp;
 
-//     await UserModel.updateOTP(username, null); // Xóa mã OTP sau khi xác thực thành công
+    const user = await UserModel.getUser(username);
+    if (!user) {
+        return res.status(404).send({ message: 'Tài khoản không tồn tại' });
+    }
+    if (user.otp !== otp) {
+        return res.status(401).send({ message: 'Mã OTP không hợp lệ' });
+    }
 
-//     return res.json({
-//         status: 'success',
-//         message: 'Xác thực thành công',
-//         username
-//     });
-// }
+    await UserModel.updateOTP(username, null, null); // Xóa mã OTP sau khi xác thực thành công
+
+    return res.json({
+        status: 'success',
+        message: 'Xác thực thành công',
+        username
+    });
+}
 
 exports.changePassword = async (req, res) => {
-  const username = req.user.username.toLowerCase();
-  const password = req.body.password;
-  const newPassword = req.body.newPassword;
+    const username = req.user.username.toLowerCase();
+    const password = req.body.password;
+    const newPassword = req.body.newPassword;
 
-  const user = await UserModel.getUser(username);
-  if (!user) {
-    return res.status(404).send({ message: "Tài khoản không tồn tại" });
-  }
-  const isMatch = bcrypt.compareSync(password, user.password);
-  if (!isMatch) {
-    return res.status(401).send({ message: "Sai mật khẩu" });
-  }
+    const user = await UserModel.getUser(username);
+    if (!user) {
+        return res.status(404).send({ message: 'Tài khoản không tồn tại' });
+    }
+    const isMatch = bcrypt.compareSync(password, user.password);
+    if (!isMatch) {
+        return res.status(401).send({ message: 'Sai mật khẩu' });
+    }
 
-  const hashPassword = bcrypt.hashSync(newPassword, SALT_ROUNDS);
-  await UserModel.updatePassword(username, hashPassword);
+    const hashPassword = bcrypt.hashSync(newPassword, SALT_ROUNDS);
+    await UserModel.updatePassword(username, hashPassword);
 
-  return res.json({
-    status: "success",
-    message: "Đổi mật khẩu thành công",
-    username,
-  });
-};
+    return res.json({
+        status: 'success',
+        message: 'Đổi mật khẩu thành công',
+        username
+    });
+}
 
-// exports.forgotPassword = async (req, res) => {
-//     const username = req.body.username.toLowerCase();
-//     const user = await UserModel.getUser(username);
-//     if (!user) {
-//         return res.status(404).send({ message: 'Tài khoản không tồn tại' });
-//     }
-//     const otp = otpMethod.generateOTP() // Tạo mã OTP ngẫu nhiên 6 chữ số
-//     const expiryTime = new Date().getTime() + 2 * 60 * 1000; // Thời gian hết hạn là 2 phút sau
-//     await UserModel.updateOTP(username, otp, expiryTime); // Cập nhật mã OTP và thời gian hết hạn vào database
+exports.forgotPassword = async (req, res) => {
+    const username = req.body.username;
+    const user = await UserModel.getUser(username);
+    if (!user) {
+        return res.status(404).send({ message: 'Tài khoản không tồn tại' });
+    }
+    const otp = otpMethod.generateOTP() // Tạo mã OTP ngẫu nhiên 6 chữ số
+    const expiryTime = new Date().getTime() + 2 * 60 * 1000; // Thời gian hết hạn là 2 phút sau
+    await UserModel.updateOTP(username, otp, expiryTime); // Cập nhật mã OTP và thời gian hết hạn vào database
 
-//     await otpMethod.sendOTP(username, otp); // Gửi mã OTP đến số điện thoại của người dùng
+    try{
+        await vonageMethod.sendOTP(username, otp); // Gửi mã OTP đến số điện thoại của người dùng
+    } catch (error) {
+        console.error('Gửi mã OTP không thành công:', error);
+        return res.status(500).send({ message: 'Có lỗi trong quá trình gửi mã OTP, vui lòng thử lại.' });
+    }
 
-//     return res.json({
-//         status: 'success',
-//         message: 'Mã OTP đã được gửi đến số điện thoại của bạn.',
-//         username
-//     });
-// }
+    return res.json({
+        status: 'success',
+        message: 'Mã OTP đã được gửi đến số điện thoại của bạn.',
+        username
+    });
+}
+
+exports.resetPassword = async (req, res) => {
+    const username = req.body.username;
+    const otp = req.body.otp;
+    const newPassword = req.body.newPassword;
+
+    const user = await UserModel.getUser(username);
+    if (!user) {
+        return res.status(404).send({ message: 'Tài khoản không tồn tại' });
+    }
+    if (user.otp !== otp) {
+        return res.status(401).send({ message: 'Mã OTP không hợp lệ' });
+    }
+
+    const hashPassword = bcrypt.hashSync(newPassword, SALT_ROUNDS);
+    await UserModel.updatePassword(username, hashPassword);
+    await UserModel.updateOTP(username, null, null); // Xóa mã OTP sau khi xác thực thành công
+
+    return res.json({
+        status: 'success',
+        message: 'Đặt lại mật khẩu thành công',
+        username
+    });
+}
