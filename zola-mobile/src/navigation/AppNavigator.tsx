@@ -8,6 +8,9 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import TabNavigator from './TabNavigator';
 import OTPScreen from '../screens/OTPScreen';
+import NameScreen from '../screens/RegisterNameScreen';
+import PrivateInformationScreen from '../screens/PrivateInformationScreen';
+import PasswordScreen from '../screens/PasswordScreen';
 
 // Define navigation types
 export type RootStackParamList = {
@@ -32,6 +35,9 @@ const AuthStack: React.FC = () => {
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="OTP" component={OTPScreen} />
+      <Stack.Screen name="Name" component={NameScreen} />
+      <Stack.Screen name="PrivateInformation" component={PrivateInformationScreen} />
+      <Stack.Screen name="Password" component={PasswordScreen} />
     </Stack.Navigator>
   );
 };
