@@ -49,3 +49,7 @@ export const sendOtp = async (username) => {
 export const registerUser = async (data) => {
   return await axios.post("/auth-service/auth/register", data);
 };
+
+export const logoutUser = async (username) => {
+  return await axios.post("/auth-service/auth/logout", { username });
+};
