@@ -20,8 +20,6 @@ export const LoginToken = async () => {
 };
 
 export const updateUser = async (username,fullname,dob,gender) => {
-  console.log(username,fullname,dob,gender);
-  
   try {
     const response = await axios.post("/auth-service/me/update", {
       username,
@@ -45,3 +43,9 @@ export const decodedToken = async () => {
     throw error;
   }
 }
+export const sendOtp = async (username) => {
+  return await axios.post("/auth-service/auth/send-otp", { username });
+};
+export const registerUser = async (data) => {
+  return await axios.post("/auth-service/auth/register", data);
+};

@@ -6,6 +6,7 @@ import Profile from "./pages/Profile/Profile";
 import { decodedToken } from "./services/UserService";
 import { useDispatch, useSelector } from "react-redux";
 import { login, setLoading } from "./redux/UserSlice";
+import Register from "./pages/Register/Register";
 
 function App() {
   const dispatch = useDispatch();
@@ -50,6 +51,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/profile" element={<Profile />} />
       </Routes>
     </Router>
