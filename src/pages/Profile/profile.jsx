@@ -32,18 +32,22 @@ const Profile = ({ isModalOpen, setModalOpen }) => {
     form.setFieldsValue({
       fullname: user?.fullname,
       gender: user?.gender,
-      day: user?.dob?.split("-")[2],
-      month: user?.dob?.split("-")[1],
-      year: user?.dob?.split("-")[0],
+      day: user?.dob?.split("/")[0],
+      month: user?.dob?.split("/")[1],
+      year: user?.dob?.split("/")[2],
     });
   };
-
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
+    console.log(dateString);
+    const [day, month, year] = dateString.split('/');
+    // Ensure the date is properly formatted
+    const date = new Date(`${year}-${month}-${day}`);
     const options = { year: "numeric", month: "2-digit", day: "2-digit" };
-    return date.toLocaleDateString("en-GB", options);
+    // This will return the format as 23/04/2025
+    return date.toLocaleDateString("en-GB", options).replace(/\//g, '/');
   };
-
+  
+  
   const handleModalClose = () => {
     setModalOpen(false);
     setModalContent("profile"); // Reset to profile content
@@ -52,11 +56,10 @@ const Profile = ({ isModalOpen, setModalOpen }) => {
   const handleUpdateSubmit = async (values) => {
     let username = user.username;
     let fullname = values.fullname;
-    let dob = `${values.year}-${String(values.month).padStart(2, "0")}-${String(
-      values.day
+    let dob = `${values.day}/${String(values.month).padStart(2, "0")}/${String(
+      values.year
     ).padStart(2, "0")}`;
     let gender = values.gender;
-    
     const res = await updateUser(username,fullname,dob,gender);
     initAuth(); // Refresh user data after update
     

@@ -28,10 +28,9 @@ function Login() {
       dispatch(setLoading(true)); // Bắt đầu loading
       const res = await LoginUser(data);
       dispatch(setLoading(false)); // Kết thúc loading
-
+      
       if (res) {
         dispatch(login(res.user)); // Lưu thông tin người dùng vào Redux
-        console.log("Đăng nhập thành công");
         localStorage.setItem("accessToken", res.accessToken);
         localStorage.setItem("refreshToken", res.refreshToken);
         navigate("/"); // Chuyển hướng về trang Home
