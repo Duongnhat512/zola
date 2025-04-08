@@ -10,7 +10,7 @@ const otpMethod = require('../methods/otp.method');
 const SALT_ROUNDS = 10;
 
 exports.register = async (req, res) => {
-    const username = req.body.username.toLowerCase();
+    const username = req.body.username;
     const user = await UserModel.getUser(username);
     if (user) {
         return res.status(409).send({ message: 'Tài khoản đã tồn tại' });
@@ -39,7 +39,7 @@ exports.register = async (req, res) => {
 };
 
 exports.login = async (req, res) => {
-  const username = req.body.username.toLowerCase();
+  const username = req.body.username;
   const password = req.body.password;
 
   const user = await UserModel.getUser(username);
@@ -87,63 +87,50 @@ exports.login = async (req, res) => {
 };
 
 exports.refreshToken = async (req, res) => {
-    // Lấy access token từ header
-    const accessTokenFromHeader = req.headers.authorization?.split(' ')[1];
-    if (!accessTokenFromHeader) {
-        return res.status(400).send('Không tìm thấy access token.');
-    }
-
-    // Lấy refresh token từ body
-    const refreshTokenFromBody = req.body.refreshToken;
-    if (!refreshTokenFromBody) {
-        return res.status(400).send('Không tìm thấy refresh token.');
-    }
-
-    const accessTokenSecret =
-        process.env.ACCESS_TOKEN_SECRET;
-    const accessTokenLife =
-        process.env.ACCESS_TOKEN_LIFE;
-
-    // Decode access token đó
-    const decoded = await authMethod.decodeToken(
-        accessTokenFromHeader,
-        accessTokenSecret,
-    );
-    if (!decoded) {
-        return res.status(400).send('Access token không hợp lệ.');
-    }
-
-    const username = decoded.payload.username; // Lấy username từ payload
-
-    const user = await UserModel.getUser(username);
-    if (!user) {
-        return res.status(401).send('User không tồn tại.');
-    }
-
-    if (refreshTokenFromBody !== user.refreshToken) {
-        return res.status(400).send('Refresh token không hợp lệ.');
-    }
-
-    // Tạo access token mới
-    const dataForAccessToken = {
-        username,
-    };
-
-    const accessToken = await authMethod.generateToken(
-        dataForAccessToken,
-        accessTokenSecret,
-        accessTokenLife,
-    );
-    if (!accessToken) {
-        return res
-            .status(400)
-            .send('Tạo access token không thành công, vui lòng thử lại.');
-    }
-    return res.json({
-        status: 'success',
-        message: 'Cấp lại access token thành công.',
-        accessToken,
-    });
+     const refreshTokenFromBody = req.body.refreshToken;
+     const username = req.body.username;
+     
+     if (!refreshTokenFromBody) {
+         return res.status(400).send('Không tìm thấy refresh token.');
+     }
+     
+     if (!username) {
+         return res.status(400).send('Không tìm thấy username.');
+     }
+ 
+     const accessTokenSecret = process.env.ACCESS_TOKEN_SECRET;
+     const accessTokenLife = process.env.ACCESS_TOKEN_LIFE;
+ 
+     // Kiểm tra user và refresh token
+     const user = await UserModel.getUser(username);
+     if (!user) {
+         return res.status(401).send('User không tồn tại.');
+     }
+ 
+     if (refreshTokenFromBody !== user.refreshToken) {
+         return res.status(400).send('Refresh token không hợp lệ.');
+     }
+ 
+     // Tạo access token mới
+     const dataForAccessToken = {
+         username,
+     };
+ 
+     const accessToken = await authMethod.generateToken(
+         dataForAccessToken,
+         accessTokenSecret,
+         accessTokenLife,
+     );
+     if (!accessToken) {
+         return res
+             .status(400)
+             .send('Tạo access token không thành công, vui lòng thử lại.');
+     }
+     return res.json({
+         status: 'success',
+         message: 'Cấp lại access token thành công.',
+         accessToken,
+     });
 };
 
 exports.logout = async (req, res) => {
