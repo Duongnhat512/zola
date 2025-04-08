@@ -1,3 +1,4 @@
+
 import axios from "../utils/customize-axios";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -85,3 +86,14 @@ export const refreshToken = async () => {
 
 
 
+export const sendOTPCode = async (phoneNumber) => {
+  try {
+    const response = await axios.post("/auth-service/auth/send-otp", {
+      username: phoneNumber,
+    });
+    return response;
+  } catch (error) {
+    console.error("Error sending OTP", error);
+    throw error;
+  }
+}

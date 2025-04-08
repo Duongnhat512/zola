@@ -2,25 +2,22 @@ import React, { useState } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import axios from 'axios';
-import {registerUser} from '../services/UserService'; // Import hàm gọi API từ UserService
-type PasswordScreenProps = {
-  route: any;  // Thêm route để lấy params
-  navigation: any;
-};
+import { Ionicons } from '@expo/vector-icons'; // 👈 Thêm dòng này
+import { registerUser } from '../services/UserService';
 
-const PasswordScreen = ({ route, navigation }: PasswordScreenProps) => {
+const PasswordScreen = ({ route, navigation }) => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordVisible, setPasswordVisible] = useState(false); // 👁
+  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false); // 👁
   const [passwordValid, setPasswordValid] = useState(true);
-  const { userName, phoneNumber, gender, birthday } = route.params; // Lấy userName và phoneNumber từ params
 
-  // Kiểm tra tính hợp lệ của mật khẩu
+  const { userName, phoneNumber, gender, birthday } = route.params;
+
   const validatePassword = (password: string) => {
     const regex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[A-Za-z0-9!@#$%^&*]{6,}$/;
-    const year = birthday.split('/')[2]; // Lấy năm sinh từ birthday
+    const year = birthday.split('/')[2];
     const forbiddenWords = ['Zalo', userName, year];
-    console.log('userName', year);
     if (forbiddenWords.some(word => password.includes(word))) {
       return "Mật khẩu không chứa tên 'Zalo', 'Tên của bạn', hoặc 'Năm sinh của bạn'.";
     }
@@ -30,38 +27,32 @@ const PasswordScreen = ({ route, navigation }: PasswordScreenProps) => {
     return null;
   };
 
-  // Kiểm tra điều kiện để nút tiếp tục hoạt động
   const isFormValid = () => {
     const error = validatePassword(password);
     return password && confirmPassword && password === confirmPassword && !error;
   };
 
-  // Xử lý sự kiện tiếp tục
   const handleContinue = async () => {
     const error = validatePassword(password);
     if (error) {
       setPasswordValid(false);
       Alert.alert('Thông báo', error);
     } else if (password !== confirmPassword) {
-      console.log(phoneNumber, userName, birthday, gender);
       Alert.alert('Thông báo', 'Mật khẩu và xác nhận mật khẩu không trùng khớp!');
     } else {
-      // Tiến hành gọi API tạo tài khoản
       try {
         const data = {
           userName: phoneNumber,
-          password: password,
-          fullname: userName, // Pass the fullname to API
+          password,
+          fullname: userName,
           dob: birthday,
-          gender:gender,
-          status: 'active', // Or whatever status you want to set
+          gender,
+          status: 'active',
         };
-
-        const response = await registerUser(data); // Gọi hàm registerUser từ UserService
-
-        if (response) { // Assuming 200 is the success status code
+        const response = await registerUser(data);
+        if (response) {
           Alert.alert('Thông báo', 'Tạo tài khoản thành công!');
-          navigation.navigate('Welcome'); // Navigate to the next screen
+          navigation.navigate('Welcome');
         } else {
           Alert.alert('Thông báo', 'Có lỗi trong quá trình tạo tài khoản.');
         }
@@ -75,16 +66,9 @@ const PasswordScreen = ({ route, navigation }: PasswordScreenProps) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.content}
-      >
-        {/* Header */}
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.content}>
         <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Text style={styles.backButtonText}>←</Text>
           </TouchableOpacity>
           <View style={styles.placeholder} />
@@ -92,29 +76,41 @@ const PasswordScreen = ({ route, navigation }: PasswordScreenProps) => {
 
         <Text style={styles.headerTitle}>Tạo mật khẩu</Text>
 
-        {/* Form */}
         <View style={styles.form}>
-          {/* Nhập mật khẩu */}
           <Text style={styles.label}>Nhập mật khẩu</Text>
-          <TextInput
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-            style={[styles.input, !passwordValid && { borderColor: 'red' }]}
-            placeholder="Nhập mật khẩu"
-          />
+          <View style={styles.inputWrapper}>
+            <TextInput
+              secureTextEntry={!passwordVisible}
+              value={password}
+              onChangeText={setPassword}
+              style={[styles.input, !passwordValid && { borderColor: 'red' }]}
+              placeholder="Nhập mật khẩu"
+            />
+            <TouchableOpacity
+              style={styles.eyeIcon}
+              onPress={() => setPasswordVisible(!passwordVisible)}
+            >
+              <Ionicons name={passwordVisible ? 'eye' : 'eye-off'} size={24} color="gray" />
+            </TouchableOpacity>
+          </View>
 
-          {/* Xác nhận lại mật khẩu */}
           <Text style={styles.label}>Xác nhận lại mật khẩu</Text>
-          <TextInput
-            secureTextEntry
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            style={[styles.input, !passwordValid && { borderColor: 'red' }]}
-            placeholder="Xác nhận mật khẩu"
-          />
+          <View style={styles.inputWrapper}>
+            <TextInput
+              secureTextEntry={!confirmPasswordVisible}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              style={[styles.input, !passwordValid && { borderColor: 'red' }]}
+              placeholder="Xác nhận mật khẩu"
+            />
+            <TouchableOpacity
+              style={styles.eyeIcon}
+              onPress={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
+            >
+              <Ionicons name={confirmPasswordVisible ? 'eye' : 'eye-off'} size={24} color="gray" />
+            </TouchableOpacity>
+          </View>
 
-          {/* Nút tiếp tục */}
           <TouchableOpacity
             style={[styles.registerButton, password && confirmPassword ? styles.registerButtonActive : null]}
             onPress={handleContinue}
@@ -168,12 +164,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 5,
   },
-  input: {
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 2,
     borderColor: 'blue',
     borderRadius: 10,
+    paddingHorizontal: 10,
+  },
+  input: {
+    flex: 1,
     padding: 15,
     fontSize: 16,
+  },
+  eyeIcon: {
+    marginLeft: 10,
   },
   registerButton: {
     backgroundColor: '#b8d4ff',
