@@ -154,7 +154,7 @@ exports.logout = async (req, res) => {
 };
 
 exports.sendOTP = async (req, res) => {
-    const username = req.body.username;
+  const username = req.body.username;
 
     const otp = otpMethod.generateOTP(); 
 
@@ -169,8 +169,8 @@ exports.sendOTP = async (req, res) => {
 };
 
 exports.verifyOTP = async (req, res) => {
-    const username = req.body.username.toLowerCase();
-    const otp = req.body.otp;
+  const username = req.body.username.toLowerCase();
+  const otp = req.body.otp;
 
     const user = await UserModel.getUser(username);
     if (!user) {
@@ -180,7 +180,7 @@ exports.verifyOTP = async (req, res) => {
         return res.status(401).send({ message: "Mã OTP không hợp lệ" });
     }
 
-    await UserModel.updateOTP(username, null, null); // Xóa mã OTP sau khi xác thực thành công
+  await UserModel.updateOTP(username, null, null); // Xóa mã OTP sau khi xác thực thành công
 
     return res.json({
         status: "success",
@@ -190,9 +190,9 @@ exports.verifyOTP = async (req, res) => {
 };
 
 exports.changePassword = async (req, res) => {
-    const username = req.user.username.toLowerCase();
-    const password = req.body.password;
-    const newPassword = req.body.newPassword;
+  const username = req.user.username.toLowerCase();
+  const password = req.body.password;
+  const newPassword = req.body.newPassword;
 
     const user = await UserModel.getUser(username);
     if (!user) {
@@ -203,8 +203,8 @@ exports.changePassword = async (req, res) => {
         return res.status(401).send({ message: "Sai mật khẩu" });
     }
 
-    const hashPassword = bcrypt.hashSync(newPassword, SALT_ROUNDS);
-    await UserModel.updatePassword(username, hashPassword);
+  const hashPassword = bcrypt.hashSync(newPassword, SALT_ROUNDS);
+  await UserModel.updatePassword(username, hashPassword);
 
     return res.json({
         status: "success",
@@ -242,9 +242,9 @@ exports.forgotPassword = async (req, res) => {
 };
 
 exports.resetPassword = async (req, res) => {
-    const username = req.body.username;
-    const otp = req.body.otp;
-    const newPassword = req.body.newPassword;
+  const username = req.body.username;
+  const otp = req.body.otp;
+  const newPassword = req.body.newPassword;
 
     const user = await UserModel.getUser(username);
     if (!user) {
@@ -254,9 +254,9 @@ exports.resetPassword = async (req, res) => {
         return res.status(401).send({ message: "Mã OTP không hợp lệ" });
     }
 
-    const hashPassword = bcrypt.hashSync(newPassword, SALT_ROUNDS);
-    await UserModel.updatePassword(username, hashPassword);
-    await UserModel.updateOTP(username, null, null); // Xóa mã OTP sau khi xác thực thành công
+  const hashPassword = bcrypt.hashSync(newPassword, SALT_ROUNDS);
+  await UserModel.updatePassword(username, hashPassword);
+  await UserModel.updateOTP(username, null, null); // Xóa mã OTP sau khi xác thực thành công
 
     return res.json({
         status: "success",
