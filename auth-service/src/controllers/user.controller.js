@@ -1,4 +1,4 @@
-const e = require('express');
+    const e = require('express');
 const { s3, dynamoDB } = require('../utils/aws.helper');
 const UserModel = require('../models/user.model');
 
