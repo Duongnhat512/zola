@@ -10,7 +10,7 @@ const Profile = ({ isModalOpen, setModalOpen }) => {
 
   const [modalContent, setModalContent] = useState("profile"); // State to manage modal content
   const [form] = Form.useForm(); // Ant Design form instance
-  
+
   const handleUpdateClick = () => {
     setModalContent("update"); // Switch to update content
     form.setFieldsValue({
@@ -40,8 +40,8 @@ const Profile = ({ isModalOpen, setModalOpen }) => {
       values.day
     ).padStart(2, "0")}`;
     let gender = values.gender;
-    
-    const res = await updateUser(username,fullname,dob,gender);
+
+    const res = await updateUser(username, fullname, dob, gender);
     console.log(res);
     setModalContent("profile"); // Switch back to profile content
   };

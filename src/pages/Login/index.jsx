@@ -6,6 +6,7 @@ import { LoginUser } from "../../services/UserService";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { login } from "../../redux/UserSlice"; // Import the login action from UserSlice
+import { toast, ToastContainer } from "react-toastify";
 function Login() {
   const [isQR, setIsQR] = useState(true); // State to toggle between QR and password login
   const [isLoading, setIsLoading] = useState(false); // State to manage loading state

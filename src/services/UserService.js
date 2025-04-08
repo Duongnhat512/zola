@@ -19,9 +19,9 @@ export const LoginToken = async () => {
   }
 };
 
-export const updateUser = async (username,fullname,dob,gender) => {
-  console.log(username,fullname,dob,gender);
-  
+export const updateUser = async (username, fullname, dob, gender) => {
+  console.log(username, fullname, dob, gender);
+
   try {
     const response = await axios.post("/auth-service/me/update", {
       username,
@@ -32,6 +32,18 @@ export const updateUser = async (username,fullname,dob,gender) => {
     return response;
   } catch (error) {
     console.error("Update failed", error);
+    throw error;
+  }
+};
+
+export const logoutUser = async (username) => {
+  try {
+    const response = await axios.post("/auth-service/auth/logout", {
+      username,
+    });
+    return response;
+  } catch (error) {
+    console.error("Logout failed", error);
     throw error;
   }
 };

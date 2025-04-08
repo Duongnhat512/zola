@@ -13,6 +13,8 @@ import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { Avatar, Dropdown, Layout, Menu } from "antd";
 import Profile from "../Profile/Profile";
+import { logoutUser } from "../../services/UserService";
+import { toast, ToastContainer } from "react-toastify";
 
 const { Content, Sider } = Layout;
 
@@ -33,6 +35,18 @@ const Home = () => {
   }, [isAuthenticated, navigate]);
   const showModal = () => {
     setIsModalOpen(true);
+  };
+  const handleLogout = async () => {
+    try {
+      const res = await logoutUser(user.username);
+      if (res) {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        navigate("/login");
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
   // Menu items
   const menuItemsTop = [
@@ -61,7 +75,7 @@ const Home = () => {
     },
     { label: "Cài đặt", key: "3" },
     { type: "divider" },
-    { label: "Đăng xuất", key: "4" },
+    { label: "Đăng xuất", key: "4", onClick: handleLogout },
   ];
 
   return (
