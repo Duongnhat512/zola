@@ -1,11 +1,26 @@
 import axios from "axios";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { refreshToken } from '../services/UserService';
 
 const baseURL = process.env.BASE_URL;
 const instance = axios.create({
   baseURL: baseURL,
   withCredentials: true, // Để gửi cookie nếu backend dùng
 });
+
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
 
 // ✅ Hàm cập nhật token
 export const setAuthToken = (token) => {
@@ -37,12 +52,41 @@ instance.interceptors.response.use(
     return response && response.data ? response.data : response;
   },
   async function (error) {
-    if (error.response?.status === 401) {
-      await AsyncStorage.removeItem('accessToken');
-      setAuthToken(null);
-      
-      return Promise.reject(error);
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then(token => {
+            originalRequest.headers['Authorization'] = 'Bearer ' + token;
+            return instance(originalRequest);
+          })
+          .catch(err => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const newTokens = await refreshToken();
+        await AsyncStorage.setItem('accessToken', newTokens.accessToken);
+        setAuthToken(newTokens.accessToken);
+        
+        processQueue(null, newTokens.accessToken);
+        return instance(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        await AsyncStorage.removeItem('accessToken');
+        await AsyncStorage.removeItem('refreshToken');
+        setAuthToken(null);
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
     }
+
     return Promise.reject(error);
   }
 );

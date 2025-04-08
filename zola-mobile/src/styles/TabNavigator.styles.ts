@@ -101,10 +101,12 @@ const styles = StyleSheet.create({
   height: 48,
   paddingHorizontal: 24,
   paddingVertical: 12,
-  borderRadius: 8,
+  borderRadius: 50,
   justifyContent: 'center',
   alignItems: 'center',
   marginTop: 24, // hoặc tùy chỉnh vị trí
+  width: '90%',
+  alignSelf: 'center',
 },
 logoutText: {
   color: '#fff',

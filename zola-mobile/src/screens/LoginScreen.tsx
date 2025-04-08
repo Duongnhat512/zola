@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   KeyboardAvoidingView,
   TouchableWithoutFeedback,
   Keyboard,
-  Alert
+  Alert,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import styles from '../styles/LoginScreen.styles';
@@ -18,8 +18,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { login } from '../redux/slices/UserSlice';
 
 const LoginScreen = ({ navigation }) => {
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [password, setPassword] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState(
+    AsyncStorage.getItem("username") || ''
+  );
+  const [password, setPassword] = useState();
   const [passwordHidden, setPasswordHidden] = useState(true);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -38,8 +40,10 @@ const LoginScreen = ({ navigation }) => {
       if (res) {
         dispatch(login(res.user));
         setIsLoading(false);
+        await AsyncStorage.setItem("username", phoneNumber.toString());
         await AsyncStorage.setItem("accessToken", res.accessToken);
         await AsyncStorage.setItem("refreshToken", res.refreshToken);
+        console.log(await AsyncStorage.getItem("username"));
       } else {
         setError("Thông tin tài khoản hoặc mật khẩu không chính xác.");
       }
@@ -48,6 +52,14 @@ const LoginScreen = ({ navigation }) => {
       Alert.alert("Thông báo", "Thông tin tài khoản hoặc mật khẩu không chính xác.");
     }
   };
+
+  useEffect(() => {
+    const getUsername = async () => {
+      const username = await AsyncStorage.getItem("username");
+      setPhoneNumber(username || '');
+    };
+    getUsername();
+  }, []);
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -155,4 +167,4 @@ const LoginScreen = ({ navigation }) => {
   );
 };
 
-export default LoginScreen; 
+export default LoginScreen;

@@ -1,4 +1,5 @@
 import axios from "../utils/customize-axios";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const LoginUser = async (data) => {
   try {
@@ -65,4 +66,22 @@ export const registerUser = async (data) => {
     throw error;
   }
 };
+
+export const refreshToken = async () => {
+  try {
+    const refreshToken = await AsyncStorage.getItem('refreshToken');
+    if (!refreshToken) {
+      throw new Error('No refresh token available');
+    }
+    const response = await axios.post("/auth-service/auth/refresh-token", {
+      refreshToken
+    });
+    return response;
+  } catch (error) {
+    console.error("Token refresh failed", error);
+    throw error;
+  }
+};
+
+
 
