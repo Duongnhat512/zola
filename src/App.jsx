@@ -7,6 +7,8 @@ import { decodedToken } from "./services/UserService";
 import { useDispatch, useSelector } from "react-redux";
 import { login, setLoading } from "./redux/UserSlice";
 import Register from "./pages/Register/Register";
+import { Spin } from "antd";
+import { LoadingOutlined } from "@ant-design/icons";
 
 function App() {
   const dispatch = useDispatch();
@@ -36,12 +38,7 @@ function App() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
-        <div className="text-center">
-          <div className="loader"></div>
-          <p className="mt-4 text-lg text-gray-700 dark:text-gray-300">
-            Đang tải...
-          </p>
-        </div>
+        <Spin indicator={<LoadingOutlined style={{ fontSize: 48 }} spin />} />
       </div>
     );
   }

@@ -17,7 +17,7 @@ function Login() {
   const isLoading = useSelector((state) => state.user.isLoading); // Lấy trạng thái loading từ Redux
   const authenticated = useSelector((state) => state.user.authenticated); // Lấy thông tin người dùng từ Redux
   console.log(authenticated);
-  
+
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
@@ -28,7 +28,7 @@ function Login() {
       dispatch(setLoading(true)); // Bắt đầu loading
       const res = await LoginUser(data);
       dispatch(setLoading(false)); // Kết thúc loading
-      
+
       if (res) {
         dispatch(login(res.user)); // Lưu thông tin người dùng vào Redux
         localStorage.setItem("accessToken", res.accessToken);
@@ -43,11 +43,10 @@ function Login() {
     }
   };
   useEffect(() => {
-    if(authenticated){
+    if (authenticated) {
       navigate("/"); // Chuyển hướng về trang Home nếu đã đăng nhập
     }
-  }
-  , [navigate]);
+  }, [navigate]);
   return (
     <div className="min-h-screen bg-blue-50 flex items-center justify-center">
       <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
