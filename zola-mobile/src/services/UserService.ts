@@ -35,8 +35,6 @@ export const LoginToken = async () => {
 };
 
 export const updateUser = async (username,fullname,dob,gender) => {
-  console.log(username,fullname,dob,gender);
-  
   try {
     const response = await axios.post("/auth-service/me/update", {
       username,

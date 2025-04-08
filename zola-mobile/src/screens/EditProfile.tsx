@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity, Modal, Pressable, TextInput } from 'react-native';
+import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity, Modal, Pressable, TextInput, Alert } from 'react-native';
 import { Icon } from 'react-native-elements';
 import { updateUserRedux } from '../redux/slices/UserSlice';
 import { updateUser } from '../services/UserService';
@@ -31,7 +31,7 @@ const EditProfile = () => {
     try {
       await updateUser(user.username,form.fullname,form.dob,form.gender);
       dispatch(updateUserRedux(form)); // update redux
-      alert('Cập nhật thành công!');
+      Alert.alert('Thông báo','Cập nhật thành công!');
     } catch (err) {
       console.error('Lỗi cập nhật user:', err);
     }
@@ -125,7 +125,7 @@ const EditProfile = () => {
         <View style={styles.infoRow}>
           <Text style={styles.label}>Điện thoại</Text>
           <View>
-            <Text style={styles.value}>+84 899 530 610</Text>
+            <Text style={styles.value}>{user.username}</Text>
             <Text style={styles.subtext}>
               Số điện thoại chỉ hiển thị với người có lưu số bạn trong danh bạ máy
             </Text>

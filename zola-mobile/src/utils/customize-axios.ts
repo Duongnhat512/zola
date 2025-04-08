@@ -1,7 +1,7 @@
 import axios from "axios";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const baseURL = process.env.BASE_URL || "http://localhost:8888/api/v1/";
+const baseURL = process.env.BASE_URL;
 const instance = axios.create({
   baseURL: baseURL,
   withCredentials: true, // Để gửi cookie nếu backend dùng

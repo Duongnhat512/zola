@@ -36,7 +36,6 @@ const LoginScreen = ({ navigation }) => {
       setIsLoading(true);
       const res = await LoginUser(data);
       if (res) {
-        console.log(res)
         dispatch(login(res.user));
         setIsLoading(false);
         await AsyncStorage.setItem("accessToken", res.accessToken);

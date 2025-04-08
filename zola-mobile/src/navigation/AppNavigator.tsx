@@ -60,7 +60,6 @@ const AppNavigator: React.FC = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        console.log('User state:', user);
         const authenticated = user?.authenticated === true;
         console.log('Is authenticated:', authenticated);
         setIsAuthenticated(authenticated);
