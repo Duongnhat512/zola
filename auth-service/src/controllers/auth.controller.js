@@ -156,9 +156,9 @@ exports.logout = async (req, res) => {
 exports.sendOTP = async (req, res) => {
     const username = req.body.username;
 
-    const otp = otpMethod.generateOTP(); // Tạo mã OTP ngẫu nhiên 6 chữ số
+    const otp = otpMethod.generateOTP(); 
 
-    await vonageMethod.sendOTP(username, otp); // Gửi mã OTP đến số điện thoại của người dùng
+    await vonageMethod.sendOTP(username, otp);
 
     return res.json({
         status: "success",
