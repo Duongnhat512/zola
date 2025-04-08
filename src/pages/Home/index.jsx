@@ -24,6 +24,8 @@ const Home = () => {
 
   // Redux state
   const isAuthenticated = useSelector((state) => state.user.authenticated);
+  useSelector((state) => console.log(state.user)
+  )
   const user = useSelector((state) => state.user.user);
   const [isModalOpen, setIsModalOpen] = useState(false);
 

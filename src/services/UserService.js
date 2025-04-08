@@ -20,8 +20,6 @@ export const LoginToken = async () => {
 };
 
 export const updateUser = async (username, fullname, dob, gender) => {
-  console.log(username, fullname, dob, gender);
-
   try {
     const response = await axios.post("/auth-service/me/update", {
       username,
@@ -36,14 +34,18 @@ export const updateUser = async (username, fullname, dob, gender) => {
   }
 };
 
-export const logoutUser = async (username) => {
+export const decodedToken = async () => {
   try {
-    const response = await axios.post("/auth-service/auth/logout", {
-      username,
-    });
+    const response = await axios.post("/auth-service/auth/decode-token");
     return response;
   } catch (error) {
-    console.error("Logout failed", error);
+    console.error("Decoded token failed", error);
     throw error;
   }
+};
+export const sendOtp = async (username) => {
+  return await axios.post("/auth-service/auth/send-otp", { username });
+};
+export const registerUser = async (data) => {
+  return await axios.post("/auth-service/auth/register", data);
 };

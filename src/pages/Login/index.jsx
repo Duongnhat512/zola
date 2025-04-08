@@ -1,21 +1,23 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { PhoneIcon, LockClosedIcon } from "@heroicons/react/outline"; // Import Heroicons
 import QRForm from "./QRForm";
 import { LoginForm } from "./LoginForm";
 import { LoginUser } from "../../services/UserService";
 import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
-import { login } from "../../redux/UserSlice"; // Import the login action from UserSlice
-import { toast, ToastContainer } from "react-toastify";
+import { useDispatch, useSelector } from "react-redux";
+import { login, setLoading } from "../../redux/UserSlice"; // Import the login and setLoading actions from UserSlice
+
 function Login() {
   const [isQR, setIsQR] = useState(true); // State to toggle between QR and password login
-  const [isLoading, setIsLoading] = useState(false); // State to manage loading state
   const [phoneNumber, setPhoneNumber] = useState(""); // State to manage phone number input
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const dispatch = useDispatch();
-
+  const isLoading = useSelector((state) => state.user.isLoading); // Lấy trạng thái loading từ Redux
+  const authenticated = useSelector((state) => state.user.authenticated); // Lấy thông tin người dùng từ Redux
+  console.log(authenticated);
+  
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
@@ -23,24 +25,30 @@ function Login() {
         username: phoneNumber,
         password: password,
       };
-      setIsLoading(true);
+      dispatch(setLoading(true)); // Bắt đầu loading
       const res = await LoginUser(data);
-      setIsLoading(false);
+      dispatch(setLoading(false)); // Kết thúc loading
 
       if (res) {
-        dispatch(login(res.user));
+        dispatch(login(res.user)); // Lưu thông tin người dùng vào Redux
         console.log("Đăng nhập thành công");
         localStorage.setItem("accessToken", res.accessToken);
         localStorage.setItem("refreshToken", res.refreshToken);
-        navigate("/");
+        navigate("/"); // Chuyển hướng về trang Home
       } else {
         setError("Đăng nhập thất bại. Vui lòng thử lại sau.");
       }
     } catch (err) {
-      setError("Đăng nhập thất bại. Vui lòng thử lại sau.", err);
+      dispatch(setLoading(false)); // Kết thúc loading nếu có lỗi
+      setError("Đăng nhập thất bại. Vui lòng thử lại sau.");
     }
   };
-
+  useEffect(() => {
+    if(authenticated){
+      navigate("/"); // Chuyển hướng về trang Home nếu đã đăng nhập
+    }
+  }
+  , [navigate]);
   return (
     <div className="min-h-screen bg-blue-50 flex items-center justify-center">
       <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
@@ -54,20 +62,29 @@ function Login() {
           để kết nối với ứng dụng Zalo Web
         </p>
 
-        {/* Form đăng nhập */}
-        {isQR ? (
-          <LoginForm
-            setIsQR={setIsQR}
-            isQR={isQR}
-            phoneNumber={phoneNumber}
-            password={password}
-            setIsLoading={setIsLoading}
-            setPhoneNumber={setPhoneNumber}
-            setPassword={setPassword}
-            handleLogin={handleLogin}
-          />
+        {/* Hiển thị loader khi đang loading */}
+        {isLoading ? (
+          <div className="flex items-center justify-center">
+            <div className="loader"></div>
+            <p className="mt-4 text-lg text-gray-700">Đang xử lý...</p>
+          </div>
         ) : (
-          <QRForm setIsQR={setIsQR} isQR={isQR} />
+          <>
+            {/* Form đăng nhập */}
+            {isQR ? (
+              <LoginForm
+                setIsQR={setIsQR}
+                isQR={isQR}
+                phoneNumber={phoneNumber}
+                password={password}
+                setPhoneNumber={setPhoneNumber}
+                setPassword={setPassword}
+                handleLogin={handleLogin}
+              />
+            ) : (
+              <QRForm setIsQR={setIsQR} isQR={isQR} />
+            )}
+          </>
         )}
 
         {/* Quảng cáo Zalo PC */}
