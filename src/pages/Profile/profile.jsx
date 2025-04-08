@@ -25,10 +25,10 @@ const Profile = ({ isModalOpen, setModalOpen }) => {
         localStorage.removeItem("refreshToken");
       }
     }
-    dispatch(setLoading(false)); // Kết thúc loading
+    dispatch(setLoading(false)); 
   };
   const handleUpdateClick = () => {
-    setModalContent("update"); // Switch to update content
+    setModalContent("update"); 
     form.setFieldsValue({
       fullname: user?.fullname,
       gender: user?.gender,
@@ -40,17 +40,15 @@ const Profile = ({ isModalOpen, setModalOpen }) => {
   const formatDate = (dateString) => {
     console.log(dateString);
     const [day, month, year] = dateString.split('/');
-    // Ensure the date is properly formatted
     const date = new Date(`${year}-${month}-${day}`);
     const options = { year: "numeric", month: "2-digit", day: "2-digit" };
-    // This will return the format as 23/04/2025
     return date.toLocaleDateString("en-GB", options).replace(/\//g, '/');
   };
   
   
   const handleModalClose = () => {
     setModalOpen(false);
-    setModalContent("profile"); // Reset to profile content
+    setModalContent("profile");
   };
 
   const handleUpdateSubmit = async (values) => {
@@ -60,12 +58,8 @@ const Profile = ({ isModalOpen, setModalOpen }) => {
       values.year
     ).padStart(2, "0")}`;
     let gender = values.gender;
-<<<<<<< HEAD
-    const res = await updateUser(username,fullname,dob,gender);
-=======
 
     const res = await updateUser(username, fullname, dob, gender);
->>>>>>> 545181c50d77b9304461384ce9d0ecaf08b13477
     initAuth(); // Refresh user data after update
 
     setModalContent("profile"); // Switch back to profile content
