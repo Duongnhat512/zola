@@ -9,10 +9,13 @@ import {
   SettingFilled,
   UserOutlined,
 } from "@ant-design/icons";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { Avatar, Dropdown, Layout, Menu } from "antd";
 import Profile from "../Profile/Profile";
+import { logoutUser } from "../../services/UserService";
+import { toast, ToastContainer } from "react-toastify";
+import { logout } from "../../redux/UserSlice";
 
 const { Content, Sider } = Layout;
 
@@ -22,11 +25,10 @@ const Home = () => {
 
   // Redux state
   const isAuthenticated = useSelector((state) => state.user.authenticated);
-  useSelector((state) => console.log(state.user)
-  )
+  useSelector((state) => console.log(state.user));
   const user = useSelector((state) => state.user.user);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const dispatch = useDispatch();
   // Kiểm tra trạng thái đăng nhập
   useEffect(() => {
     if (!isAuthenticated) {
@@ -35,6 +37,24 @@ const Home = () => {
   }, [isAuthenticated, navigate]);
   const showModal = () => {
     setIsModalOpen(true);
+  };
+  const handleLogout = async () => {
+    console.log("Đang đăng xuất...");
+
+    try {
+      const res = await logoutUser(user.username);
+      console.log(res);
+
+      if (res) {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        dispatch(logout());
+        navigate("/login");
+        // Gọi action logoutUser để cập nhật trạng thái đăng nhập trong Redux
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
   // Menu items
   const menuItemsTop = [
@@ -63,7 +83,7 @@ const Home = () => {
     },
     { label: "Cài đặt", key: "3" },
     { type: "divider" },
-    { label: "Đăng xuất", key: "4" },
+    { label: "Đăng xuất", key: "4", onClick: handleLogout },
   ];
 
   return (

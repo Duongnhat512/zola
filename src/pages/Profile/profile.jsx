@@ -12,21 +12,21 @@ const Profile = ({ isModalOpen, setModalOpen }) => {
   const [modalContent, setModalContent] = useState("profile"); // State to manage modal content
   const [form] = Form.useForm(); // Ant Design form instance
   const initAuth = async () => {
-        const token = localStorage.getItem("accessToken");
-        if (token) {
-          try {
-            const res = await decodedToken();
-            if (res?.user) {
-              dispatch(login(res.user));
-            }
-          } catch (err) {
-            console.error("Token không hợp lệ hoặc đã hết hạn.");
-            localStorage.removeItem("accessToken");
-            localStorage.removeItem("refreshToken");
-          }
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      try {
+        const res = await decodedToken();
+        if (res?.user) {
+          dispatch(login(res.user));
         }
-        dispatch(setLoading(false)); // Kết thúc loading
-      };
+      } catch (err) {
+        console.error("Token không hợp lệ hoặc đã hết hạn.");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+      }
+    }
+    dispatch(setLoading(false)); // Kết thúc loading
+  };
   const handleUpdateClick = () => {
     setModalContent("update"); // Switch to update content
     form.setFieldsValue({
@@ -60,9 +60,14 @@ const Profile = ({ isModalOpen, setModalOpen }) => {
       values.year
     ).padStart(2, "0")}`;
     let gender = values.gender;
+<<<<<<< HEAD
     const res = await updateUser(username,fullname,dob,gender);
+=======
+
+    const res = await updateUser(username, fullname, dob, gender);
+>>>>>>> 545181c50d77b9304461384ce9d0ecaf08b13477
     initAuth(); // Refresh user data after update
-    
+
     setModalContent("profile"); // Switch back to profile content
   };
 
