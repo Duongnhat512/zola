@@ -18,6 +18,7 @@ exports.register = async (req, res) => {
         const hashPassword = bcrypt.hashSync(req.body.password, SALT_ROUNDS);
         const newUser = {
             username: username,
+            phone: req.body.phone,
             password: hashPassword,
             fullname: req.body.fullname,
             dob: req.body.dob,
@@ -71,7 +72,7 @@ exports.login = async (req, res) => {
     let refreshToken = randToken.generate(jwtVariable.refreshTokenSize); // tạo 1 refresh token ngẫu nhiên
     if (!user.refreshToken) {
         // Nếu user này chưa có refresh token thì lưu refresh token đó vào database
-        await UserModel.updateRefreshToken(user.username, refreshToken);
+        await UserModel.updateRefreshToken(user.id, refreshToken);
     } else {
         // Nếu user này đã có refresh token thì lấy refresh token đó từ database
         refreshToken = user.refreshToken;
@@ -87,7 +88,8 @@ exports.login = async (req, res) => {
 };
 
 exports.refreshToken = async (req, res) => {
-    const refreshTokenFromBody = req.body.refreshToken;
+    const refreshTokenFromBody = req.body.refresh_token;
+    const accessTokenFromHeader = req.headers.authorization?.split(" ")[1]; 
     const username = req.body.username;
 
     if (!refreshTokenFromBody) {
@@ -107,9 +109,26 @@ exports.refreshToken = async (req, res) => {
         return res.status(401).send('User không tồn tại.');
     }
 
-    if (refreshTokenFromBody !== user.refreshToken) {
+    if (refreshTokenFromBody !== user.refresh_token) {
         return res.status(400).send('Refresh token không hợp lệ.');
     }
+
+    // Kiểm tra access token có hợp lệ không
+    if (accessTokenFromHeader) {
+        const isBlacklisted = await BlackList.find(accessTokenFromHeader);
+        if (isBlacklisted) {
+            return res.status(401).send('Access token đã hết hạn.');
+        }
+        const verified = await authMethod.verifyToken(
+            accessTokenFromHeader,
+            accessTokenSecret
+        );
+        if (!verified) {
+            return res.status(400).send('Access token đã hết hạn.');
+        }
+    }
+
+    await BlackList.create(accessTokenFromHeader); 
 
     // Tạo access token mới
     const dataForAccessToken = {
@@ -135,19 +154,12 @@ exports.refreshToken = async (req, res) => {
 
 exports.logout = async (req, res) => {
     const { username } = req.body;
-    const accessToken = req.headers.authorization?.split(" ")[1];
-    if (!accessToken) {
-        return res.status(400).send({ message: "Access token không hợp lệ" });
-    }
 
     const user = await UserModel.getUser(username);
     if (!user) {
         return res.status(403).send({ message: "Không tồn tại tài khoản" });
     }
-
-    await BlackList.create(accessToken);
-    console.log("Blacklist: ", accessToken);
-
+    
     await UserModel.updateRefreshToken(user.username, null);
 
     return res.json({ status: "success", message: "Đăng xuất thành công" });
@@ -169,7 +181,7 @@ exports.sendOTP = async (req, res) => {
 };
 
 exports.verifyOTP = async (req, res) => {
-    const username = req.body.username.toLowerCase();
+    const username = req.body.username;
     const otp = req.body.otp;
 
     const user = await UserModel.getUser(username);
@@ -180,10 +192,16 @@ exports.verifyOTP = async (req, res) => {
         return res.status(401).send({ message: "Mã OTP không hợp lệ" });
     }
 
+    const currentTime = new Date().getTime();
+
+    if (user.otp_expiry_time < currentTime) {
+        return res.status(401).send({ message: "Mã OTP đã hết hạn" });
+    }
+
     await UserModel.updateOTP(username, null, null); // Xóa mã OTP sau khi xác thực thành công
 
     return res.json({
-        status: "success",
+        status: 200,
         message: "Xác thực thành công",
         username,
     });
@@ -207,7 +225,7 @@ exports.changePassword = async (req, res) => {
     await UserModel.updatePassword(username, hashPassword);
 
     return res.json({
-        status: "success",
+        status: 200,
         message: "Đổi mật khẩu thành công",
         username,
     });
@@ -243,15 +261,11 @@ exports.forgotPassword = async (req, res) => {
 
 exports.resetPassword = async (req, res) => {
     const username = req.body.username;
-    const otp = req.body.otp;
     const newPassword = req.body.newPassword;
 
     const user = await UserModel.getUser(username);
     if (!user) {
         return res.status(404).send({ message: "Tài khoản không tồn tại" });
-    }
-    if (user.otp !== otp) {
-        return res.status(401).send({ message: "Mã OTP không hợp lệ" });
     }
 
     const hashPassword = bcrypt.hashSync(newPassword, SALT_ROUNDS);
@@ -264,6 +278,7 @@ exports.resetPassword = async (req, res) => {
         username,
     });
 };
+
 exports.decodeToken = async (req, res) => {
     try {
         const token = req.headers.authorization.split(" ")[1]; // Lấy token từ header Authorization

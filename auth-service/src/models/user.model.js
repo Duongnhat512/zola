@@ -1,14 +1,19 @@
 const { dynamodb } = require("../utils/aws.helper");
+const { v4: uuidv4 } = require("uuid");
+const { create } = require("./blacklist.model");
 require("dotenv").config();
 
 const tableName = "users";
 
 const UserModel = {
     createUser: async userData => {
+        const userId = uuidv4();
         const imageUrl = process.env.DEFAULT_AVT_URL;
+
         const params = {
             TableName: tableName,
             Item: {
+                id: userId,
                 username: userData.username,
                 password: userData.password,
                 fullname: userData.fullname,
@@ -16,6 +21,8 @@ const UserModel = {
                 gender: userData.gender,
                 avt: imageUrl,
                 status: userData.status,
+                phone: userData.phone,
+                created_at: new Date().toISOString(),
             }
         };
 
@@ -25,21 +32,24 @@ const UserModel = {
     getUser: async username => {
         const params = {
             TableName: tableName,
-            Key: {
-                username
-            }
+            IndexName: "username-index",
+            KeyConditionExpression: "username = :username",
+            ExpressionAttributeValues: {
+                ":username": username
+            },
+            limit: 1
         };
 
-        const data = await dynamodb.get(params).promise();
-        return data.Item;
+        const data = await dynamodb.query(params).promise();
+        return data.Items[0];
     },
-    updateRefreshToken: async (username, refreshToken) => {
+    updateRefreshToken: async (id, refreshToken) => {
         const params = {
             TableName: tableName,
             Key: {
-                username
+                id
             },
-            UpdateExpression: "set refreshToken = :refreshToken",
+            UpdateExpression: "set refresh_token = :refreshToken",
             ExpressionAttributeValues: {
                 ":refreshToken": refreshToken
             }
@@ -121,7 +131,7 @@ const UserModel = {
             Key: {
                 username
             },
-            UpdateExpression: "set otp = :otp, otpExpiryTime = :otpExpiryTime",
+            UpdateExpression: "set otp = :otp, otp_expiry_time = :otpExpiryTime",
             ExpressionAttributeValues: {
                 ":otp": otp,
                 ":otpExpiryTime": expiryTime
