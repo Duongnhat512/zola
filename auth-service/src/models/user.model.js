@@ -57,11 +57,11 @@ const UserModel = {
 
         await dynamodb.update(params).promise();
     },
-    updateUser: async (username, userData) => {
+    updateUser: async (id, userData) => {
         const params = {
             TableName: tableName,
             Key: {
-                username
+                id
             },
             UpdateExpression: "set fullname = :fullname, dob = :dob, gender = :gender",
             ExpressionAttributeValues: {
@@ -81,11 +81,11 @@ const UserModel = {
             throw error;
         }
     },
-    updateAvt: async (username, avt) => {
+    updateAvt: async (id, avt) => {
         const params = {
             TableName: tableName,
             Key: {
-                username
+                id
             },
             UpdateExpression: "set avt = :avt",
             ExpressionAttributeValues: {
@@ -103,11 +103,11 @@ const UserModel = {
             throw error;
         }
     },
-    updatePassword: async (username, password) => {
+    updatePassword: async (id, password) => {
         const params = {
             TableName: tableName,
             Key: {
-                username
+                id
             },
             UpdateExpression: "set password = :password",
             ExpressionAttributeValues: {
@@ -125,11 +125,11 @@ const UserModel = {
             throw error;
         }
     },
-    updateOTP: async (username, otp, expiryTime) => {
+    updateOTP: async (id, otp, expiryTime) => {
         const params = {
             TableName: tableName,
             Key: {
-                username
+                id
             },
             UpdateExpression: "set otp = :otp, otp_expiry_time = :otpExpiryTime",
             ExpressionAttributeValues: {
@@ -148,15 +148,26 @@ const UserModel = {
             throw error;
         }
     },
-    deleteUser: async username => {
+    deleteUser: async id => {
         const params = {
             TableName: tableName,
             Key: {
-                username
+                id
             }
         };
 
         await dynamodb.delete(params).promise();
+    },
+    getUserById: async id => {
+        const params = {
+            TableName: tableName,
+            Key: {
+                id
+            }
+        };
+
+        const data = await dynamodb.get(params).promise();
+        return data.Item;
     },
 }
 

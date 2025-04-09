@@ -89,7 +89,7 @@ exports.login = async (req, res) => {
 
 exports.refreshToken = async (req, res) => {
     const refreshTokenFromBody = req.body.refresh_token;
-    const accessTokenFromHeader = req.headers.authorization?.split(" ")[1]; 
+    const accessTokenFromHeader = req.headers.authorization?.split(" ")[1];
     const username = req.body.username;
 
     if (!refreshTokenFromBody) {
@@ -128,7 +128,7 @@ exports.refreshToken = async (req, res) => {
         }
     }
 
-    await BlackList.create(accessTokenFromHeader); 
+    await BlackList.create(accessTokenFromHeader);
 
     // Tạo access token mới
     const dataForAccessToken = {
@@ -154,21 +154,24 @@ exports.refreshToken = async (req, res) => {
 
 exports.logout = async (req, res) => {
     const { username } = req.body;
+    const accessToken = req.headers.authorization?.split(" ")[1];
+
+    await BlackList.create(accessToken);
 
     const user = await UserModel.getUser(username);
     if (!user) {
         return res.status(403).send({ message: "Không tồn tại tài khoản" });
     }
-    
-    await UserModel.updateRefreshToken(user.username, null);
+
+    await UserModel.updateRefreshToken(user.id, null);
 
     return res.json({ status: "success", message: "Đăng xuất thành công" });
 };
 
 exports.sendOTP = async (req, res) => {
-  const username = req.body.username;
+    const username = req.body.username;
 
-    const otp = otpMethod.generateOTP(); 
+    const otp = otpMethod.generateOTP();
 
     await vonageMethod.sendOTP(username, otp);
 
@@ -198,8 +201,6 @@ exports.verifyOTP = async (req, res) => {
         return res.status(401).send({ message: "Mã OTP đã hết hạn" });
     }
 
-    await UserModel.updateOTP(username, null, null); // Xóa mã OTP sau khi xác thực thành công
-
     return res.json({
         status: 200,
         message: "Xác thực thành công",
@@ -208,9 +209,9 @@ exports.verifyOTP = async (req, res) => {
 };
 
 exports.changePassword = async (req, res) => {
-  const username = req.user.username.toLowerCase();
-  const password = req.body.password;
-  const newPassword = req.body.newPassword;
+    const username = req.user.username.toLowerCase();
+    const password = req.body.password;
+    const newPassword = req.body.newPassword;
 
     const user = await UserModel.getUser(username);
     if (!user) {
@@ -221,8 +222,8 @@ exports.changePassword = async (req, res) => {
         return res.status(401).send({ message: "Sai mật khẩu" });
     }
 
-  const hashPassword = bcrypt.hashSync(newPassword, SALT_ROUNDS);
-  await UserModel.updatePassword(username, hashPassword);
+    const hashPassword = bcrypt.hashSync(newPassword, SALT_ROUNDS);
+    await UserModel.updatePassword(user.id, hashPassword);
 
     return res.json({
         status: 200,
@@ -239,7 +240,8 @@ exports.forgotPassword = async (req, res) => {
     }
     const otp = otpMethod.generateOTP(); // Tạo mã OTP ngẫu nhiên 6 chữ số
     const expiryTime = new Date().getTime() + 2 * 60 * 1000; // Thời gian hết hạn là 2 phút sau
-    await UserModel.updateOTP(username, otp, expiryTime); // Cập nhật mã OTP và thời gian hết hạn vào database
+
+    await UserModel.updateOTP(user.id, otp, expiryTime); // Cập nhật mã OTP và thời gian hết hạn vào database
 
     try {
         await vonageMethod.sendOTP(username, otp); // Gửi mã OTP đến số điện thoại của người dùng
@@ -262,15 +264,20 @@ exports.forgotPassword = async (req, res) => {
 exports.resetPassword = async (req, res) => {
     const username = req.body.username;
     const newPassword = req.body.newPassword;
+    const otp = req.body.otp;
 
     const user = await UserModel.getUser(username);
     if (!user) {
         return res.status(404).send({ message: "Tài khoản không tồn tại" });
     }
+    if (user.otp !== otp) {
+        return res.status(401).send({ message: "Mã OTP không hợp lệ" });
+    }
 
-  const hashPassword = bcrypt.hashSync(newPassword, SALT_ROUNDS);
-  await UserModel.updatePassword(username, hashPassword);
-  await UserModel.updateOTP(username, null, null); // Xóa mã OTP sau khi xác thực thành công
+    const hashPassword = bcrypt.hashSync(newPassword, SALT_ROUNDS);
+
+    await UserModel.updatePassword(user.id, hashPassword);
+    await UserModel.updateOTP(user.id, null, null); // Xóa mã OTP sau khi xác thực thành công
 
     return res.json({
         status: "success",

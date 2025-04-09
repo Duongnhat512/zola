@@ -7,7 +7,9 @@ const UserController = {}
 UserController.updateUser = async (req, res) => {
     const { username, fullname, dob, gender } = req.body;
 
-    const data = await UserModel.updateUser(username, { fullname, dob, gender });
+    const user = await UserModel.getUser(username);
+
+    const data = await UserModel.updateUser(user.id, { fullname, dob, gender });
     if (!data) {
         return res.status(400).send({ message: 'Có lỗi trong quá trình cập nhật thông tin, vui lòng thử lại.' });
     }
@@ -22,7 +24,6 @@ UserController.updateUser = async (req, res) => {
     })
 }
 
-
 UserController.updateAvt = async (req, res) => {
     const username = req.body.username;
     const file = req.file;
@@ -32,7 +33,12 @@ UserController.updateAvt = async (req, res) => {
         return res.status(400).send({ message: 'Có lỗi trong quá trình cập nhật ảnh đại diện, vui lòng thử lại.' });
     }
 
-    const data = await UserModel.updateAvt(username, avt);
+    const user = await UserModel.getUser(username);
+    if (!user) {
+        return res.status(400).send({ message: 'Người dùng không tồn tại.' });
+    }
+
+    const data = await UserModel.updateAvt(user.id, avt);
 
     return res.json({
         status: 'success',
