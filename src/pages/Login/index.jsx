@@ -29,11 +29,11 @@ function Login() {
       const res = await LoginUser(data);
       dispatch(setLoading(false)); // Kết thúc loading
 
-      if (res) {
+      if (res && res.status === "success") {
         dispatch(login(res.user)); // Lưu thông tin người dùng vào Redux
         localStorage.setItem("accessToken", res.accessToken);
         localStorage.setItem("refreshToken", res.refreshToken);
-        navigate("/"); // Chuyển hướng về trang Home
+        // navigate("/"); // Chuyển hướng về trang Home
       } else {
         setError("Đăng nhập thất bại. Vui lòng thử lại sau.");
       }

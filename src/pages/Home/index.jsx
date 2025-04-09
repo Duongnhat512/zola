@@ -44,7 +44,6 @@ const Home = () => {
     try {
       const res = await logoutUser(user.username);
       console.log(res);
-
       if (res) {
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
