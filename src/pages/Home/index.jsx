@@ -13,6 +13,7 @@ import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { Avatar, Dropdown, Layout, Menu } from "antd";
 import Profile from "../Profile/Profile";
+import HomeDetails from "./HomeDetails";
 
 const { Content, Sider } = Layout;
 
@@ -22,17 +23,16 @@ const Home = () => {
 
   // Redux state
   const isAuthenticated = useSelector((state) => state.user.authenticated);
-  useSelector((state) => console.log(state.user)
-  )
+  useSelector((state) => console.log(state.user));
   const user = useSelector((state) => state.user.user);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Kiểm tra trạng thái đăng nhập
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/login");
-    }
-  }, [isAuthenticated, navigate]);
+  // useEffect(() => {
+  //   if (!isAuthenticated) {
+  //     navigate("/login");
+  //   }
+  // }, [isAuthenticated, navigate]);
   const showModal = () => {
     setIsModalOpen(true);
   };
@@ -145,20 +145,7 @@ const Home = () => {
       </Sider>
 
       {/* Main Layout */}
-      <Layout>
-        <Sider width="25%" style={{ background: "#fff" }}>
-          <div style={{ padding: "20px", textAlign: "center" }}>Sider</div>
-        </Sider>
-        <Content
-          style={{
-            padding: "20px",
-            background: "#ebecf0",
-            minHeight: "100vh",
-          }}
-        >
-          <h1 style={{ textAlign: "center" }}>Content</h1>
-        </Content>
-      </Layout>
+      <HomeDetails />
     </Layout>
   );
 };
