@@ -24,8 +24,18 @@ const ChatWindow = ({
 }) => {
   if (!selectedChat) {
     return (
-      <div className="flex-1 flex items-center justify-center text-gray-500">
-        Chọn một cuộc trò chuyện
+      <div className="flex items-center justify-center flex-col text-center flex-1">
+        <h1 className="text-2xl font-semibold text-gray-800">
+          Chào mừng đến với <span className="text-blue-600">Zalo PC</span>!
+        </h1>
+        <p className="text-sm text-gray-600 mt-2 max-w-md">
+          Khám phá những tiện ích hỗ trợ làm việc và trò chuyện cùng người thân,
+          bạn bè được tối ưu hoá cho máy tính của bạn.
+        </p>
+        <MessageOutlined
+          style={{ fontSize: "64px", color: "#4096ff" }}
+          className="my-8"
+        />
       </div>
     );
   }

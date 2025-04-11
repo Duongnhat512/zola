@@ -91,7 +91,7 @@ function Register() {
     <div className="min-h-screen flex items-center justify-center bg-blue-50">
       <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
         <h1 className="text-2xl font-bold text-center text-blue-600 mb-4">
-          Đăng ký tài khoản Zalo
+          Đăng ký tài khoản Zola
         </h1>
 
         {step === 1 && (
