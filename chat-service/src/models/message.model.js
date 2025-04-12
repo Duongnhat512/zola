@@ -1,4 +1,3 @@
-const { get } = require("../routes/socket.route");
 const { dynamodb } = require("../utils/aws.helper");
 const { v4: uuidv4 } = require("uuid");
 

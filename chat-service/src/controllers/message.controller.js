@@ -22,6 +22,17 @@ MessageController.sendMessage = async (socket, data) => {
     }
 }
 
+MessageController.sendImage = async (socket, data) => {
+    try {
+        const savedMessage = await MessageModel.sendImage(data)
+        socket.emit('image_sent', savedMessage)
+        socket.to(data.conversation_id).emit("new_image", savedMessage);
+    } catch (error) {
+        console.error("Lỗi khi gửi hình ảnh:", error)
+        socket.emit('error', { message: "Lỗi khi gửi hình ảnh" })
+    }
+}
+
 MessageController.deleteMessage = async (socket, data) => {
     try {
         const result = await MessageModel.deleteMessage(data.message_id)
