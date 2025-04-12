@@ -1,3 +1,4 @@
+const { sendImage } = require("../controllers/message.controller");
 const { dynamodb } = require("../utils/aws.helper");
 const { v4: uuidv4 } = require("uuid");
 
@@ -13,9 +14,9 @@ const MessageModel = {
                 conversation_id: message.conversation_id,
                 sender_id: message.sender_id,
                 receiver_id: message.receiver_id,
-                type: message.type,
+                type: "text",
                 message: message.message,
-                media: message.media,
+                media: message.media || "",
                 status: message.status,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
@@ -30,6 +31,33 @@ const MessageModel = {
             throw new Error("Error sending message");
         }
     },
+    sendImage: async (message) => {
+        const messageId = uuidv4();
+        const params = {
+            TableName: tableName,
+            Item: {
+                message_id: messageId,
+                conversation_id: message.conversation_id,
+                sender_id: message.sender_id,
+                receiver_id: message.receiver_id,
+                type: "image",
+                message: message.message,
+                media: message.media,
+                status: message.status,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                is_deleted: false,
+            },
+        };
+        try {
+            await dynamodb.put(params).promise();
+            return message;
+        } catch (error) {
+            console.error("Error sending image:", error);
+            throw new Error("Error sending image");
+        }
+    },
+    
     getMessages: async (conversation_id) => {
         const params = {
             TableName: tableName,

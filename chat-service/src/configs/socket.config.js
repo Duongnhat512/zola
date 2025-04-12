@@ -52,6 +52,8 @@ function setupSocket(server) {
       }
     });
 
+    
+
     socket.on("disconnect", () => {
       console.log(`User disconnected: ${socket.id}, UserID: ${socket.user.id}`);
       if (userSocketMap.get(socket.user.id) === socket.id) {
