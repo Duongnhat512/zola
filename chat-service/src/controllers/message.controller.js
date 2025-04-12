@@ -12,6 +12,7 @@ MessageController.getMessages = async (socket, data) => {
 }
 
 MessageController.sendMessage = async (socket, data) => {
+    data.sender_id = socket.user.id
     try {
         const savedMessage = await MessageModel.sendMessage(data)
         socket.emit('message_sent', savedMessage)
