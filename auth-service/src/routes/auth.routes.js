@@ -13,5 +13,5 @@ router.post('/forgot-password', authController.forgotPassword);
 router.post('/verify-otp', authController.verifyOTP);
 router.post('/reset-password', authController.resetPassword);
 router.post('/send-otp', authController.sendOTP);
-router.post('/decode-token', isAuth, authController.decodeToken);
+router.post('/decode-token', authController.decodeToken);
 module.exports = router;

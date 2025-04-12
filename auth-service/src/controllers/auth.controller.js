@@ -173,7 +173,17 @@ exports.sendOTP = async (req, res) => {
 
     const otp = otpMethod.generateOTP();
 
-    await vonageMethod.sendOTP(username, otp);
+    // await vonageMethod.sendOTP(username, otp);
+    try {
+        await vonageMethod.sendOTP(username, otp);
+    } catch (error) {
+        console.error("Gửi mã OTP không thành công:", error);
+        return res
+            .status(500)
+            .send({
+                message: "Có lỗi trong quá trình gửi mã OTP, vui lòng thử lại.",
+            });
+    }
 
     return res.json({
         status: "success",
