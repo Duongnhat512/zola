@@ -27,4 +27,9 @@ router.get(
   isAuthExpress,
   FriendController.getSendFriendRequests
 );
+router.get(
+  "/listFriend/:userId",
+  isAuthExpress,
+  FriendController.getListFriends
+);
 module.exports = router;

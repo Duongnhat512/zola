@@ -68,8 +68,8 @@ const FriendModel = {
       const getParams = {
         TableName: friendRequestTableName,
         Key: {
-          user_id: user_id,
-          user_friend_id: user_friend_id,
+          user_id: user_friend_id,
+          user_friend_id: user_id,
         },
       };
 
@@ -82,8 +82,8 @@ const FriendModel = {
       const updateParams = {
         TableName: friendRequestTableName,
         Key: {
-          user_id: user_id,
-          user_friend_id: user_friend_id,
+          user_id: user_friend_id,
+          user_friend_id: user_id,
         },
         UpdateExpression: "set #status = :status, updatedAt = :updatedAt",
         ExpressionAttributeNames: {
@@ -132,8 +132,8 @@ const FriendModel = {
       const getParams = {
         TableName: friendRequestTableName,
         Key: {
-          user_id: user_id,
-          user_friend_id: user_friend_id,
+          user_id: user_friend_id,
+          user_friend_id: user_id,
         },
       };
 
@@ -146,8 +146,8 @@ const FriendModel = {
       const updateParams = {
         TableName: friendRequestTableName,
         Key: {
-          user_id: user_id,
-          user_friend_id: user_friend_id,
+          user_id: user_friend_id,
+          user_friend_id: user_id,
         },
         UpdateExpression: "set #status = :status, updatedAt = :updatedAt",
         ExpressionAttributeNames: {
@@ -167,7 +167,7 @@ const FriendModel = {
     }
   },
 
-  // Lấy danh sách lời mời kết bạn
+  // Lấy danh sách gửi lời mời kết bạn
   getFriendRequests: async (user_id) => {
     const params = {
       TableName: friendRequestTableName,
@@ -191,17 +191,34 @@ const FriendModel = {
     }
   },
   //get danh sách yêu cầu kết bạn
-  getSentFriendRequests: async (user_id) => {
+  getReceivedFriendRequests: async (user_friend_id) => {
     const params = {
       TableName: friendRequestTableName,
-      KeyConditionExpression: "user_id = :user_id",
-      FilterExpression: "#status = :status",
+      FilterExpression:
+        "user_friend_id = :user_friend_id AND #status = :status",
       ExpressionAttributeNames: {
         "#status": "status",
       },
       ExpressionAttributeValues: {
-        ":user_id": user_id,
+        ":user_friend_id": user_friend_id,
         ":status": "pending",
+      },
+    };
+
+    try {
+      const result = await dynamodb.scan(params).promise();
+      return result.Items || [];
+    } catch (error) {
+      console.error("Error getting received friend requests:", error);
+      throw error;
+    }
+  },
+  getListFriends: async (user_id) => {
+    const params = {
+      TableName: friendTableName,
+      KeyConditionExpression: "user_id = :user_id",
+      ExpressionAttributeValues: {
+        ":user_id": user_id,
       },
     };
 
@@ -209,7 +226,7 @@ const FriendModel = {
       const result = await dynamodb.query(params).promise();
       return result.Items || [];
     } catch (error) {
-      console.error("Error getting sent friend requests:", error);
+      console.error("Error getting friends:", error);
       throw error;
     }
   },

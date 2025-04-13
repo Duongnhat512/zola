@@ -55,66 +55,65 @@ const UserModel = {
       },
     };
 
-        await dynamodb.update(params).promise();
-    },
-    updateUser: async (id, userData) => {
-        const params = {
-            TableName: tableName,
-            Key: {
-                id
-            },
-            UpdateExpression: "set fullname = :fullname, dob = :dob, gender = :gender",
-            ExpressionAttributeValues: {
-                ":fullname": userData.fullname,
-                ":dob": userData.dob,
-                ":gender": userData.gender
-            },
-            ReturnValues: "ALL_NEW",
-        }
+    await dynamodb.update(params).promise();
+  },
+  updateUser: async (id, userData) => {
+    const params = {
+      TableName: tableName,
+      Key: {
+        id,
+      },
+      UpdateExpression:
+        "set fullname = :fullname, dob = :dob, gender = :gender",
+      ExpressionAttributeValues: {
+        ":fullname": userData.fullname,
+        ":dob": userData.dob,
+        ":gender": userData.gender,
+      },
+      ReturnValues: "ALL_NEW",
+    };
 
-        try {
-            const data = await dynamodb.update(params).promise();
-            return data.Attributes;
-        }
-        catch (error) {
-            console.error("Error updating user: ", error);
-            throw error;
-        }
-    },
-    updateAvt: async (id, avt) => {
-        const params = {
-            TableName: tableName,
-            Key: {
-                id
-            },
-            UpdateExpression: "set avt = :avt",
-            ExpressionAttributeValues: {
-                ":avt": avt
-            },
-            ReturnValues: "ALL_NEW",
-        }
+    try {
+      const data = await dynamodb.update(params).promise();
+      return data.Attributes;
+    } catch (error) {
+      console.error("Error updating user: ", error);
+      throw error;
+    }
+  },
+  updateAvt: async (id, avt) => {
+    const params = {
+      TableName: tableName,
+      Key: {
+        id,
+      },
+      UpdateExpression: "set avt = :avt",
+      ExpressionAttributeValues: {
+        ":avt": avt,
+      },
+      ReturnValues: "ALL_NEW",
+    };
 
-        try {
-            const data = await dynamodb.update(params).promise();
-            return data.Attributes;
-        }
-        catch (error) {
-            console.error("Error updating user: ", error);
-            throw error;
-        }
-    },
-    updatePassword: async (id, password) => {
-        const params = {
-            TableName: tableName,
-            Key: {
-                id
-            },
-            UpdateExpression: "set password = :password",
-            ExpressionAttributeValues: {
-                ":password": password
-            },
-            ReturnValues: "ALL_NEW",
-        }
+    try {
+      const data = await dynamodb.update(params).promise();
+      return data.Attributes;
+    } catch (error) {
+      console.error("Error updating user: ", error);
+      throw error;
+    }
+  },
+  updatePassword: async (id, password) => {
+    const params = {
+      TableName: tableName,
+      Key: {
+        id,
+      },
+      UpdateExpression: "set password = :password",
+      ExpressionAttributeValues: {
+        ":password": password,
+      },
+      ReturnValues: "ALL_NEW",
+    };
 
     try {
       const data = await dynamodb.update(params).promise();
@@ -138,41 +137,40 @@ const UserModel = {
       ReturnValues: "ALL_NEW",
     };
 
-        try {
-            const data = await dynamodb.update(params).promise();
-            return data.Attributes;
-        }
-        catch (error) {
-            console.error("Error updating OTP: ", error);
-            throw error;
-        }
-    },
-    deleteUser: async id => {
-        const params = {
-            TableName: tableName,
-            Key: {
-                id
-            }
-        };
+    try {
+      const data = await dynamodb.update(params).promise();
+      return data.Attributes;
+    } catch (error) {
+      console.error("Error updating OTP: ", error);
+      throw error;
+    }
+  },
+  deleteUser: async (id) => {
+    const params = {
+      TableName: tableName,
+      Key: {
+        id,
+      },
+    };
 
-        await dynamodb.delete(params).promise();
-    },
-    getUserById: async userId => {
-        const params = {
-            TableName: tableName,
-            Key: {
-                id: userId
-            }
-        };
+    await dynamodb.delete(params).promise();
+  },
+  getUserById: async (userId) => {
+    const params = {
+      TableName: tableName,
+      Key: {
+        id: userId,
+      },
+    };
 
-        try {
-            const data = await dynamodb.get(params).promise();
-            return data.Item;
-        } catch (error) {
-            console.error("Error getting user by id: ", error);
-            throw error;
-        }
-    },
-}
+    try {
+      const data = await dynamodb.get(params).promise();
+      return data.Item;
+    } catch (error) {
+      console.error("Error getting user by id: ", error);
+      throw error;
+    }
+  },
+};
 
 module.exports = UserModel;

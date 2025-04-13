@@ -105,6 +105,10 @@ const FriendController = {
   acceptFriendRequest: async (req, res) => {
     const { user_id, user_friend_id } = req.query;
 
+    console.log("====================================");
+    console.log("user_id", user_id);
+    console.log("user_friend_id", user_friend_id);
+    console.log("====================================");
     if (!user_id || !user_friend_id) {
       return res
         .status(400)
@@ -140,7 +144,7 @@ const FriendController = {
    * Body: { user_id, user_friend_id }
    */
   rejectFriendRequest: async (req, res) => {
-    const { user_id, user_friend_id } = req.body;
+    const { user_id, user_friend_id } = req.query;
 
     if (!user_id || !user_friend_id) {
       return res
@@ -207,7 +211,7 @@ const FriendController = {
     }
 
     try {
-      const requests = await FriendModel.getSentFriendRequests(userId);
+      const requests = await FriendModel.getReceivedFriendRequests(userId);
       return res.status(200).json({
         code: 200,
         data: requests,
@@ -217,6 +221,29 @@ const FriendController = {
       return res.status(500).json({
         code: 500,
         message: "Có lỗi khi lấy danh sách lời mời kết bạn",
+      });
+    }
+  },
+  getListFriends: async (req, res) => {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res
+        .status(400)
+        .json({ code: 400, message: "Thiếu ID người dùng" });
+    }
+
+    try {
+      const friends = await FriendModel.getListFriends(userId);
+      return res.status(200).json({
+        code: 200,
+        data: friends,
+      });
+    } catch (error) {
+      console.error("Có lỗi khi lấy danh sách bạn bè:", error);
+      return res.status(500).json({
+        code: 500,
+        message: "Có lỗi khi lấy danh sách bạn bè",
       });
     }
   },
