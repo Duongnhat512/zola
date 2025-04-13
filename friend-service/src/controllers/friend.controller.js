@@ -197,6 +197,29 @@ const FriendController = {
       });
     }
   },
+  getSendFriendRequests: async (req, res) => {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res
+        .status(400)
+        .json({ code: 400, message: "Thiếu ID người dùng" });
+    }
+
+    try {
+      const requests = await FriendModel.getSentFriendRequests(userId);
+      return res.status(200).json({
+        code: 200,
+        data: requests,
+      });
+    } catch (error) {
+      console.error("Có lỗi khi lấy danh sách lời mời kết bạn:", error);
+      return res.status(500).json({
+        code: 500,
+        message: "Có lỗi khi lấy danh sách lời mời kết bạn",
+      });
+    }
+  },
 };
 
 module.exports = FriendController;

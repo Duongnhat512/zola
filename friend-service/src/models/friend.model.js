@@ -168,16 +168,16 @@ const FriendModel = {
   },
 
   // Lấy danh sách lời mời kết bạn
-  getFriendRequests: async (user_friend_id) => {
+  getFriendRequests: async (user_id) => {
     const params = {
       TableName: friendRequestTableName,
-      KeyConditionExpression: "user_friend_id = :user_friend_id",
-      FilterExpression: "#status = :status",
+      KeyConditionExpression: "user_id = :user_id", // Chỉ dùng PK ở đây
+      FilterExpression: "#status = :status", // Lọc thêm status
       ExpressionAttributeNames: {
         "#status": "status",
       },
       ExpressionAttributeValues: {
-        ":user_friend_id": user_friend_id,
+        ":user_id": user_id,
         ":status": "pending",
       },
     };
@@ -187,6 +187,29 @@ const FriendModel = {
       return result.Items || [];
     } catch (error) {
       console.error("Error getting friend requests:", error);
+      throw error;
+    }
+  },
+  //get danh sách yêu cầu kết bạn
+  getSentFriendRequests: async (user_id) => {
+    const params = {
+      TableName: friendRequestTableName,
+      KeyConditionExpression: "user_id = :user_id",
+      FilterExpression: "#status = :status",
+      ExpressionAttributeNames: {
+        "#status": "status",
+      },
+      ExpressionAttributeValues: {
+        ":user_id": user_id,
+        ":status": "pending",
+      },
+    };
+
+    try {
+      const result = await dynamodb.query(params).promise();
+      return result.Items || [];
+    } catch (error) {
+      console.error("Error getting sent friend requests:", error);
       throw error;
     }
   },
