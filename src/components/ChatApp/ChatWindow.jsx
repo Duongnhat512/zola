@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { SmileOutlined, SendOutlined } from "@ant-design/icons";
-import { Input, Avatar, Badge } from "antd";
+import { Input, Avatar, Badge, Button } from "antd";
 import {
   UserOutlined,
   SearchOutlined,
@@ -15,6 +15,8 @@ import {
   PaperClipOutlined,
   FileTextOutlined,
 } from "@ant-design/icons";
+import AddFriendModal from "./AddFriendModal";
+
 const ChatWindow = ({
   selectedChat,
   messages,
@@ -22,6 +24,8 @@ const ChatWindow = ({
   setInput,
   sendMessage,
 }) => {
+  const [showAddFriendModal, setShowAddFriendModal] = useState(false);
+
   if (!selectedChat) {
     return (
       <div className="flex items-center justify-center flex-col text-center flex-1">
@@ -54,6 +58,13 @@ const ChatWindow = ({
             </div>
 
             <div className="flex items-center gap-4">
+              <Button
+                onClick={() => setShowAddFriendModal(true)}
+                className="flex gap-2 ml-2"
+              >
+                <UserOutlined className="text-gray-500 text-lg cursor-pointer hover:text-blue-500" />
+              </Button>
+              <div className="w-8 h-8 rounded-full bg-gray-300 cursor-pointer hover:bg-gray-400" />
               <button className="text-gray-600 hover:text-blue-500">
                 <PlusOutlined className="text-xl" title="Thêm bạn vào nhóm" />
               </button>
@@ -155,6 +166,8 @@ const ChatWindow = ({
           />
         </div>
       )}
+      {/* AddFriendModal component */}
+      {showAddFriendModal && <AddFriendModal />}
     </div>
   );
 };

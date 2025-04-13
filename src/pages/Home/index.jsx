@@ -33,7 +33,7 @@ const Home = () => {
   // Kiểm tra trạng thái đăng nhập
   useEffect(() => {
     if (!isAuthenticated) {
-      navigate("/login");
+      navigate("/");
     }
   }, [isAuthenticated, navigate]);
   const showModal = () => {

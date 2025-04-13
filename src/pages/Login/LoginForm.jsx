@@ -47,9 +47,12 @@ export const LoginForm = ({
         Đăng nhập với mật khẩu
       </button>
 
-      <div className="text-center">
+      <div className="text-center text-gray-600 mb-4 flex items-center justify-between">
         <a href="#" className="text-blue-500 text-sm hover:underline">
           Quên mật khẩu
+        </a>
+        <a href="/register" className="text-blue-500 text-sm hover:underline">
+          Đăng ký
         </a>
       </div>
 

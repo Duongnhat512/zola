@@ -5,6 +5,7 @@ export const LoginUser = async (data) => {
     const response = await axios.post("/auth-service/auth/login", data);
     return response;
   } catch (error) {
+    alert("Đăng nhập thất bại. Vui lòng thử lại sau.");
     console.error("Login failed", error);
     throw error;
   }
