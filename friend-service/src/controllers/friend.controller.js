@@ -53,7 +53,7 @@ const FriendController = {
    * Body: { user_id, user_friend_id }
    */
   createFriendRequest: async (req, res) => {
-    const { user_id, user_friend_id } = req.query;
+    const { user_id, user_friend_id } = req.body;
 
     console.log("user_id", user_id);
     console.log("user_friend_id", user_friend_id);
@@ -103,7 +103,7 @@ const FriendController = {
    * Body: { user_id, user_friend_id }
    */
   acceptFriendRequest: async (req, res) => {
-    const { user_id, user_friend_id } = req.query;
+    const { user_id, user_friend_id } = req.body;
 
     if (!user_id || !user_friend_id) {
       return res

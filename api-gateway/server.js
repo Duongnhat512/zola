@@ -39,6 +39,10 @@ app.use(
   "/api/v1/auth-service",
   createProxyMiddleware(serviceRoutes["/api/v1/auth-service"])
 );
+app.use(
+  "/api/v1/friend-service",
+  createProxyMiddleware(serviceRoutes["/api/v1/friend-service"])
+);
 
 for (const [path, serviceUrl] of Object.entries(serviceRoutes)) {
   app.use(path, createWebSocketProxyMiddleware(path, serviceUrl));

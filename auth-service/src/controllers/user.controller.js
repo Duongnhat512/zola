@@ -49,7 +49,7 @@ UserController.updateAvt = async (req, res) => {
 }
 
 UserController.getUserById = async (req, res) => {
-    const { id } = req.body;
+    const { id } = req.query;
 
     try {
         const data = await UserModel.getUserById(id);
