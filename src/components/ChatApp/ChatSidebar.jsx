@@ -11,7 +11,8 @@ import AddGroupModal from "./AddGroupModal";
 const ChatSidebar = ({ chats, openChat }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isModalGroupVisible, setIsModalGroupVisible] = useState(false);
-
+  console.log(chats);
+  
   const openModal = () => {
     setIsModalVisible(true);
   };
