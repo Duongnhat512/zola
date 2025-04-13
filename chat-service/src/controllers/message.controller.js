@@ -16,7 +16,7 @@ MessageController.getMessages = async (socket, data) => {
 
 MessageController.sendMessage = async (socket, data) => {
   data.sender_id = socket.user.id;
-  console.log("data", data.conversation_id);
+  console.log("data", data);
   try {
     const savedMessage = await MessageModel.sendMessage(data);
 
@@ -171,6 +171,7 @@ MessageController.updateMessage = async (socket, data) => {
 };
 
 MessageController.sendPrivateMessage = async (socket, data) => {
+  data.sender_id = socket.user.id;
   try {
     let conversation = await ConversationModel.findPrivateConversation(
       socket.user.id,
@@ -194,6 +195,7 @@ MessageController.sendPrivateMessage = async (socket, data) => {
     const messageData = {
       conversation_id: conversation.id,
       user_id: socket.user.id,
+      sender_id: socket.user.id,
       receiver_id: data.receiver_id,
       message: data.message,
       type: data.type || "text",

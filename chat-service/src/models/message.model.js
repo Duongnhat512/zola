@@ -85,6 +85,7 @@ const MessageModel = {
             ExpressionAttributeValues: {
                 ":conversation_id": conversation_id,
             },
+            
         };
         try {
             const data = await dynamodb.query(params).promise();
@@ -212,7 +213,7 @@ const MessageModel = {
             },
             UpdateExpression: "set last_message_id = :last_message_id",
             ExpressionAttributeValues: {
-                ":last_message_id": last_message_id,
+                ":last_message": last_message_id,
             },
         };
         try {
