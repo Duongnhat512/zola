@@ -7,7 +7,7 @@ const MessageController = {}
 MessageController.getMessages = async (socket, data) => {
   try {
     const messages = await MessageModel.getMessages(data.conversation_id);
-    socket.emit("get_messages", messages);
+    socket.emit("list_messages", messages);
   } catch (error) {
     console.error("Lỗi khi nhận tin nhắn:", error);
     socket.emit("error", { message: "Lỗi khi nhận tin nhắn" });
@@ -19,8 +19,18 @@ MessageController.sendMessage = async (socket, data) => {
   console.log("data", data.conversation_id);
   try {
     const savedMessage = await MessageModel.sendMessage(data);
+
+    console.log("savedMessage", savedMessage);
+
+    await ConversationModel.updateLastMessage(
+      data.conversation_id,
+      savedMessage.message_id
+    );
+    
     socket.emit("message_sent", savedMessage);
     socket.to(data.conversation_id).emit("new_message", savedMessage);
+
+    return savedMessage;
   } catch (error) {
     console.error("Lỗi khi gửi tin nhắn:", error);
     socket.emit("error", { message: "Lỗi khi gửi tin nhắn" });
@@ -221,6 +231,11 @@ MessageController.sendPrivateMessage = async (socket, data) => {
     });
 
     socket.to(conversation.id).emit('new_message', message);
+
+    await ConversationModel.updateLastMessage(
+      conversation.id,
+      message.message_id
+    );
 
     return { conversation, message };
   } catch (error) {
