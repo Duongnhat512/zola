@@ -2,15 +2,17 @@ import React, { useEffect, useState } from "react";
 import ChatSidebar from "../../components/ChatApp/ChatSidebar";
 import ChatWindow from "../../components/ChatApp/ChatWindow";
 import socket from "../../services/Socket";
-import { getAllConversationById } from "../../services/Conversation";
+import {
+  getAllConversationById,
+  getConversation,
+} from "../../services/Conversation";
 import { useSelector } from "react-redux";
 
 const HomeDetails = () => {
   const [selectedChat, setSelectedChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [chats, setChats] = useState([
-  ]);
+  const [chats, setChats] = useState([]);
   const user = useSelector((state) => state.user.user);
   const chat = [
     {
@@ -222,10 +224,7 @@ const HomeDetails = () => {
       if (response.status === "success") {
         setChats(response.conversations);
       } else {
-        console.error(
-          "Lỗi khi lấy danh sách hội thoại:",
-          response.message
-        );
+        console.error("Lỗi khi lấy danh sách hội thoại:", response.message);
       }
     } catch (error) {
       console.error("Lỗi khi gọi API:", error);

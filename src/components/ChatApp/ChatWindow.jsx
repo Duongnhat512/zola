@@ -12,11 +12,17 @@ import {
 } from "@ant-design/icons";
 import socket from "../../services/Socket";
 
-const ChatWindow = ({ selectedChat, messages, setMessages, input, setInput }) => {
+const ChatWindow = ({
+  selectedChat,
+  messages,
+  setMessages,
+  input,
+  setInput,
+}) => {
   const [showAddFriendModal, setShowAddFriendModal] = useState(false);
 
   // useEffect(() => {
-    
+
   //   if (selectedChat?.conversation_id) {
   //     // Gửi yêu cầu lấy lịch sử tin nhắn qua socket
   //     socket.emit("get_messages", { conversation_id: selectedChat.conversation_id });
@@ -41,7 +47,7 @@ const ChatWindow = ({ selectedChat, messages, setMessages, input, setInput }) =>
       socket.on("disconnect", () => {
         console.log("Socket disconnected");
       });
-    }catch (error) {
+    } catch (error) {
       console.error("Socket connection error:", error);
     }
   }, []);
@@ -62,7 +68,14 @@ const ChatWindow = ({ selectedChat, messages, setMessages, input, setInput }) =>
     // Cập nhật tin nhắn vào danh sách
     setMessages((prev) => [
       ...prev,
-      { ...msg, sender: "me", time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) },
+      {
+        ...msg,
+        sender: "me",
+        time: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      },
     ]);
 
     // Xóa nội dung trong ô nhập
@@ -88,7 +101,11 @@ const ChatWindow = ({ selectedChat, messages, setMessages, input, setInput }) =>
       {/* Header */}
       <div className="bg-white p-4 shadow flex items-center justify-between">
         <div className="flex items-center">
-          <Avatar src={selectedChat.avatar || "/default-avatar.jpg"} size="large" className="mr-3" />
+          <Avatar
+            src={selectedChat.avatar || "/default-avatar.jpg"}
+            size="large"
+            className="mr-3"
+          />
           <div>
             <h2 className="font-semibold">{selectedChat.name}</h2>
             <p className="text-sm text-gray-500">Vừa truy cập</p>
@@ -109,7 +126,10 @@ const ChatWindow = ({ selectedChat, messages, setMessages, input, setInput }) =>
             <SearchOutlined className="text-xl" title="Tìm kiếm" />
           </button>
           <button className="text-gray-600 hover:text-blue-500">
-            <InfoCircleOutlined className="text-xl" title="Thông tin hộp thoại" />
+            <InfoCircleOutlined
+              className="text-xl"
+              title="Thông tin hộp thoại"
+            />
           </button>
         </div>
       </div>
@@ -119,17 +139,27 @@ const ChatWindow = ({ selectedChat, messages, setMessages, input, setInput }) =>
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`flex ${msg.sender === "me" ? "justify-end" : "items-start"} gap-2`}
+            className={`flex ${
+              msg.sender === "me" ? "justify-end" : "items-start"
+            } gap-2`}
           >
             {msg.sender !== "me" && (
-              <Avatar src={msg.avatar || "/default-avatar.jpg"} size="small" className="self-end" />
+              <Avatar
+                src={msg.avatar || "/default-avatar.jpg"}
+                size="small"
+                className="self-end"
+              />
             )}
             <div
-              className={`flex flex-col items-${msg.sender === "me" ? "end" : "start"}`}
+              className={`flex flex-col items-${
+                msg.sender === "me" ? "end" : "start"
+              }`}
             >
               <div
                 className={`px-4 py-2 rounded-xl max-w-xs whitespace-pre-line ${
-                  msg.sender === "me" ? "bg-blue-100 text-right" : "bg-white shadow"
+                  msg.sender === "me"
+                    ? "bg-blue-100 text-right"
+                    : "bg-white shadow"
                 }`}
               >
                 {msg.text}
