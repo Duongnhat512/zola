@@ -13,6 +13,8 @@ import {
   IdcardOutlined,
 } from "@ant-design/icons";
 import { getUserSdt } from "../../services/UserService";
+import { createFriendRequest } from "../../services/FriendService";
+import { useSelector } from "react-redux";
 
 const { Option } = Select;
 
@@ -21,6 +23,7 @@ const AddFriendModal = ({ onClose, visible = true }) => {
   const [step, setStep] = useState("search");
   const [error, setError] = useState("");
   const [showMessage, setShowMessage] = useState(false);
+  const user = useSelector((state) => state.user.user);
   const [userInfo, setUserInfo] = useState({}); // Thông tin người dùng tìm thấy
   const suggestedFriends = [
     { name: "Cường Repair", source: "Từ số điện thoại" },
@@ -62,6 +65,25 @@ const AddFriendModal = ({ onClose, visible = true }) => {
   };
   const handleBack = () => {
     setStep("search");
+  };
+  const handleRequestFriend = async () => {
+    try {
+      const response = await createFriendRequest(user.id, userInfo.id);
+      console.log("====================================");
+      console.log(response);
+      console.log("====================================");
+      if (response.code === 201) {
+        console.log("Yêu cầu kết bạn đã được gửi thành công!");
+        setStep("search"); // Quay lại bước tìm kiếm sau khi gửi yêu cầu
+      } else {
+        console.error("Không thể gửi yêu cầu kết bạn:", response.message);
+        setError("Không thể gửi yêu cầu kết bạn.");
+        setShowMessage(true);
+        setTimeout(() => setShowMessage(false), 3000);
+      }
+    } catch (error) {
+      console.error("Lỗi khi gửi yêu cầu kết bạn:", error);
+    }
   };
 
   return (
@@ -204,7 +226,7 @@ const AddFriendModal = ({ onClose, visible = true }) => {
 
           {/* Nút hành động */}
           <div className="flex justify-center mt-4 gap-3">
-            <Button> Kết bạn </Button>
+            <Button onClick={handleRequestFriend}> Kết bạn </Button>
             <Button type="primary"> Nhắn tin </Button>
           </div>
 

@@ -17,13 +17,14 @@ import HomeDetails from "./HomeDetails";
 import { logoutUser } from "../../services/UserService";
 import { toast, ToastContainer } from "react-toastify";
 import { logout } from "../../redux/UserSlice";
+import MainLayout from "../../components/ChatApp/MainLayout";
 
 const { Content, Sider } = Layout;
 
 const Home = () => {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
-
+  const [layout, setLayout] = useState("default"); // State to manage layout type
   // Redux state
   const isAuthenticated = useSelector((state) => state.user.authenticated);
   useSelector((state) => console.log(state.user));
@@ -58,8 +59,22 @@ const Home = () => {
   };
   // Menu items
   const menuItemsTop = [
-    { label: "Tin nhắn", key: "1", icon: <MessageOutlined /> },
-    { label: "Team", key: "2", icon: <TeamOutlined /> },
+    {
+      label: "Tin nhắn",
+      key: "1",
+      icon: <MessageOutlined />,
+      onClick: () => {
+        setLayout("default");
+      },
+    },
+    {
+      label: "Team",
+      key: "2",
+      icon: <TeamOutlined />,
+      onClick: () => {
+        setLayout("mainlayout");
+      },
+    },
     { label: "Files", key: "3", icon: <FileOutlined /> },
   ];
 
@@ -164,8 +179,9 @@ const Home = () => {
         </div>
       </Sider>
 
-      {/* Main Layout */}
-      <HomeDetails />
+      <Content>
+        {layout === "default" ? <HomeDetails /> : <MainLayout />}
+      </Content>
     </Layout>
   );
 };
