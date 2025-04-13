@@ -1,21 +1,4 @@
 import React, { useState } from "react";
-import { Input, Avatar, Badge } from "antd";
-import {
-  UserOutlined,
-  SearchOutlined,
-  DownloadOutlined,
-  MessageOutlined,
-  LeftOutlined,
-  RightOutlined,
-  PlusOutlined,
-  VideoCameraOutlined,
-  InfoCircleOutlined,
-  PictureOutlined,
-  SmileOutlined,
-  PaperClipOutlined,
-  FileTextOutlined,
-  SendOutlined, // Import biểu tượng SendOutlined
-} from "@ant-design/icons";
 import ChatSidebar from "../../components/ChatApp/ChatSidebar";
 import ChatWindow from "../../components/ChatApp/ChatWindow";
 
