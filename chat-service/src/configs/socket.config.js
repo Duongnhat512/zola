@@ -3,6 +3,7 @@ const axios = require("axios");
 const messageController = require("../controllers/message.controller");
 const conversationController = require("../controllers/conversation.controller");
 const { isAuth } = require("../middlewares/auth.middleware");
+const { addUser, removeUser } = require("../utils/online.helper");
 
 const userSocketMap = new Map();
 const onlineUsers = new Set();
@@ -27,9 +28,7 @@ function setupSocket(server) {
   io.on("connection", (socket) => {
     console.log(`User connected: ${socket.user.username}, UserID: ${socket.user.id}`);
 
-    // Lưu trữ kết nối user 
-    userSocketMap.set(socket.user.id, socket.id);
-    onlineUsers.add(socket.user.id);
+    addUser(socket.user.id, socket.id);
 
     // Thông báo cho các user khác về user online
     io.emit('user_online', {
@@ -117,6 +116,16 @@ function setupSocket(server) {
       }
     });
 
+    socket.on("send_private_message", async (data) => {
+      console.log("Received first message data:", JSON.stringify(data));
+      try {
+          await messageController.sendPrivateMessage(socket, data);
+      } catch (error) {
+          console.error("Error handling first message:", error);
+          socket.emit('error', { message: "Lỗi khi gửi tin nhắn đầu tiên" });
+      }
+  });
+
     socket.on("typing", (data) => {
       socket.to(data.conversation_id).emit("user_typing", {
         userId: socket.user.id,
@@ -128,7 +137,7 @@ function setupSocket(server) {
     // Disconnect
     socket.on("disconnect", () => {
       console.log(`User disconnected: ${socket.id}, UserID: ${socket.user.id}`);
-      userSocketMap.delete(socket.user.id);
+      removeUser(socket.user.id, socket.id);
       io.emit('user_offline', { userId: socket.user.id });
       console.log(`Emitted user_offline for UserID: ${socket.user.id}`);
     });

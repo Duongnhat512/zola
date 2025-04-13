@@ -1,22 +1,23 @@
 const ConversationModel = require('../models/conversation.model');
 const ConversationController = {};
 
+
 ConversationController.joinRoom = async (socket, data) => {
     try {
         socket.join(data.conversation_id);
-        
-        socket.emit('joined_room', { 
+
+        socket.emit('joined_room', {
             conversation_id: data.conversation_id,
             message: "Đã tham gia phòng chat"
         });
-        
+
         socket.to(data.conversation_id).emit('user_joined', {
             user_id: data.user_id,
             username: data.username,
             conversation_id: data.conversation_id,
             timestamp: new Date().toISOString()
         });
-        
+
     } catch (error) {
         console.error("Lỗi khi tham gia phòng:", error);
         socket.emit('error', { message: "Lỗi khi tham gia phòng" });
@@ -26,19 +27,19 @@ ConversationController.joinRoom = async (socket, data) => {
 ConversationController.leaveRoom = async (socket, data) => {
     try {
         socket.leave(data.conversation_id);
-        
-        socket.emit('left_room', { 
+
+        socket.emit('left_room', {
             conversation_id: data.conversation_id,
             message: "Đã rời phòng chat"
         });
-        
+
         socket.to(data.conversation_id).emit('user_left', {
             user_id: data.user_id,
             username: data.username,
             conversation_id: data.conversation_id,
             timestamp: new Date().toISOString()
         });
-        
+
     } catch (error) {
         console.error("Lỗi khi rời phòng:", error);
         socket.emit('error', { message: "Lỗi khi rời phòng" });
