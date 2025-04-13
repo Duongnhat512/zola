@@ -6,7 +6,8 @@ import {
   TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  Modal
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -21,8 +22,8 @@ const OTPScreen = ({ route, navigation }: OTPScreenProps) => {
   const { phoneNumber } = route.params;
   const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
   const [otpServer, setOtpServer] = useState('');
+  const [showErrorModal, setShowErrorModal] = useState(false);
   const inputsRef = useRef<(TextInput | null)[]>([]);
-
 
   useEffect(() => {
     const fetchOTP = async () => {
@@ -41,7 +42,7 @@ const OTPScreen = ({ route, navigation }: OTPScreenProps) => {
   const handleVerify = () => {
     const otp = otpCode.join('');
     if (otp !== otpServer) {
-      alert('Mã OTP không chính xác!');
+      setShowErrorModal(true);
       return;
     }
     navigation.navigate('Name', { phoneNumber });
@@ -104,6 +105,30 @@ const OTPScreen = ({ route, navigation }: OTPScreenProps) => {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Modal thông báo OTP sai */}
+      <Modal
+        visible={showErrorModal}
+        transparent
+        animationType="fade"
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Mã OTP không chính xác</Text>
+            <Text style={{ textAlign: 'center', marginBottom: 15, fontSize: 16 }}>
+              Vui lòng kiểm tra lại mã và thử lại.
+            </Text>
+            <TouchableOpacity
+              style={{ paddingVertical: 12, alignItems: 'center' }}
+              onPress={() => setShowErrorModal(false)}
+            >
+              <Text style={{ color: '#0068FF', fontWeight: 'bold', fontSize: 16 }}>
+                Thử lại
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -153,6 +178,25 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 18,
     fontWeight: 'bold'
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.3)'
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 12,
+    width: '85%',
+    elevation: 5
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center'
   }
 });
 

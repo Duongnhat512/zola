@@ -1,16 +1,27 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  Modal,
+  Alert,
+} from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons'; // 👈 Thêm dòng này
+import { Ionicons } from '@expo/vector-icons';
 import { registerUser } from '../services/UserService';
 
 const PasswordScreen = ({ route, navigation }) => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordVisible, setPasswordVisible] = useState(false); // 👁
-  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false); // 👁
-  const [passwordValid, setPasswordValid] = useState(true);
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const { userName, phoneNumber, gender, birthday } = route.params;
 
@@ -19,26 +30,22 @@ const PasswordScreen = ({ route, navigation }) => {
     const year = birthday.split('/')[2];
     const forbiddenWords = ['Zalo', userName, year];
     if (forbiddenWords.some(word => password.includes(word))) {
-      return "Mật khẩu không chứa tên 'Zalo', 'Tên của bạn', hoặc 'Năm sinh của bạn'.";
+      return "Mật khẩu không được chứa 'Zalo', tên của bạn hoặc năm sinh.";
     }
     if (!regex.test(password)) {
-      return "Mật khẩu phải có ít nhất 6 ký tự, bao gồm số và ký tự đặc biệt.";
+      return "Mật khẩu phải chứa ít nhất 6 ký tự, bao gồm ít nhất một số và một ký tự đặc biệt.";
     }
     return null;
-  };
-
-  const isFormValid = () => {
-    const error = validatePassword(password);
-    return password && confirmPassword && password === confirmPassword && !error;
   };
 
   const handleContinue = async () => {
     const error = validatePassword(password);
     if (error) {
-      setPasswordValid(false);
-      Alert.alert('Thông báo', error);
+      setErrorMessage(error);
+      setShowErrorModal(true);
     } else if (password !== confirmPassword) {
-      Alert.alert('Thông báo', 'Mật khẩu và xác nhận mật khẩu không trùng khớp!');
+      setErrorMessage('Mật khẩu và xác nhận mật khẩu không trùng khớp. Vui lòng kiểm tra lại.');
+      setShowErrorModal(true);
     } else {
       try {
         const data = {
@@ -54,11 +61,13 @@ const PasswordScreen = ({ route, navigation }) => {
           Alert.alert('Thông báo', 'Tạo tài khoản thành công!');
           navigation.navigate('Welcome');
         } else {
-          Alert.alert('Thông báo', 'Có lỗi trong quá trình tạo tài khoản.');
+          setErrorMessage('Đã xảy ra lỗi trong quá trình tạo tài khoản. Vui lòng thử lại sau.');
+          setShowErrorModal(true);
         }
       } catch (error) {
         console.error(error);
-        Alert.alert('Thông báo', 'Đã xảy ra lỗi khi kết nối với máy chủ.');
+        setErrorMessage('Số điện thoại đã tồn tại. Vui lòng thử lại với số điện thoại khác.');
+        setShowErrorModal(true);
       }
     }
   };
@@ -83,7 +92,7 @@ const PasswordScreen = ({ route, navigation }) => {
               secureTextEntry={!passwordVisible}
               value={password}
               onChangeText={setPassword}
-              style={[styles.input, !passwordValid && { borderColor: 'red' }]}
+              style={styles.input}
               placeholder="Nhập mật khẩu"
             />
             <TouchableOpacity
@@ -100,7 +109,7 @@ const PasswordScreen = ({ route, navigation }) => {
               secureTextEntry={!confirmPasswordVisible}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
-              style={[styles.input, !passwordValid && { borderColor: 'red' }]}
+              style={styles.input}
               placeholder="Xác nhận mật khẩu"
             />
             <TouchableOpacity
@@ -112,7 +121,10 @@ const PasswordScreen = ({ route, navigation }) => {
           </View>
 
           <TouchableOpacity
-            style={[styles.registerButton, password && confirmPassword ? styles.registerButtonActive : null]}
+            style={[
+              styles.registerButton,
+              password && confirmPassword ? styles.registerButtonActive : null,
+            ]}
             onPress={handleContinue}
             disabled={password === '' || confirmPassword === ''}
           >
@@ -120,50 +132,50 @@ const PasswordScreen = ({ route, navigation }) => {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Modal thông báo lỗi */}
+      <Modal visible={showErrorModal} transparent animationType="fade">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Lỗi</Text>
+            <Text style={{ textAlign: 'center', marginBottom: 15, fontSize: 16 }}>
+              {errorMessage}
+            </Text>
+            <TouchableOpacity
+              style={{ paddingVertical: 12, alignItems: 'center' }}
+              onPress={() => setShowErrorModal(false)}
+            >
+              <Text style={{ color: '#0068FF', fontWeight: 'bold', fontSize: 16 }}>
+                Đóng
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-  },
+  container: { flex: 1, backgroundColor: '#fff' },
+  content: { flex: 1, padding: 20 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 30,
+    marginBottom: 30
   },
-  backButton: {
-    padding: 10,
-  },
-  backButtonText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  placeholder: {
-    width: 40,
-  },
+  backButton: { padding: 10 },
+  backButtonText: { fontSize: 24, fontWeight: 'bold' },
+  placeholder: { width: 40 },
   headerTitle: {
     fontSize: 25,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: 30
   },
-  form: {
-    width: '100%',
-    gap: 15,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
+  form: { width: '100%', gap: 15 },
+  label: { fontSize: 16, fontWeight: 'bold', marginBottom: 5 },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -177,9 +189,7 @@ const styles = StyleSheet.create({
     padding: 15,
     fontSize: 16,
   },
-  eyeIcon: {
-    marginLeft: 10,
-  },
+  eyeIcon: { marginLeft: 10 },
   registerButton: {
     backgroundColor: '#b8d4ff',
     borderRadius: 40,
@@ -194,6 +204,25 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 12,
+    width: '85%',
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
   },
 });
 

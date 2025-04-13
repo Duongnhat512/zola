@@ -1,5 +1,15 @@
 import React, { useState } from 'react';
-import { StyleSheet, View,Modal, Text, TextInput,Pressable, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Modal,
+  Text,
+  TextInput,
+  Pressable,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform
+} from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -12,64 +22,81 @@ const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
   const [checked1, setChecked1] = useState(false);
   const [checked2, setChecked2] = useState(false);
   const [showOTPModal, setShowOTPModal] = useState(false);
+  const [phoneError, setPhoneError] = useState('');
+
+  const validatePhoneNumber = (number: string) => {
+    const regex = /^0\d{9}$/;
+    return regex.test(number);
+  };
 
   const handleRegister = () => {
+    if (!validatePhoneNumber(phoneNumber)) {
+      setPhoneError('Số điện thoại không hợp lệ. Vui lòng nhập đúng định dạng.');
+      return;
+    }
+    setPhoneError('');
     setShowOTPModal(true);
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
-      
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.content}
       >
-        {/* Header with back button */}
         <View style={styles.header}>
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={styles.backButton}
           >
             <Text style={styles.backButtonText}>←</Text>
           </TouchableOpacity>
-          
           <View style={styles.placeholder} />
         </View>
+
         <Text style={styles.headerTitle}>Nhập số điện thoại</Text>
-      
-        
-        {/* Form */}
+
         <View style={styles.form}>
           <TextInput
             style={styles.input}
             placeholder="Số điện thoại"
             value={phoneNumber}
-            onChangeText={setPhoneNumber}
+            onChangeText={(text) => {
+              setPhoneNumber(text);
+              setPhoneError('');
+            }}
             keyboardType="phone-pad"
           />
+          {phoneError ? (
+            <Text style={{ color: 'red', marginBottom: 10 }}>{phoneError}</Text>
+          ) : null}
 
-          <TouchableOpacity 
-            style={[styles.registerButton, phoneNumber  && checked1 && checked2? styles.registerButtonActive : null]}
-            disabled={!phoneNumber ||  checked1 === false || checked2 === false}
+          <TouchableOpacity
+            style={[
+              styles.registerButton,
+              phoneNumber?.trim() && checked1 && checked2
+                ? styles.registerButtonActive
+                : null
+            ]}
+            disabled={!phoneNumber || !checked1 || !checked2}
             onPress={handleRegister}
           >
             <Text style={styles.registerButtonText}>Đăng ký</Text>
           </TouchableOpacity>
-          
-          <View style={styles.termsRow}>
-              <Pressable onPress={() => setChecked1(!checked1)} style={styles.checkbox}>
-                {checked1 && <Text style={styles.checkmark}>✔</Text>}
-              </Pressable>
 
-              <Text style={styles.label}>
-                Tôi đồng ý với
-                <Text style={styles.link} onPress={() => alert('Điều khoản')}>
-                   {' '}điều khoản sử dụng Zola
-                </Text>
+          <View style={styles.termsRow}>
+            <Pressable onPress={() => setChecked1(!checked1)} style={styles.checkbox}>
+              {checked1 && <Text style={styles.checkmark}>✔</Text>}
+            </Pressable>
+            <Text style={styles.label}>
+              Tôi đồng ý với
+              <Text style={styles.link} onPress={() => alert('Điều khoản')}>
+                {' '}điều khoản sử dụng Zola
               </Text>
-              
+            </Text>
           </View>
+
           <View style={styles.termsRow}>
             <Pressable onPress={() => setChecked2(!checked2)} style={styles.checkbox}>
               {checked2 && <Text style={styles.checkmark}>✔</Text>}
@@ -81,55 +108,44 @@ const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
               </Text>
             </Text>
           </View>
-
         </View>
-        
-
       </KeyboardAvoidingView>
-          <Modal
-              visible={showOTPModal}
-              transparent
-              animationType="fade"
-            >
-              <View style={styles.modalContainer}>
-                <View style={styles.modalContent}>
-                  <Text style={styles.modalTitle}>Nhận mã xác thực qua số {'\n'} <Text style={styles.boldText}>{phoneNumber}?</Text></Text>
-                  <Text style={{ textAlign: 'center', marginBottom: 15,fontSize: 16 }}>
-                    Zola sẽ gửi mã xác thực qua số điện thoại này.
-                  </Text>
-                  <View style={{ flexDirection: 'column-reverse', gap: 10 }}>
-                    <TouchableOpacity 
-                      style={{
-                        paddingVertical: 12,
-                        alignItems: 'center'
-                      }}
-                      onPress={() => setShowOTPModal(false)}
-                    >
-                      <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 16 }}>
-                        Đổi số khác
-                      </Text>
-                    </TouchableOpacity>
 
-                    <TouchableOpacity 
-                      style={{
-                        paddingVertical: 12,
-                        alignItems: 'center'
-                      }}
-                      onPress={() => {
-                        setShowOTPModal(false);
-                        navigation.navigate('OTP', { phoneNumber });
-                      }}
-                    >
-                      <Text style={{ color: '#0068FF', fontWeight: 'bold', fontSize: 16 }}>
-                        Tiếp tục
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
+      <Modal visible={showOTPModal} transparent animationType="fade">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>
+              Nhận mã xác thực qua số {'\n'}
+              <Text style={styles.boldText}>{phoneNumber}?</Text>
+            </Text>
+            <Text style={{ textAlign: 'center', marginBottom: 15, fontSize: 16 }}>
+              Zola sẽ gửi mã xác thực qua số điện thoại này.
+            </Text>
+            <View style={{ flexDirection: 'column-reverse', gap: 10 }}>
+              <TouchableOpacity
+                style={{ paddingVertical: 12, alignItems: 'center' }}
+                onPress={() => setShowOTPModal(false)}
+              >
+                <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 16 }}>
+                  Đổi số khác
+                </Text>
+              </TouchableOpacity>
 
-                
-                </View>
-              </View>
-          </Modal>
+              <TouchableOpacity
+                style={{ paddingVertical: 12, alignItems: 'center' }}
+                onPress={() => {
+                  setShowOTPModal(false);
+                  navigation.navigate('OTP', { phoneNumber });
+                }}
+              >
+                <Text style={{ color: '#0068FF', fontWeight: 'bold', fontSize: 16 }}>
+                  Tiếp tục
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
