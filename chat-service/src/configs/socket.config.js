@@ -94,16 +94,45 @@ function setupSocket(server) {
       }
     });
 
-    // Gửi hình ảnh
-    socket.on("send_image", async (data) => {
-      console.log("Received image data:", JSON.stringify(data));
+    // Gửi file
+    socket.on("send_file", async (data) => {
+      console.log(`Received file upload request from ${socket.user.username}`);
       try {
-        await messageController.sendImage(socket, data);
+        // Xử lý giới hạn kích thước file nếu cần
+        if (data.file_size && data.file_size > 50 * 1024 * 1024) { // 50MB
+          return socket.emit('error', { message: "File quá lớn, vui lòng upload file nhỏ hơn 5MB" });
+        }
+
+        await messageController.sendFile(socket, data);
       } catch (error) {
-        console.error("Error handling send_image:", error);
-        socket.emit('error', { message: "Lỗi xử lý hình ảnh" });
+        console.error("Error handling send_file:", error);
+        socket.emit('error', { message: "Lỗi khi gửi file" });
       }
     });
+
+    // Gửi file private khi chưa tạo conversation
+    socket.on("send_private_file", async (data) => {
+      console.log(`Received private file from ${socket.user.username} to ${data.receiver_id}`);
+      try {
+          const fileMessage = await messageController.sendPrivateFile(socket, {
+              ...data,
+              conversation_id: data.conversation_id || null
+          });
+          
+          if (!data.conversation_id) {
+              await messageController.sendPrivateMessage(socket, {
+                  receiver_id: data.receiver_id,
+                  type: "file",
+                  message: `Đã gửi file: ${data.file_name}`,
+                  media: fileMessage.file_url,
+                  file_data: null // Không gửi lại file data
+              });
+          }
+      } catch (error) {
+          console.error("Error handling private file:", error);
+          socket.emit('error', { message: "Lỗi khi gửi file" });
+      }
+  });
 
     // Nhận tin nhắn
     socket.on("get_messages", async (data) => {
@@ -119,12 +148,12 @@ function setupSocket(server) {
     socket.on("send_private_message", async (data) => {
       console.log("Received first message data:", JSON.stringify(data));
       try {
-          await messageController.sendPrivateMessage(socket, data);
+        await messageController.sendPrivateMessage(socket, data);
       } catch (error) {
-          console.error("Error handling first message:", error);
-          socket.emit('error', { message: "Lỗi khi gửi tin nhắn đầu tiên" });
+        console.error("Error handling first message:", error);
+        socket.emit('error', { message: "Lỗi khi gửi tin nhắn đầu tiên" });
       }
-  });
+    });
 
     socket.on("typing", (data) => {
       socket.to(data.conversation_id).emit("user_typing", {

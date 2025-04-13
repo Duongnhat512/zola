@@ -1,5 +1,5 @@
 require("dotenv").config();
-const { s3 } = require("../config/aws-helper");
+const { s3 } = require("../utils/aws.helper");
 
 const randomString = numberCharacter => {
     return `${Math.random()
@@ -11,11 +11,21 @@ const randomString = numberCharacter => {
 const FILE_TYPE_MATCH = [
     "image/png",
     "image/jpeg",
-    "image/jpg"
+    "image/jpg",
+    "image/gif",
+    "video/mp3",
+    "video/mp4",
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-powerpoint",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "application/vnd.rar",
+    "application/zip",
 ]
 
 const uploadFile = async file => {
-    const filePath = `${randomString(4)}-${new Date().getTime()}-${file?.originalname}`;
+    const filePath = `file/${randomString(4)}-${new Date().getTime()}-${file?.originalname}`;
 
     if (FILE_TYPE_MATCH.indexOf(file.mimetype) === -1) {
         throw new Error(`File type ${file.originalname} is not supported`);
