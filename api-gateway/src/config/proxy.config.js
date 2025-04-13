@@ -1,4 +1,3 @@
-
 module.exports = {
-    "/api/auth": "http://localhost:5001",
-}
+  "/api/auth": "http://localhost:5001",
+};

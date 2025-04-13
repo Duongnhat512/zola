@@ -3,6 +3,7 @@ const axios = require("axios");
 const messageController = require("../controllers/message.controller");
 const conversationController = require("../controllers/conversation.controller");
 const { isAuth } = require("../middlewares/auth.middleware");
+const { addUser, removeUser } = require("../utils/online.helper");
 
 const userSocketMap = new Map();
 const onlineUsers = new Set();
@@ -27,9 +28,7 @@ function setupSocket(server) {
   io.on("connection", (socket) => {
     console.log(`User connected: ${socket.user.username}, UserID: ${socket.user.id}`);
 
-    // Lưu trữ kết nối user 
-    userSocketMap.set(socket.user.id, socket.id);
-    onlineUsers.add(socket.user.id);
+    addUser(socket.user.id, socket.id);
 
     // Thông báo cho các user khác về user online
     io.emit('user_online', {
@@ -95,16 +94,45 @@ function setupSocket(server) {
       }
     });
 
-    // Gửi hình ảnh
-    socket.on("send_image", async (data) => {
-      console.log("Received image data:", JSON.stringify(data));
+    // Gửi file
+    socket.on("send_file", async (data) => {
+      console.log(`Received file upload request from ${socket.user.username}`);
       try {
-        await messageController.sendImage(socket, data);
+        // Xử lý giới hạn kích thước file nếu cần
+        if (data.file_size && data.file_size > 50 * 1024 * 1024) { // 50MB
+          return socket.emit('error', { message: "File quá lớn, vui lòng upload file nhỏ hơn 5MB" });
+        }
+
+        await messageController.sendFile(socket, data);
       } catch (error) {
-        console.error("Error handling send_image:", error);
-        socket.emit('error', { message: "Lỗi xử lý hình ảnh" });
+        console.error("Error handling send_file:", error);
+        socket.emit('error', { message: "Lỗi khi gửi file" });
       }
     });
+
+    // Gửi file private khi chưa tạo conversation
+    socket.on("send_private_file", async (data) => {
+      console.log(`Received private file from ${socket.user.username} to ${data.receiver_id}`);
+      try {
+          const fileMessage = await messageController.sendPrivateFile(socket, {
+              ...data,
+              conversation_id: data.conversation_id || null
+          });
+          
+          if (!data.conversation_id) {
+              await messageController.sendPrivateMessage(socket, {
+                  receiver_id: data.receiver_id,
+                  type: "file",
+                  message: `Đã gửi file: ${data.file_name}`,
+                  media: fileMessage.file_url,
+                  file_data: null // Không gửi lại file data
+              });
+          }
+      } catch (error) {
+          console.error("Error handling private file:", error);
+          socket.emit('error', { message: "Lỗi khi gửi file" });
+      }
+  });
 
     // Nhận tin nhắn
     socket.on("get_messages", async (data) => {
@@ -114,6 +142,16 @@ function setupSocket(server) {
       } catch (error) {
         console.error("Error handling get_messages:", error);
         socket.emit('error', { message: "Lỗi xử lý tin nhắn" });
+      }
+    });
+
+    socket.on("send_private_message", async (data) => {
+      console.log("Received first message data:", JSON.stringify(data));
+      try {
+        await messageController.sendPrivateMessage(socket, data);
+      } catch (error) {
+        console.error("Error handling first message:", error);
+        socket.emit('error', { message: "Lỗi khi gửi tin nhắn đầu tiên" });
       }
     });
 
@@ -128,7 +166,7 @@ function setupSocket(server) {
     // Disconnect
     socket.on("disconnect", () => {
       console.log(`User disconnected: ${socket.id}, UserID: ${socket.user.id}`);
-      userSocketMap.delete(socket.user.id);
+      removeUser(socket.user.id, socket.id);
       io.emit('user_offline', { userId: socket.user.id });
       console.log(`Emitted user_offline for UserID: ${socket.user.id}`);
     });

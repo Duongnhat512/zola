@@ -1,10 +1,16 @@
 const { sendImage } = require("../controllers/message.controller");
 const { dynamodb } = require("../utils/aws.helper");
+const ConversationModel = require("./conversation.model");
 const { v4: uuidv4 } = require("uuid");
 
 const tableName = "messages"
 
 const MessageModel = {
+    /**
+     * Gửi text message
+     * @param {Object} message 
+     * @returns {Object} message
+     */
     sendMessage: async (message) => {
         const messageId = uuidv4();
         const params = {
@@ -14,7 +20,7 @@ const MessageModel = {
                 conversation_id: message.conversation_id,
                 sender_id: message.sender_id,
                 receiver_id: message.receiver_id,
-                type: "text",
+                type: message.type || "text",
                 message: message.message,
                 media: message.media || "",
                 status: message.status,
@@ -24,13 +30,22 @@ const MessageModel = {
             },
         };
         try {
-            await dynamodb.put(params).promise();
-            return message;
+            const data = await dynamodb.put(params).promise();
+            return {
+                message_id: messageId,
+                ...message,
+            };
         } catch (error) {
             console.error("Error sending message:", error);
             throw new Error("Error sending message");
         }
     },
+
+    /**
+     * Gửi image message
+     * @param {Object} message 
+     * @returns {Object} message
+     */
     sendImage: async (message) => {
         const messageId = uuidv4();
         const params = {
@@ -58,6 +73,11 @@ const MessageModel = {
         }
     },
     
+    /**
+     * Lấy danh sách tin nhắn trong cuộc hội thoại theo conversation_id
+     * @param {String} conversation_id 
+     * @returns 
+     */
     getMessages: async (conversation_id) => {
         const params = {
             TableName: tableName,
@@ -74,21 +94,21 @@ const MessageModel = {
             throw new Error("Error getting messages");
         }
     },
+
     deleteMessage: async (message_id) => {
         const params = {
             TableName: tableName,
-            Key: {
-                message_id: message_id,
-            },
+            IndexName: "message_id_index",
         };
         try {
             await dynamodb.delete(params).promise();
-            return { message: "Message deleted successfully" };
+            return { message: "Xóa tin nhắn thành công" };
         } catch (error) {
-            console.error("Error deleting message:", error);
-            throw new Error("Error deleting message");
+            console.error("Lỗi khi xóa tin nhắn:", error);
+            throw new Error("Lỗi khi xóa tin nhắn");
         }
     },
+
     updateMessage: async (message_id, updatedMessage) => {
         const params = {
             TableName: tableName,
@@ -107,27 +127,29 @@ const MessageModel = {
         };
         try {
             await dynamodb.update(params).promise();
-            return { message: "Message updated successfully" };
+            return { message: "Cập nhật tin nhắn thành công" };
         } catch (error) {
-            console.error("Error updating message:", error);
-            throw new Error("Error updating message");
+            console.error("Lỗi khi cập nhật tin nhắn:", error);
+            throw new Error("Lỗi khi cập nhật tin nhắn");
         }
     },
-    getMessageById: async (message_id) => {
-        const params = {
-            TableName: tableName,
-            Key: {
-                message_id: message_id,
-            },
-        };
-        try {
-            const data = await dynamodb.get(params).promise();
-            return data.Item;
-        } catch (error) {
-            console.error("Error getting message:", error);
-            throw new Error("Error getting message");
-        }
-    },
+
+    // getMessageById: async (message_id) => {
+    //     const params = {
+    //         TableName: tableName,
+    //         Key: {
+    //             message_id: message_id,
+    //         },
+    //     };
+    //     try {
+    //         const data = await dynamodb.get(params).promise();
+    //         return data.Item;
+    //     } catch (error) {
+    //         console.error("Error getting message:", error);
+    //         throw new Error("Error getting message");
+    //     }
+    // },
+    
     getMessagesByConversationId: async (conversation_id) => {
         const params = {
             TableName: tableName,
