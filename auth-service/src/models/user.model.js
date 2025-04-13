@@ -71,7 +71,7 @@ const UserModel = {
             },
             ReturnValues: "ALL_NEW",
         }
-    
+
         try {
             const data = await dynamodb.update(params).promise();
             return data.Attributes;
@@ -158,16 +158,21 @@ const UserModel = {
 
         await dynamodb.delete(params).promise();
     },
-    getUserById: async id => {
+    getUserById: async userId => {
         const params = {
             TableName: tableName,
             Key: {
-                id
+                id: userId
             }
         };
 
-        const data = await dynamodb.get(params).promise();
-        return data.Item;
+        try {
+            const data = await dynamodb.get(params).promise();
+            return data.Item;
+        } catch (error) {
+            console.error("Error getting user by id: ", error);
+            throw error;
+        }
     },
 }
 

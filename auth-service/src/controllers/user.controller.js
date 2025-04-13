@@ -1,4 +1,4 @@
-    const e = require('express');
+const e = require('express');
 const { s3, dynamoDB } = require('../utils/aws.helper');
 const UserModel = require('../models/user.model');
 
@@ -46,6 +46,31 @@ UserController.updateAvt = async (req, res) => {
         username: username,
         avt: avt
     });
+}
+
+UserController.getUserById = async (req, res) => {
+    const { id } = req.body;
+
+    try {
+        const data = await UserModel.getUserById(id);
+        if (!data) {
+            return res.status(400).send({ message: 'Người dùng không tồn tại.' });
+        }
+        return res.json({
+            status: 'success',
+            message: 'Lấy thông tin người dùng thành công',
+            user: {
+                username: data.username,
+                fullname: data.fullname,
+                dob: data.dob,
+                avt: data.avt,
+                gender: data.gender
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send({ message: 'Có lỗi xảy ra trong quá trình lấy thông tin người dùng.' });
+    }
 }
 
 exports.UserController = UserController;

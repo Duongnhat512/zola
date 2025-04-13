@@ -8,5 +8,6 @@ router.get('/profile', isAuth, async (req, res) => {
 });
 router.post('/update', isAuth, UserController.updateUser);
 router.post('/update-avt', isAuth, UserController.updateAvt);
+router.get("/get-user", isAuth, UserController.getUserById);
 
 module.exports = router;
