@@ -12,3 +12,13 @@ export const getConversation = async (id) => {
   }
 };
 
+
+export const getAllConversationById = async (id) => {
+  try {
+    const response = await axios.get(`/chat-service/conversations/get-conversations?user_id=${id}`);
+    return response;
+  } catch (error) {
+    console.error("Failed to get all conversation by ID", error);
+    throw error;
+  }
+}
