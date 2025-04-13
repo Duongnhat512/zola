@@ -4,6 +4,7 @@ import ChatWindow from "../../components/ChatApp/ChatWindow";
 import socket from "../../services/Socket";
 import { getAllConversationById } from "../../services/Conversation";
 import { useSelector } from "react-redux";
+import { getUserById } from "../../services/UserService";
 
 const HomeDetails = () => {
   const [selectedChat, setSelectedChat] = useState(null);
@@ -11,78 +12,13 @@ const HomeDetails = () => {
   const [input, setInput] = useState("");
   const [chats, setChats] = useState([
     {
-      user_id: "dbebb8ee-93c8-4d2e-a707-03fe75c54b42",
+      user_id: "c6c7efab-5a27-45bd-938e-b14b6e80f409",
       created_at: "2025-04-13T15:12:22.364Z",
       id: "f58979ec-f3b6-4b0a-8393-c06c94c8701f",
       conversation_id: "1cbc07fc-5918-4d46-9da3-e6b2418f49da",
     },
   ]);
   const user = useSelector((state) => state.user.user);
-  const chat = [
-    {
-      name: "Nguyễn Văn A",
-      msg: "Bạn đã nhận được tài liệu chưa? Đây là tài liệu rất quan trọng, vui lòng kiểm tra lại.",
-      time: "1 phút trước",
-      group: false,
-      unread: 2,
-    },
-    {
-      name: "Nhóm Dự Án ReactJS",
-      msg: "Mọi người nhớ hoàn thành task trước thứ 6 nhé! Đừng quên cập nhật tiến độ.",
-      time: "5 phút trước",
-      group: true,
-      unread: 8,
-    },
-    {
-      name: "Trần Thị B",
-      msg: "Cảm ơn bạn nhiều nhé! Hẹn gặp lại bạn vào tuần sau.",
-      time: "10 phút trước",
-      group: false,
-      unread: 0,
-    },
-    {
-      name: "Nhóm Học Tập",
-      msg: "Ai có thể giải bài tập này giúp mình không? Mình đang gặp khó khăn với bài số 3.",
-      time: "30 phút trước",
-      group: true,
-      unread: 3,
-    },
-    {
-      name: "Nguyễn Văn C",
-      msg: "Hôm nay bạn có rảnh không? Mình muốn mời bạn đi uống cà phê.",
-      time: "1 giờ trước",
-      group: false,
-      unread: 1,
-    },
-    {
-      name: "Nhóm Công Nghệ Mới",
-      msg: "Đừng quên buổi họp vào lúc 3 giờ chiều mai. Chúng ta sẽ thảo luận về dự án mới.",
-      time: "2 giờ trước",
-      group: true,
-      unread: 5,
-    },
-    {
-      name: "Phạm Văn D",
-      msg: "Tôi đã gửi email cho bạn rồi nhé. Vui lòng kiểm tra và phản hồi sớm.",
-      time: "5 giờ trước",
-      group: false,
-      unread: 0,
-    },
-    {
-      name: "Nhóm Thể Thao",
-      msg: "Cuối tuần này có trận bóng, ai tham gia không? Đăng ký sớm để chuẩn bị.",
-      time: "1 ngày trước",
-      group: true,
-      unread: 2,
-    },
-    {
-      name: "Lê Thị E",
-      msg: "Chúc bạn một ngày tốt lành! Hãy luôn giữ nụ cười trên môi.",
-      time: "2 ngày trước",
-      group: false,
-      unread: 0,
-    },
-  ];
   const messagesData = {
     "Nguyễn Văn A": Array.from({ length: 25 }, (_, i) => ({
       id: i + 1,
@@ -206,26 +142,13 @@ const HomeDetails = () => {
     setSelectedChat(chat);
     setMessages(messagesData[chat.name] || []);
   };
-  // const sendMessage = () => {
-  //   if (input.trim() === "") return;
-  //   setMessages([
-  //     ...messages,
-  //     {
-  //       id: messages.length + 1,
-  //       sender: "me",
-  //       text: input,
-  //       time: new Date().toLocaleTimeString([], {
-  //         hour: "2-digit",
-  //         minute: "2-digit",
-  //       }),
-  //     },
-  //   ]);
-  //   setInput("");
-  // };
+
   const fetchConversations = async () => {
     try {
       const response = await getAllConversationById(user.id); // Thay bằng URL API của bạn
+      console.log("Conversations:", response);
       if (response.status === "success") {
+        
         // setChats(response.conversations);
       } else {
         console.error("Lỗi khi lấy danh sách hội thoại:", response.message);
@@ -234,32 +157,35 @@ const HomeDetails = () => {
       console.error("Lỗi khi gọi API:", error);
     }
   };
+  const fetchUserDetails = async () => {
+    try {
+      const updatedChats = await Promise.all(
+        chats.map(async (chat) => {
+          console.log(chat);
+          
+          const response = await getUserById(chat.user_id); // Gọi API với user_id
+          console.log(response);
+          if (response.status === "success") {
+            return {
+              ...chat,
+              user:response.user
+            };
+          }
+          return chat; // Nếu lỗi, giữ nguyên dữ liệu cũ
+        })
+      );
+      console.log("Updated Chats:", updatedChats);
+      
+      setChats(updatedChats); // Cập nhật danh sách chats
+    } catch (error) {
+      console.error("Lỗi khi lấy thông tin người dùng:", error);
+    }
+  };
   useEffect(() => {
     fetchConversations();
-
-    socket.on("new_message", (message) => {
-      setMessages((prev) => [...prev, message]);
-    });
-
-    return () => {
-      socket.off("new_message");
-    };
+    fetchUserDetails()
   }, []);
-  const sendMessage = (content) => {
-    const msg = {
-      conversation_id: selectedChat?.conversation_id || "default-id",
-      receiver_id: selectedChat?.user_id || "default-receiver",
-      message: content,
-      type: "text",
-      status: "sent",
-    };
 
-    // socket.emit("send_message", msg);
-    // setMessages((prev) => [
-    //   ...prev,
-    //   { ...msg, sender: "me", time: new Date().toLocaleTimeString() },
-    // ]);
-  };
   return (
     <div className="flex h-screen w-full bg-gray-100">
       {/* <ChatSidebar
@@ -284,7 +210,6 @@ const HomeDetails = () => {
       <ChatWindow
         chat={selectedChat}
         messages={messages}
-        onSendMessage={sendMessage}
         input={input}
         setInput={setInput}
         setMessages={setMessages}
