@@ -1,19 +1,16 @@
 import React, { useState } from "react";
-import { Input, Avatar, Badge, Button } from "antd";
+import { Input, Avatar, Badge } from "antd";
 import {
   SearchOutlined,
   UserOutlined,
-  DownloadOutlined,
-  PlusOutlined,
-  GroupOutlined,
   UsergroupAddOutlined,
 } from "@ant-design/icons";
 import AddFriendModal from "./AddFriendModal";
 import AddGroupModal from "./AddGroupModal";
-import { UserGroupIcon } from "@heroicons/react/outline";
 
 const ChatSidebar = ({ chats, openChat }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isModalGroupVisible, setIsModalGroupVisible] = useState(false);
 
   const openModal = () => {
     setIsModalVisible(true);
@@ -22,7 +19,6 @@ const ChatSidebar = ({ chats, openChat }) => {
   const closeModal = () => {
     setIsModalVisible(false);
   };
-  const [isModalGroupVisible, setIsModalGroupVisible] = useState(false);
 
   const openModalGroup = () => {
     setIsModalGroupVisible(true);
@@ -61,23 +57,6 @@ const ChatSidebar = ({ chats, openChat }) => {
         )}
       </div>
 
-      {/* Notification */}
-      <div className="bg-blue-50 p-3 text-xs text-blue-700">
-        <div className="flex gap-2 items-start">
-          <DownloadOutlined className="mt-0.5 text-blue-500" />
-          <span>
-            Khi đăng nhập Zalo Web trên nhiều trình duyệt, một số trò chuyện sẽ
-            không đủ tin nhắn cũ.{" "}
-            <a
-              className="text-blue-500 font-semibold cursor-pointer hover:underline"
-              href="#"
-            >
-              Tải Zalo PC để xem đầy đủ tin nhắn
-            </a>
-          </span>
-        </div>
-      </div>
-
       {/* Chat List */}
       <div className="overflow-y-auto flex-1">
         {chats.map((chat, idx) => (
@@ -88,20 +67,27 @@ const ChatSidebar = ({ chats, openChat }) => {
           >
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-3">
-                <Badge count={chat.unread} size="small">
-                  <Avatar size="large" icon={<UserOutlined />} />
+                <Badge count={0} size="small">
+                  <Avatar
+                    size="large"
+                    src={chat.avt || "https://via.placeholder.com/150"}
+                    icon={!chat.avt && <UserOutlined />}
+                  />
                 </Badge>
                 <div className="w-48">
                   <div className="text-sm font-semibold leading-5 text-gray-800 truncate">
-                    {chat.name}
+                    {chat.fullname || "Người dùng"}
                   </div>
                   <div className="text-xs text-gray-500 truncate">
-                    {chat.msg}
+                    {chat.last_message || "Không có tin nhắn"}
                   </div>
                 </div>
               </div>
               <div className="text-xs text-gray-400 whitespace-nowrap">
-                {chat.time}
+                {new Date(chat.created_at).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
               </div>
             </div>
           </div>

@@ -1,12 +1,18 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import ChatSidebar from "../../components/ChatApp/ChatSidebar";
 import ChatWindow from "../../components/ChatApp/ChatWindow";
+import socket from "../../services/Socket";
+import { getAllConversationById } from "../../services/Conversation";
+import { useSelector } from "react-redux";
 
 const HomeDetails = () => {
   const [selectedChat, setSelectedChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const chats = [
+  const [chats, setChats] = useState([
+  ]);
+  const user = useSelector((state) => state.user.user);
+  const chat = [
     {
       name: "Nguyễn Văn A",
       msg: "Bạn đã nhận được tài liệu chưa? Đây là tài liệu rất quan trọng, vui lòng kiểm tra lại.",
@@ -194,31 +200,95 @@ const HomeDetails = () => {
     setSelectedChat(chat);
     setMessages(messagesData[chat.name] || []);
   };
-  const sendMessage = () => {
-    if (input.trim() === "") return;
-    setMessages([
-      ...messages,
-      {
-        id: messages.length + 1,
-        sender: "me",
-        text: input,
-        time: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      },
+  // const sendMessage = () => {
+  //   if (input.trim() === "") return;
+  //   setMessages([
+  //     ...messages,
+  //     {
+  //       id: messages.length + 1,
+  //       sender: "me",
+  //       text: input,
+  //       time: new Date().toLocaleTimeString([], {
+  //         hour: "2-digit",
+  //         minute: "2-digit",
+  //       }),
+  //     },
+  //   ]);
+  //   setInput("");
+  // };
+  const fetchConversations = async () => {
+    try {
+      const response = await getAllConversationById(user.id); // Thay bằng URL API của bạn
+      if (response.status === "success") {
+        setChats(response.conversations);
+      } else {
+        console.error(
+          "Lỗi khi lấy danh sách hội thoại:",
+          response.message
+        );
+      }
+    } catch (error) {
+      console.error("Lỗi khi gọi API:", error);
+    }
+  };
+  useEffect(() => {
+    fetchConversations();
+
+    // Lắng nghe sự kiện từ socket
+    socket.on("new_message", (message) => {
+      setMessages((prev) => [...prev, message]);
+    });
+
+    return () => {
+      socket.off("new_message");
+    };
+  }, []);
+  const sendMessage = (content) => {
+    const msg = {
+      conversation_id: selectedChat?.conversation_id || "default-id",
+      receiver_id: selectedChat?.user_id || "default-receiver",
+      message: content,
+      type: "text",
+      status: "sent",
+    };
+
+    socket.emit("send_message", msg);
+    setMessages((prev) => [
+      ...prev,
+      { ...msg, sender: "me", time: new Date().toLocaleTimeString() },
     ]);
-    setInput("");
   };
   return (
     <div className="flex h-screen w-full bg-gray-100">
-      <ChatSidebar chats={chats} openChat={openChat} />
+      {/* <ChatSidebar
+        onSelectChat={(chat) => {
+          setSelectedChat(chat);
+          // Gửi yêu cầu lấy tin nhắn cho hội thoại được chọn
+          socket.emit("get_messages", { conversation_id: chat.id });
+
+          socket.once("message_list", (data) => {
+            setMessages(data);
+          });
+        }}
+      />
       <ChatWindow
         selectedChat={selectedChat}
         messages={messages}
         input={input}
         setInput={setInput}
         sendMessage={sendMessage}
+      /> */}
+      <ChatSidebar chats={chats} openChat={openChat} />
+      <ChatWindow
+        chat={selectedChat}
+        messages={messages}
+        onSendMessage={sendMessage}
+        input={input}
+        setInput={setInput}
+        setMessages={setMessages}
+        setSelectedChat={setSelectedChat}
+        selectedChat={selectedChat}
+        setChats={setChats}
       />
     </div>
   );
