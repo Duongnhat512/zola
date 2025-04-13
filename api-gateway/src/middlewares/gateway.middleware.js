@@ -1,5 +1,7 @@
 const axios = require("axios");
-const { createProxyMiddleware: proxyMiddleware } = require('http-proxy-middleware');
+const {
+  createProxyMiddleware: proxyMiddleware,
+} = require("http-proxy-middleware");
 
 // HTTP proxy
 module.exports.createProxyMiddleware = (serviceUrl) => async (req, res) => {
@@ -34,14 +36,14 @@ module.exports.createWebSocketProxyMiddleware = (path, serviceUrl) => {
     target: serviceUrl,
     changeOrigin: true,
     ws: true,
-    pathRewrite: { [`^${path}`]: '' },
-    logLevel: 'debug',
+    pathRewrite: { [`^${path}`]: "" },
+    logLevel: "debug",
     onError: (err, req, res) => {
-      console.error('Proxy error:', err);
+      console.error("Proxy error:", err);
       if (res && res.writeHead) {
-        res.writeHead(500, {'Content-Type': 'text/plain'});
-        res.end('Proxy error: ' + err.message);
+        res.writeHead(500, { "Content-Type": "text/plain" });
+        res.end("Proxy error: " + err.message);
       }
-    }
+    },
   });
 };

@@ -1,6 +1,5 @@
 const express = require("express");
 const cors = require("cors");
-
 const app = express();
 
 app.use(
@@ -9,9 +8,9 @@ app.use(
     credentials: true, // Cho phép cookie được gửi từ client
   })
 );
-app.use(express.json());
+app.use(express.json()); // để đọc JSON body
 
-app.use("/users", require("./routes/friend.route"));
+app.use("/friends", require("./routes/friend.route"));
 
 // Health check route
 app.get("/", (req, res) => {

@@ -58,7 +58,7 @@ ConversationController.create = async (req, res) => {
 };
 
 ConversationController.get = async (req, res) => {
-  const { user_id } = req.body;
+  const { user_id } = req.query;
   try {
     const conversations = await ConversationModel.getConversations(user_id);
     res.status(200).json({
