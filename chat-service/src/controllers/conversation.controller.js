@@ -98,6 +98,8 @@ ConversationController.update = async (req, res) => {
 ConversationController.getConversationsByUserId = async (req, res) => {
   const { user_id } = req.query;
 
+  console.log("user_id", user_id);
+
   if (!user_id) {
     return res.status(400).json({ message: "Thiếu user_id" });
   }
@@ -115,7 +117,6 @@ ConversationController.getConversationsByUserId = async (req, res) => {
     console.error("Có lỗi khi lấy danh sách hội thoại:", error);
     res.status(500).json({ message: "Có lỗi khi lấy danh sách hội thoại" });
   }
-}
-
+};
 
 module.exports = ConversationController;
