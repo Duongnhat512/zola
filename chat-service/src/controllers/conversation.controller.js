@@ -95,4 +95,27 @@ ConversationController.update = async (req, res) => {
   }
 };
 
+ConversationController.getConversationsByUserId = async (req, res) => {
+  const { user_id } = req.query;
+
+  if (!user_id) {
+    return res.status(400).json({ message: "Thiếu user_id" });
+  }
+
+  try {
+    const conversations = await ConversationModel.getConversationByUserId(
+      user_id
+    );
+    res.status(200).json({
+      status: "success",
+      message: "Lấy danh sách hội thoại thành công",
+      conversations,
+    });
+  } catch (error) {
+    console.error("Có lỗi khi lấy danh sách hội thoại:", error);
+    res.status(500).json({ message: "Có lỗi khi lấy danh sách hội thoại" });
+  }
+}
+
+
 module.exports = ConversationController;

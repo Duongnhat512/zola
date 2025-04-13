@@ -7,6 +7,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/conversations", require("./routes/conversation.route"));
+app.use("/messages", require("./routes/message.route"));
 
 // Health check route
 app.get("/", (req, res) => {
