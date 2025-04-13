@@ -13,19 +13,32 @@ app.use(
 );
 app.use(express.json());
 
+// Service URL
+const services = {
+  authService: process.env.AUTH_SERVICE_URL || "http://localhost:5001",
+  chatService: process.env.CHAT_SERVICE_URL || "http://localhost:5002",
+  chatService: process.env.FRIEND_SERVICE_URL || "http://localhost:5003",
+};
 
 const serviceRoutes = {
-  "/api/v1/auth-service": process.env.AUTH_SERVICE_URL || "http://localhost:5001",
-  "/api/v1/chat-service": process.env.CHAT_SERVICE_URL || "http://localhost:5002",
+  "/api/v1/auth-service":
+    process.env.AUTH_SERVICE_URL || "http://localhost:5001",
+  "/api/v1/chat-service":
+    process.env.CHAT_SERVICE_URL || "http://localhost:5002",
+  "/api/v1/friend-service":
+    process.env.FRIEND_SERVICE_URL || "http://localhost:5003",
 };
 
 const {
-  createProxyMiddleware, setupWebSocketProxy,
-  createWebSocketProxyMiddleware
+  createProxyMiddleware,
+  setupWebSocketProxy,
+  createWebSocketProxyMiddleware,
 } = require("./src/middlewares/gateway.middleware");
 
-app.use("/api/v1/auth-service", createProxyMiddleware(serviceRoutes["/api/v1/auth-service"]));
-app.use("/api/v1/chat-service", createProxyMiddleware(serviceRoutes["/api/v1/chat-service"]));
+app.use(
+  "/api/v1/auth-service",
+  createProxyMiddleware(serviceRoutes["/api/v1/auth-service"])
+);
 
 for (const [path, serviceUrl] of Object.entries(serviceRoutes)) {
   app.use(path, createWebSocketProxyMiddleware(path, serviceUrl));
@@ -36,4 +49,6 @@ for (const [path, serviceUrl] of Object.entries(serviceRoutes)) {
 app.get("/", (req, res) => res.send("API Gateway is running..."));
 
 const PORT = process.env.PORT || 8888;
-server.listen(PORT, () => console.log(`API Gateway is running on port ${PORT}`));
+server.listen(PORT, () =>
+  console.log(`API Gateway is running on port ${PORT}`)
+);
