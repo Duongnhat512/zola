@@ -18,6 +18,7 @@ MessageController.sendMessage = async (socket, data) => {
         const savedMessage = await MessageModel.sendMessage(data)
         socket.emit('message_sent', savedMessage)
         socket.to(data.conversation_id).emit("new_message", savedMessage);
+        return savedMessage
     } catch (error) {
         console.error("Lỗi khi gửi tin nhắn:", error)
         socket.emit('error', { message: "Lỗi khi gửi tin nhắn" })
