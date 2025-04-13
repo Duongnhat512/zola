@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const FriendController = require("../controllers/friend.controller");
 const { isAuthExpress } = require("../middlewares/auth.middleware");
+const { route } = require("../app");
 
 // Tìm người dùng theo số điện thoại
 router.get("/find", isAuthExpress, FriendController.findUserByPhoneNumber);
@@ -21,5 +22,9 @@ router.get(
   isAuthExpress,
   FriendController.getFriendRequests
 );
-
+router.get(
+  "/sentRequests/:userId",
+  isAuthExpress,
+  FriendController.getSendFriendRequests
+);
 module.exports = router;
