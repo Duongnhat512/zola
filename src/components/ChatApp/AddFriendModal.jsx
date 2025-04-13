@@ -12,25 +12,55 @@ import {
   CalendarOutlined,
   IdcardOutlined,
 } from "@ant-design/icons";
+import { getUserSdt } from "../../services/UserService";
 
 const { Option } = Select;
 
 const AddFriendModal = ({ onClose, visible = true }) => {
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [step, setStep] = useState("search"); // "search" hoặc "info"
-
+  const [step, setStep] = useState("search");
+  const [error, setError] = useState("");
+  const [showMessage, setShowMessage] = useState(false);
+  const [userInfo, setUserInfo] = useState({}); // Thông tin người dùng tìm thấy
   const suggestedFriends = [
     { name: "Cường Repair", source: "Từ số điện thoại" },
     { name: "Minh Thư", source: "Từ số điện thoại" },
     { name: "Quang Hải", source: "Từ số điện thoại" },
   ];
   const handleSearch = () => {
-    // Chuyển sang bước hiển thị thông tin tài khoản
-    setStep("info");
+    const phoneRegex = /^(0|\+84)[1-9][0-9]{8}$/;
+    if (!phoneRegex.test(phoneNumber)) {
+      setError("Số điện thoại không hợp lệ!");
+      setShowMessage(true); // Hiển thị thông báo lỗi
+      setTimeout(() => setShowMessage(false), 3000); // Ẩn thông báo sau 3 giây
+      return;
+    }
+    setError("");
+    console.log("Tìm kiếm với số điện thoại:", phoneNumber);
+    handleGetUser();
   };
+  const handleGetUser = async () => {
+    try {
+      const response = await getUserSdt(phoneNumber);
+      if (response.code === 200) {
+        console.log("Thông tin người dùng:", response.user);
+        setUserInfo(response.user);
+        setStep("info");
+      } else {
+        console.error("Không tìm thấy người dùng với số điện thoại này.");
+        setError("Không tìm thấy người dùng với số điện thoại này.");
 
+        setShowMessage(true);
+        setTimeout(() => setShowMessage(false), 3000);
+      }
+    } catch (error) {
+      console.error("Lỗi khi lấy thông tin người dùng:", error);
+      setError("Không tìm thấy người dùng với số điện thoại này.");
+
+      setShowMessage(true);
+    }
+  };
   const handleBack = () => {
-    // Quay lại bước nhập số điện thoại
     setStep("search");
   };
 
@@ -73,11 +103,12 @@ const AddFriendModal = ({ onClose, visible = true }) => {
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 size="large"
-                className="rounded-lg"
+                className={`rounded-lg ${error ? "border-red-500" : ""}`}
                 prefix={
                   <PhoneOutlined className="text-gray-400 transform rotate-[95deg] transition-transform duration-300" />
                 }
               />
+              {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
             </div>
 
             {/* Suggested Friends */}
@@ -144,29 +175,41 @@ const AddFriendModal = ({ onClose, visible = true }) => {
               </button>
             </div>
           </div>
+
+          {/* Background */}
           <div
             className="bg-gray-100 rounded-lg p-2"
             style={{
-              backgroundImage: `url('https://via.placeholder.com/300')`, // Ảnh mặc định
+              backgroundImage: `url('${
+                userInfo?.avt || "https://via.placeholder.com/300"
+              }')`,
               backgroundSize: "cover",
               backgroundPosition: "center",
               width: "100%",
               height: "200px",
             }}
           ></div>
+
+          {/* Avatar và tên */}
           <div className="flex flex-col items-center -mt-10">
             <Avatar
               size={64}
-              src="https://i.pravatar.cc/150?img=12"
+              src={userInfo.avt || "https://via.placeholder.com/150"}
               className="border-2 border-white shadow"
             />
-            <p className="text-lg font-semibold mt-2">Trần Long</p>
+            <p className="text-lg font-semibold mt-2">
+              {userInfo.fullname || "N/A"}
+            </p>
           </div>
+
+          {/* Nút hành động */}
           <div className="flex justify-center mt-4 gap-3">
             <Button> Kết bạn </Button>
             <Button type="primary"> Nhắn tin </Button>
           </div>
+
           <Divider />
+
           {/* Thông tin cá nhân */}
           <div className="mt-6 px-4">
             <p className="text-gray-500 font-medium mb-1">Thông tin cá nhân</p>
@@ -175,17 +218,19 @@ const AddFriendModal = ({ onClose, visible = true }) => {
                 <UserOutlined />
                 Giới tính
               </span>
-              <span>Nam</span>
+              <span>{userInfo.gender === "male" ? "Nam" : "Nữ"}</span>
             </div>
             <div className="flex items-center justify-between border-b py-2">
               <span className="flex items-center gap-2 text-gray-600">
                 <CalendarOutlined />
                 Ngày sinh
               </span>
-              <span>05 tháng 09, 1977</span>
+              <span>{userInfo.dob || "N/A"}</span>
             </div>
           </div>
+
           <Divider />
+
           {/* Các hành động khác */}
           <div className="mt-2 px-4 space-y-3 text-sm">
             <div className="flex items-center gap-2 text-blue-500 cursor-pointer">

@@ -20,6 +20,7 @@ function App() {
       if (token) {
         try {
           const res = await decodedToken();
+          
           if (res?.user) {
             dispatch(login(res.user));
           }

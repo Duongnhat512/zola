@@ -54,3 +54,6 @@ export const registerUser = async (data) => {
 export const logoutUser = async (username) => {
   return await axios.post("/auth-service/auth/logout", { username });
 };
+export const getUserSdt = async (sdt) => {
+  return await axios.get(`/friend-service/users?phoneNumber=${sdt}`);
+}
