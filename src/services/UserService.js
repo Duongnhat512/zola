@@ -60,10 +60,13 @@ export const getUserSdt = async (sdt) => {
 
 export const getUserById = async (id) => {
   try {
-    const response = await axios.get(`/auth-service/me/get-user?id=${id}`);
+    const response = await axios.post(`/auth-service/me/get-user`, {
+      id: id,
+    });
     return response;
   } catch (error) {
     console.error("Failed to get user by ID", error);
     throw error;
   }
 };
+

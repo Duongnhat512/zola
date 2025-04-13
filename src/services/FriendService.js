@@ -40,14 +40,50 @@ export const createFriendRequest = async (userId, friendId) => {
   }
 };
 
-export const getSendFriendRequests = async (userId) => {
+export const getReceivedFriendRequests = async (userId) => {
   try {
     const response = await axios.get(
-      `/friend-service/friends/requests/sentRequests/${userId}`
+      `/friend-service/friends/sentRequests/${userId}`
     );
     return response;
   } catch (error) {
     console.error("Failed to get sent friend requests", error);
+    throw error;
+  }
+};
+
+export const acceptFriendRequest = async (userId, friendId) => {
+  try {
+    const response = await axios.put(
+      `/friend-service/friends/accept?user_id=${userId}&user_friend_id=${friendId}`
+    );
+    return response;
+  } catch (error) {
+    console.error("Failed to accept friend request", error);
+    throw error;
+  }
+};
+
+export const getListFriend = async (userId) => {
+  try {
+    const response = await axios.get(
+      `/friend-service/friends/listFriend/${userId}`
+    );
+    return response;
+  } catch (error) {
+    console.error("Failed to get friend list", error);
+    throw error;
+  }
+};
+
+export const rejectFriendRequest = async (userId, friendId) => {
+  try {
+    const response = await axios.put(
+      `/friend-service/friends/reject?user_id=${userId}&user_friend_id=${friendId}`
+    );
+    return response;
+  } catch (error) {
+    console.error("Failed to reject friend request", error);
     throw error;
   }
 };

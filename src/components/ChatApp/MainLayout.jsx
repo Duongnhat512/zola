@@ -10,11 +10,20 @@ import AddFriendModal from "./AddFriendModal";
 import AddGroupModal from "./AddGroupModal";
 import ChatWindow from "./ChatWindow";
 import FriendInvitations from "../../pages/Group/FriendInvitations";
+import FriendList from "../../pages/Group/FriendList";
 
 const MainLayout = () => {
   const [layout, setLayout] = useState("default"); // State to manage layout type
   const menuItems = [
-    { label: "Danh sách bạn bè", key: "1", icon: <UserOutlined /> },
+    {
+      label: "Danh sách bạn bè",
+      key: "1",
+      icon: <UserOutlined />,
+      onClick: () => {
+        // Handle click event for "Danh sách bạn bè"
+        setLayout("default");
+      },
+    },
     { label: "Danh sách nhóm và cộng đồng", key: "2", icon: <TeamOutlined /> },
     {
       label: "Lời mời kết bạn",
@@ -89,10 +98,12 @@ const MainLayout = () => {
       </div>
       {layout === "default" ? (
         <div className="flex-1 p-4 bg-gray-50">
-          <ChatWindow />
+          <FriendList />
         </div>
       ) : (
-        <FriendInvitations />
+        <div className="flex-1 p-4 bg-gray-50">
+          <FriendInvitations />
+        </div>
       )}
     </div>
   );

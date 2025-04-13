@@ -68,10 +68,10 @@ const AddFriendModal = ({ onClose, visible = true }) => {
   };
   const handleRequestFriend = async () => {
     try {
+      console.log(user.id, userInfo.id);
+
       const response = await createFriendRequest(user.id, userInfo.id);
-      console.log("====================================");
-      console.log(response);
-      console.log("====================================");
+
       if (response.code === 201) {
         console.log("Yêu cầu kết bạn đã được gửi thành công!");
         setStep("search"); // Quay lại bước tìm kiếm sau khi gửi yêu cầu
