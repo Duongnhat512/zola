@@ -3,7 +3,12 @@ const cors = require("cors");
 
 const app = express();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "exp://192.168.2.5:8081"], // Địa chỉ của client
+    credentials: true, // Cho phép cookie được gửi từ client
+  })
+);
 app.use(express.json());
 
 app.use("/users", require("./routes/friend.route"));
