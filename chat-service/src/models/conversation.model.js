@@ -1,3 +1,4 @@
+const { get } = require('../controllers/conversation.controller');
 const { dynamodb } = require('../utils/aws.helper');
 const { v4: uuidv4 } = require('uuid');
 
@@ -241,6 +242,25 @@ const ConversationModel = {
         } catch (error) {
             console.error("Có lỗi khi cập nhật hội thoại:", error);
             throw new Error("Có lỗi khi cập nhật hội thoại");
+        }
+    },
+
+    getConversationByUserId: async (userId) => {
+        const params = {
+            TableName: memberTableName,
+            IndexName: "userId-index",
+            KeyConditionExpression: "user_id = :userId",
+            ExpressionAttributeValues: {
+                ":userId": userId
+            }
+        };
+
+        try {
+            const result = await dynamodb.query(params).promise();
+            return result.Items;
+        } catch (error) {
+            console.error("Có lỗi khi lấy hội thoại:", error);
+            throw new Error("Có lỗi khi lấy hội thoại");
         }
     }
 };

@@ -85,6 +85,7 @@ const MessageModel = {
             ExpressionAttributeValues: {
                 ":conversation_id": conversation_id,
             },
+            
         };
         try {
             const data = await dynamodb.query(params).promise();
@@ -167,6 +168,7 @@ const MessageModel = {
             throw new Error("Error getting messages by conversation ID");
         }
     },
+
     getMessagesBySenderId: async (sender_id) => {
         const params = {
             TableName: tableName,
@@ -184,6 +186,7 @@ const MessageModel = {
             throw new Error("Error getting messages by sender ID");
         }
     },
+
     getMessagesByReceiverId: async (receiver_id) => {
         const params = {
             TableName: tableName,
@@ -199,6 +202,26 @@ const MessageModel = {
         } catch (error) {
             console.error("Error getting messages by receiver ID:", error);
             throw new Error("Error getting messages by receiver ID");
+        }
+    },
+
+    updateLastMessage: async (conversation_id, last_message_id) => {
+        const params = {
+            TableName: tableName,
+            Key: {
+                conversation_id: conversation_id,
+            },
+            UpdateExpression: "set last_message_id = :last_message_id",
+            ExpressionAttributeValues: {
+                ":last_message": last_message_id,
+            },
+        };
+        try {
+            await dynamodb.update(params).promise();
+            return { message: "Cập nhật tin nhắn thành công" };
+        } catch (error) {
+            console.error("Lỗi khi cập nhật tin nhắn:", error);
+            throw new Error("Lỗi khi cập nhật tin nhắn");
         }
     },
     
