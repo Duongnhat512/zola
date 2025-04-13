@@ -20,7 +20,7 @@ const MessageModel = {
                 conversation_id: message.conversation_id,
                 sender_id: message.sender_id,
                 receiver_id: message.receiver_id,
-                type: "text",
+                type: message.type || "text",
                 message: message.message,
                 media: message.media || "",
                 status: message.status,
@@ -94,9 +94,6 @@ const MessageModel = {
             throw new Error("Error getting messages");
         }
     },
-
-   
-
 
     deleteMessage: async (message_id) => {
         const params = {

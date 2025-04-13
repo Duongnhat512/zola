@@ -10,8 +10,8 @@ router.get("/profile", isAuth, async (req, res) => {
     user: req.user,
   });
 });
-router.post("/update", isAuth, UserController.updateUser);
-router.post("/update-avt", isAuth, UserController.updateAvt);
-router.get("/getUserById", UserController.getUserById);
+router.post('/update', isAuth, UserController.updateUser);
+router.post('/update-avt', isAuth, UserController.updateAvt);
+router.get("/get-user", isAuth, UserController.getUserById);
 
 module.exports = router;
