@@ -13,11 +13,6 @@ app.use(
 );
 app.use(express.json());
 
-// Service URL
-const services = {
-  authService: process.env.AUTH_SERVICE_URL || "http://localhost:5001",
-  chatService: process.env.CHAT_SERVICE_URL || "http://localhost:5002",
-};
 
 const serviceRoutes = {
   "/api/v1/auth-service": process.env.AUTH_SERVICE_URL || "http://localhost:5001",
@@ -30,6 +25,7 @@ const {
 } = require("./src/middlewares/gateway.middleware");
 
 app.use("/api/v1/auth-service", createProxyMiddleware(serviceRoutes["/api/v1/auth-service"]));
+app.use("/api/v1/chat-service", createProxyMiddleware(serviceRoutes["/api/v1/chat-service"]));
 
 for (const [path, serviceUrl] of Object.entries(serviceRoutes)) {
   app.use(path, createWebSocketProxyMiddleware(path, serviceUrl));
