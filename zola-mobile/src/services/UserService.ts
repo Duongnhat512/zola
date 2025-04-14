@@ -50,6 +50,7 @@ export const updateUser = async (username,fullname,dob,gender) => {
     throw error;
   }
 };
+
 export const registerUser = async (data) => {
   try {
     console.log("Registering user with data:", data);
@@ -85,7 +86,25 @@ export const refreshToken = async () => {
 };
 
 
+export const GetUserByUserName = async (username) => {
+  try {
+    const response = await axios.get("auth-service/me/get-user-by-username", {
+      params: { username },
+    });
+    console.log(response);
+    return response;
+  } catch (error) {
+    console.error("Lỗi khi lấy thông tin người dùng:", error);
+    throw error;
+  }
+};
 
+export const GetUserById = async (id) => {
+  const res = await axios.get(`auth-service/me/get-user`, {
+    params: { id },
+  });
+  return res;
+};
 export const sendOTPCode = async (phoneNumber) => {
   try {
     const response = await axios.post("/auth-service/auth/send-otp", {
