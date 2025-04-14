@@ -11,5 +11,9 @@ router.get(
 router.post("/create", ConversationController.create);
 // router.delete('/:id', isAuthExpress, ConversationController.delete);
 // router.put('/:id', isAuthExpress, ConversationController.update);
-
+router.get(
+  "/get-all-user-in-conversation",
+  isAuthExpress,
+  ConversationController.getAllUserInConversation
+);
 module.exports = router;

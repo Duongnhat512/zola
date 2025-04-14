@@ -46,11 +46,11 @@ ConversationController.leaveRoom = async (socket, data) => {
 ConversationController.create = async (req, res) => {
   try {
     console.log("req.body:", req.body);
-    
+
     if (!req.body.created_by) {
       return res.status(400).json({
         status: "error",
-        message: "Missing required field: created_by"
+        message: "Missing required field: created_by",
       });
     }
 
@@ -154,8 +154,10 @@ ConversationController.getAllUserInConversation = async (req, res) => {
     });
   } catch (error) {
     console.error("Có lỗi khi lấy danh sách thành viên hội thoại:", error);
-    res.status(500).json({ message: "Có lỗi khi lấy danh sách thành viên hội thoại" });
+    res
+      .status(500)
+      .json({ message: "Có lỗi khi lấy danh sách thành viên hội thoại" });
   }
-}
+};
 
 module.exports = ConversationController;
