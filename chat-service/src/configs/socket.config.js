@@ -179,6 +179,16 @@ function setupSocket(server) {
       });
     });
 
+    socket.on("delete_message", async (data) => {
+      console.log("Received delete_message data:", JSON.stringify(data));
+      try {
+        await messageController.deleteMessage(socket, data);
+      } catch (error) {
+        console.error("Error handling delete_message:", error);
+        socket.emit('error', { message: "Lỗi xử lý xóa tin nhắn" });
+      }
+    });
+
     // Disconnect
     socket.on("disconnect", async () => {
       console.log(`User disconnected: ${socket.id}, UserID: ${socket.user.id}`);
