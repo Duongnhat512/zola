@@ -18,7 +18,6 @@ function Register() {
   const handleSendOtp = async () => {
     try {
       let res = await sendOtp(phoneNumber);
-      console.log(res);
 
       if (res && res.status === "success") {
         setFormMessage("OTP đã được gửi thành công!");

@@ -142,11 +142,10 @@ const HomeDetails = () => {
 
   const fetchConversations = async (userId) => {
     try {
-      const response = await getAllConversationById(userId);
-      console.log("Conversations : Hehe", response);
-
+      const response = await getAllConversationById(user.id);
+      console.log("Conversations:", response);
       if (response.status === "success") {
-        setChats(response.all_members);
+        fetchUserDetails(response.all_members); // Gọi hàm fetchUserDetails với danh sách hội thoại
       } else {
         console.error("Lỗi khi lấy danh sách hội thoại:", response.message);
         return [];
@@ -156,36 +155,28 @@ const HomeDetails = () => {
       return [];
     }
   };
+  const fetchUserDetails = async (chatList) => {
+    console.log("Fetching user details...", chatList);
 
-  const fetchUserDetails = async (chats) => {
     try {
+      
       const updatedChats = await Promise.all(
-        chats.map(async (chat) => {
-          try {
-            const response = await getUserById(chat.list_user_id);
-            console.log(
-              `User details for chat ${chat.conversation_id}:`,
-              response
-            );
-
+        chatList.map(async (chat) => {
+          console.log("Fetching user details for chat:", chat.list_user_id[0]);
+          const response = await getUserById(
+            chat.list_user_id[0]
+          );
+          if (response.status === "success") {
             return {
               ...chat,
-              userDetails: response?.user || null,
-            };
-          } catch (error) {
-            console.error(
-              `Lỗi khi lấy thông tin người dùng cho chat ${chat.conversation_id}:`,
-              error
-            );
-            return {
-              ...chat,
-              userDetails: null,
+              user: response.user,
             };
           }
         })
       );
+      console.log("Updated Chats:", updatedChats);
 
-      return updatedChats;
+      setChats(updatedChats); // Cập nhật danh sách chats
     } catch (error) {
       console.error("Lỗi khi xử lý danh sách chats:", error);
       return chats;
@@ -193,18 +184,12 @@ const HomeDetails = () => {
   };
 
   useEffect(() => {
-    const fetchData = async () => {
-      const conversations = await fetchConversations(user.id);
-      const updatedChats = await fetchUserDetails(conversations);
-      setChats(updatedChats);
-    };
-
-    fetchData();
+    fetchConversations(); // Đợi fetchConversations hoàn tất
   }, []);
 
   return (
     <div className="flex h-screen w-full bg-gray-100">
-      <ChatSidebar chats={chats} openChat={openChat} />
+      <ChatSidebar chats={chats} openChat={openChat}/>
       <ChatWindow
         chat={selectedChat}
         messages={messages}

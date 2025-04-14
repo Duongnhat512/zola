@@ -27,7 +27,6 @@ const Home = () => {
   const [layout, setLayout] = useState("default"); // State to manage layout type
   // Redux state
   const isAuthenticated = useSelector((state) => state.user.authenticated);
-  useSelector((state) => console.log(state.user));
   const user = useSelector((state) => state.user.user);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const dispatch = useDispatch();
@@ -45,7 +44,6 @@ const Home = () => {
 
     try {
       const res = await logoutUser(user.username);
-      console.log(res);
       if (res) {
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");

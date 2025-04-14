@@ -14,7 +14,8 @@ import {
 } from "@ant-design/icons";
 import { getUserSdt } from "../../services/UserService";
 import { createFriendRequest } from "../../services/FriendService";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { setSelectedChat } from "../../redux/UserChatSlice";
 
 const { Option } = Select;
 
@@ -23,6 +24,7 @@ const AddFriendModal = ({ onClose, visible = true }) => {
   const [step, setStep] = useState("search");
   const [error, setError] = useState("");
   const [showMessage, setShowMessage] = useState(false);
+  const dispatch = useDispatch();
   const user = useSelector((state) => state.user.user);
   const [userInfo, setUserInfo] = useState({}); // Thông tin người dùng tìm thấy
   const suggestedFriends = [
@@ -39,14 +41,12 @@ const AddFriendModal = ({ onClose, visible = true }) => {
       return;
     }
     setError("");
-    console.log("Tìm kiếm với số điện thoại:", phoneNumber);
     handleGetUser();
   };
   const handleGetUser = async () => {
     try {
       const response = await getUserSdt(phoneNumber);
       if (response.code === 200) {
-        console.log("Thông tin người dùng:", response.user);
         setUserInfo(response.user);
         setStep("info");
       } else {
@@ -68,12 +68,10 @@ const AddFriendModal = ({ onClose, visible = true }) => {
   };
   const handleRequestFriend = async () => {
     try {
-      console.log(user.id, userInfo.id);
 
       const response = await createFriendRequest(user.id, userInfo.id);
 
       if (response.code === 201) {
-        console.log("Yêu cầu kết bạn đã được gửi thành công!");
         setStep("search"); // Quay lại bước tìm kiếm sau khi gửi yêu cầu
       } else {
         console.error("Không thể gửi yêu cầu kết bạn:", response.message);
@@ -85,7 +83,19 @@ const AddFriendModal = ({ onClose, visible = true }) => {
       console.error("Lỗi khi gửi yêu cầu kết bạn:", error);
     }
   };
-
+  const handleMessageClick = () => {
+    dispatch(
+      setSelectedChat({
+        chat: {
+          user_id: userInfo.id,
+          user: userInfo,
+          conversation_id: null, // Chưa có conversation_id
+        },
+        isFromAddFriendModal: true, // Đánh dấu mở từ AddFriendModal
+      })
+    );
+    onClose(); 
+  }
   return (
     <Modal
       title={null}
@@ -227,7 +237,7 @@ const AddFriendModal = ({ onClose, visible = true }) => {
           {/* Nút hành động */}
           <div className="flex justify-center mt-4 gap-3">
             <Button onClick={handleRequestFriend}> Kết bạn </Button>
-            <Button type="primary"> Nhắn tin </Button>
+            <Button type="primary" onClick={handleMessageClick}> Nhắn tin </Button>
           </div>
 
           <Divider />

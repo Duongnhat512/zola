@@ -16,7 +16,6 @@ function Login() {
   const dispatch = useDispatch();
   const isLoading = useSelector((state) => state.user.isLoading); // Lấy trạng thái loading từ Redux
   const authenticated = useSelector((state) => state.user.authenticated); // Lấy thông tin người dùng từ Redux
-  console.log(authenticated);
 
   const handleLogin = async (e) => {
     e.preventDefault();
