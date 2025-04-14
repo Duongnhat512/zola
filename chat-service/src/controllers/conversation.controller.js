@@ -45,6 +45,10 @@ ConversationController.leaveRoom = async (socket, data) => {
 
 ConversationController.create = async (req, res) => {
   try {
+    console.log("req.body", req.query);
+    // if (!req.body) {
+    //   return res.status(400).json({ message: "Thiếu thông tin hội thoại" });
+    // }
     const conversation = await ConversationModel.createConversation(req.body);
     res.status(201).json({
       status: "success",
