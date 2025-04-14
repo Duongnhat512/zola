@@ -212,20 +212,41 @@ const MessageModel = {
     },
     
     deleteMessageById: async (message_id) => {
-        const params = {
+        const queryParams = {
             TableName: tableName,
             IndexName: "message-id-index",
-            Key: {
-                message_id: message_id,
-            },
-            ConditionExpression: "attribute_exists(message_id)",
+            KeyConditionExpression: "message_id = :message_id",
+            ExpressionAttributeValues: {
+                ":message_id": message_id
+            }
         };
+        
         try {
-            await dynamodb.delete(params).promise();
-            return { message: "Message deleted successfully" };
+            const queryResult = await dynamodb.query(queryParams).promise();
+            if (queryResult.Items.length === 0) {
+                throw new Error("Không tìm thấy tin nhắn");
+            }
+            
+            const message = queryResult.Items[0];
+            
+            const updateParams = {
+                TableName: tableName,
+                Key: {
+                    conversation_id: message.conversation_id,
+                    message_id: message_id
+                },
+                UpdateExpression: "set is_deleted = :is_deleted, updated_at = :updated_at",
+                ExpressionAttributeValues: {
+                    ":is_deleted": true,
+                    ":updated_at": new Date().toISOString()
+                }
+            };
+            
+            await dynamodb.update(updateParams).promise();
+            return { message: "Đánh dấu xóa tin nhắn thành công" };
         } catch (error) {
-            console.error("Error deleting message:", error);
-            throw new Error("Error deleting message");
+            console.error("Lỗi khi xóa tin nhắn:", error);
+            throw new Error("Lỗi khi xóa tin nhắn");
         }
     }
 }

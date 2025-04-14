@@ -26,7 +26,7 @@ MessageController.sendMessage = async (socket, data) => {
       data.conversation_id,
       savedMessage.message_id
     );
-    
+
     socket.emit("message_sent", savedMessage);
     socket.to(data.conversation_id).emit("new_message", savedMessage);
 
@@ -145,17 +145,6 @@ MessageController.sendPrivateFile = async (socket, data) => {
   }
 }
 
-MessageController.deleteMessage = async (socket, data) => {
-  try {
-    const result = await MessageModel.deleteMessage(data.message_id);
-    socket.emit("message_deleted", result);
-    socket.broadcast.emit("message_deleted", result);
-  } catch (error) {
-    console.error("Lỗi khi xóa tin nhắn:", error);
-    socket.emit("error", { message: "Lỗi khi xóa tin nhắn" });
-  }
-};
-
 MessageController.updateMessage = async (socket, data) => {
   try {
     const message = await MessageModel.updateMessage(
@@ -268,5 +257,27 @@ MessageController.getConversationMessages = async (req, res) => {
   }
 };
 
+MessageController.deleteMessage = async (req, res) => {
+  const { message_id } = req.query;
+  if (!message_id) {
+    return res.status(400).json({ message: "Thiếu message_id" });
+  }
+  try {
+    const result = await MessageModel.deleteMessageById(message_id);
+
+    return res.status(200).json({
+      status: "success",
+      message: "Xóa tin nhắn thành công",
+      result,
+    });
+  } catch (error) {
+    console.error("Lỗi khi xóa tin nhắn:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Lỗi khi xóa tin nhắn",
+      error: error.message,
+    });
+  }
+};
 
 module.exports = MessageController;

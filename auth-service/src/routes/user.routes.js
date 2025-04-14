@@ -12,7 +12,7 @@ router.get("/profile", isAuth, async (req, res) => {
 });
 router.post("/update", isAuth, UserController.updateUser);
 router.post("/update-avt", isAuth, UserController.updateAvt);
-router.post("/get-user", isAuth, UserController.getUserById);
+router.get("/get-user", isAuth, UserController.getUserById);
 router.get("/get-user-by-username", isAuth, UserController.getUserByUsername);
 router.put("/update-status", isAuth, UserController.updateUserStatus);
 
