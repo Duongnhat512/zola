@@ -53,17 +53,15 @@ const ChatWindow = ({
       setMessages(formattedMessages);
     });
 
+    
+    return () => {
+      socket.off("list_messages");
+    };
+  }, [selectedChat?.conversation_id, selectedChat?.user_id, userMain.id]);
+  useEffect(() => {
     // Khi nhận tin nhắn mới từ server
-    socket.emit("new_message", (msg) => {
+    socket.on("new_message", (msg) => {
       console.log("New message received:", msg);
-
-      const isCurrentChat =
-        msg.sender_id === selectedChat.user_id ||
-        msg.receiver_id === selectedChat.user_id;
-      console.log("Is current chat:", isCurrentChat);
-
-      if (!isCurrentChat) return; // Nếu không phải đoạn chat hiện tại thì bỏ qua
-
       setMessages((prev) => [
         ...prev,
         {
@@ -82,10 +80,9 @@ const ChatWindow = ({
       ]);
     });
     return () => {
-      socket.off("list_messages");
       socket.off("new_message");
     };
-  }, [selectedChat?.conversation_id, selectedChat?.user_id, userMain.id]);
+  }, [userMain.id, selectedChat?.user_id]);
   const sendMessage = () => {
     if (!input.trim()) return;
     const msg = {
