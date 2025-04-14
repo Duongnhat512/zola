@@ -267,7 +267,7 @@ const ConversationModel = {
     getAllUserInConversation: async (conversationId) => {
         const params = {
             TableName: memberTableName,
-            IndexName: "conversationId-index",
+            IndexName: "conversation-id-index",
             KeyConditionExpression: "conversation_id = :conversationId",
             ExpressionAttributeValues: {
                 ":conversationId": conversationId

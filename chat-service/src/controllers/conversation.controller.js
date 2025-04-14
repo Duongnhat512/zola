@@ -119,16 +119,23 @@ ConversationController.getConversationsByUserId = async (req, res) => {
       user_id
     );
 
-    // const allMembers = []
-    // conversations.forEach(async (conversation) => {
-    //   const members = await ConversationModel.getAllUserInConversation(conversation.id)
-    //   allMembers.push(members)
-    // })
+    const allMembers = []
+    for (const conversation of conversations) {
+      const members = await ConversationModel.getAllUserInConversation(
+        conversation.conversation_id
+      );
+
+
+      allMembers.push({
+        ...conversation,
+        members,
+      });
+    }
 
     res.status(200).json({
       status: "success",
       message: "Lấy danh sách hội thoại thành công",
-      conversations,
+      allMembers,
     });
   } catch (error) {
     console.error("Có lỗi khi lấy danh sách hội thoại:", error);
