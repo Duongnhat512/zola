@@ -4,6 +4,7 @@ import ChatWindow from "../../components/ChatApp/ChatWindow";
 import socket from "../../services/Socket";
 import {
   getAllConversationById,
+  getAllMemberByConversationId,
   getConversation,
 } from "../../services/Conversation";
 import { useSelector } from "react-redux";
@@ -139,68 +140,70 @@ const HomeDetails = () => {
     setMessages(messagesData[chat.name] || []);
   };
 
-  const fetchConversations = async () => {
+  const fetchConversations = async (userId) => {
     try {
-      const response = await getAllConversationById(user.id); // Thay bằng URL API của bạn
-      console.log("Conversations:", response);
+      const response = await getAllConversationById(userId);
+      console.log("Conversations : Hehe", response);
+
       if (response.status === "success") {
-        setChats(response.conversations);
+        setChats(response.all_members);
       } else {
         console.error("Lỗi khi lấy danh sách hội thoại:", response.message);
+        return [];
       }
     } catch (error) {
-      console.error("Lỗi khi gọi API:", error);
+      console.error("Lỗi khi gọi API fetchConversations:", error);
+      return [];
     }
   };
-  const fetchUserDetails = async () => {
+
+  const fetchUserDetails = async (chats) => {
     try {
       const updatedChats = await Promise.all(
         chats.map(async (chat) => {
-          console.log(chat);
+          try {
+            const response = await getUserById(chat.list_user_id);
+            console.log(
+              `User details for chat ${chat.conversation_id}:`,
+              response
+            );
 
-          const response = await getUserById(chat.user_id); // Gọi API với user_id
-          console.log(response);
-          if (response.status === "success") {
             return {
               ...chat,
-              user: response.user,
+              userDetails: response?.user || null,
+            };
+          } catch (error) {
+            console.error(
+              `Lỗi khi lấy thông tin người dùng cho chat ${chat.conversation_id}:`,
+              error
+            );
+            return {
+              ...chat,
+              userDetails: null,
             };
           }
-          return chat; // Nếu lỗi, giữ nguyên dữ liệu cũ
         })
       );
-      console.log("Updated Chats:", updatedChats);
 
-      setChats(updatedChats); // Cập nhật danh sách chats
+      return updatedChats;
     } catch (error) {
-      console.error("Lỗi khi lấy thông tin người dùng:", error);
+      console.error("Lỗi khi xử lý danh sách chats:", error);
+      return chats;
     }
   };
+
   useEffect(() => {
-    fetchConversations();
-    fetchUserDetails();
+    const fetchData = async () => {
+      const conversations = await fetchConversations(user.id);
+      const updatedChats = await fetchUserDetails(conversations);
+      setChats(updatedChats);
+    };
+
+    fetchData();
   }, []);
 
   return (
     <div className="flex h-screen w-full bg-gray-100">
-      {/* <ChatSidebar
-        onSelectChat={(chat) => {
-          setSelectedChat(chat);
-          // Gửi yêu cầu lấy tin nhắn cho hội thoại được chọn
-          socket.emit("get_messages", { conversation_id: chat.id });
-
-          socket.once("message_list", (data) => {
-            setMessages(data);
-          });
-        }}
-      />
-      <ChatWindow
-        selectedChat={selectedChat}
-        messages={messages}
-        input={input}
-        setInput={setInput}
-        sendMessage={sendMessage}
-      /> */}
       <ChatSidebar chats={chats} openChat={openChat} />
       <ChatWindow
         chat={selectedChat}

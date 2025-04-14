@@ -26,3 +26,15 @@ export const getAllConversationById = async (id) => {
     throw error;
   }
 };
+
+export const getAllMemberByConversationId = async (id) => {
+  try {
+    const response = await axios.get(
+      `/chat-service/conversations/get-all-user-in-conversation?conversation_id=${id}`
+    );
+    return response;
+  } catch (error) {
+    console.error("Failed to get all members by conversation ID", error);
+    throw error;
+  }
+};

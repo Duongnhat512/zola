@@ -21,9 +21,13 @@ const ChatWindow = ({
   setMessages,
 }) => {
   const userMain = useSelector((state) => state.user.user);
+
   console.log("User Main:", userMain);
 
   useEffect(() => {
+    console.log("====================================");
+    console.log(selectedChat);
+    console.log("====================================");
     if (selectedChat?.conversation_id) {
       // Gửi yêu cầu lấy lịch sử tin nhắn qua socket
       socket.emit("get_messages", {
@@ -134,7 +138,9 @@ const ChatWindow = ({
             className="mr-3"
           />
           <div>
-            <h2 className="font-semibold">{selectedChat.user.fullname}</h2>
+            <h2 className="font-semibold">
+              {selectedChat.members[0].userDetails.fullname}
+            </h2>
             <p className="text-sm text-gray-500">Vừa truy cập</p>
           </div>
         </div>

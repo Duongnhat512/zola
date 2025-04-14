@@ -76,7 +76,7 @@ const ChatSidebar = ({ chats, openChat }) => {
                 </Badge>
                 <div className="w-48">
                   <div className="text-sm font-semibold leading-5 text-gray-800 truncate">
-                    {chat.user?.fullname || "Người dùng"}
+                    {chat.user?.name || "Người dùng"}
                   </div>
                   <div className="text-xs text-gray-500 truncate">
                     {chat.last_message || "Không có tin nhắn"}
