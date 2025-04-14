@@ -1,6 +1,4 @@
-const { sendImage } = require("../controllers/message.controller");
 const { dynamodb } = require("../utils/aws.helper");
-const ConversationModel = require("./conversation.model");
 const { v4: uuidv4 } = require("uuid");
 
 const tableName = "messages"
@@ -242,7 +240,7 @@ const MessageModel = {
                 }
             };
             
-            await dynamodb.update(updateParams).promise();
+            await dynamodb.put(updateParams).promise();
             return { message: "Đánh dấu xóa tin nhắn thành công" };
         } catch (error) {
             console.error("Lỗi khi xóa tin nhắn:", error);
