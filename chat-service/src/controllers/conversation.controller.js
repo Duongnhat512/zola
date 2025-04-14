@@ -138,9 +138,22 @@ ConversationController.getConversationsByUserId = async (req, res) => {
         conversation.conversation_id
       );
 
-      const last_message = await MessageModel.getMessageById(
-        last_message_id
-      );
+      let last_message = {}
+
+      if (!last_message_id) {
+        all_members.push({
+          conversation_id: conversation.conversation_id,
+          last_message: last_message,
+          list_user_id,
+        });
+        continue;
+      }else {
+        console.log("last_message_id", last_message_id);
+        last_message = await MessageModel.getMessageById(
+          last_message_id
+        );
+      }
+
 
       all_members.push({
         conversation_id: conversation.conversation_id,

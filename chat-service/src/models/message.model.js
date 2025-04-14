@@ -211,6 +211,23 @@ const MessageModel = {
         }
     },
     
+    deleteMessageById: async (message_id) => {
+        const params = {
+            TableName: tableName,
+            IndexName: "message-id-index",
+            Key: {
+                message_id: message_id,
+            },
+            ConditionExpression: "attribute_exists(message_id)",
+        };
+        try {
+            await dynamodb.delete(params).promise();
+            return { message: "Message deleted successfully" };
+        } catch (error) {
+            console.error("Error deleting message:", error);
+            throw new Error("Error deleting message");
+        }
+    }
 }
 
 module.exports = MessageModel;
