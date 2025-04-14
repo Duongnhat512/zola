@@ -141,8 +141,7 @@ const HomeDetails = () => {
       const response = await getAllConversationById(user.id);
       console.log("Conversations:", response);
       if (response.status === "success") {
-        setChats(response.conversations);
-        fetchUserDetails(response.conversations);
+        fetchUserDetails(response.all_members); // Gọi hàm fetchUserDetails với danh sách hội thoại
       } else {
         console.error("Lỗi khi lấy danh sách hội thoại:", response.message);
       }
@@ -151,17 +150,16 @@ const HomeDetails = () => {
     }
   };
   const fetchUserDetails = async (chatList) => {
-    console.log("Fetching user details...", chats);
+    console.log("Fetching user details...", chatList);
 
     try {
+      
       const updatedChats = await Promise.all(
         chatList.map(async (chat) => {
-          console.log(chat);
-
+          console.log("Fetching user details for chat:", chat.list_user_id[0]);
           const response = await getUserById(
-            "288345ba-5605-4528-9fe0-01bcf716cb84"
+            chat.list_user_id[0]
           );
-          console.log(response);
           if (response.status === "success") {
             return {
               ...chat,
@@ -184,7 +182,7 @@ const HomeDetails = () => {
 
   return (
     <div className="flex h-screen w-full bg-gray-100">
-      <ChatSidebar chats={chats} openChat={openChat} />
+      <ChatSidebar chats={chats} openChat={openChat}/>
       <ChatWindow
         chat={selectedChat}
         messages={messages}

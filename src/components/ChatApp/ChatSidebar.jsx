@@ -27,7 +27,8 @@ const ChatSidebar = ({ chats, openChat }) => {
   const closeModalGroup = () => {
     setIsModalGroupVisible(false);
   };
-
+  console.log("Chats:", chats);
+  
   return (
     <div className="w-1/4 border-r border-gray-300 flex flex-col bg-white shadow-lg " style={{width: "350px"}}>
       {/* Header */}
@@ -61,7 +62,7 @@ const ChatSidebar = ({ chats, openChat }) => {
       <div className="overflow-y-auto flex-1">
         {chats.map((chat) => (
           <div
-            key={chat.conversation_id}
+            key={chat?.conversation_id}
             className="px-4 py-3 border-b border-gray-100 hover:bg-gray-100 cursor-pointer transition-all duration-200"
             onClick={() => openChat(chat)}
           >
@@ -79,12 +80,12 @@ const ChatSidebar = ({ chats, openChat }) => {
                     {chat.user?.fullname || "Người dùng"}
                   </div>
                   <div className="text-xs text-gray-500 truncate">
-                    {chat.last_message || "Không có tin nhắn"}
+                    {chat?.last_message?.message || "Không có tin nhắn"}
                   </div>
                 </div>
               </div>
               <div className="text-xs text-gray-400 whitespace-nowrap">
-                {new Date(chat.created_at).toLocaleTimeString([], {
+                {new Date(chat?.last_message?.created_at).toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit",
                 })}

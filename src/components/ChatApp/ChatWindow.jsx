@@ -21,95 +21,118 @@ const ChatWindow = ({
   setMessages,
 }) => {
   const userMain = useSelector((state) => state.user.user);
-  console.log("User Main:", userMain);
-
   useEffect(() => {
-    if (selectedChat?.conversation_id) {
-      // Lắng nghe sự kiện `new_message`
-      socket.on("new_message", (msg) => {
-        console.log("New message received:", msg);
+    console.log("Selected chat:", selectedChat);
+    
+    if (!selectedChat?.conversation_id) return;
+    // Gửi yêu cầu lấy danh sách tin nhắn khi chọn đoạn chat
+    socket.emit("get_messages", {
+      conversation_id: selectedChat.conversation_id,
+    });
+    // Nhận danh sách tin nhắn
+    socket.on("list_messages", (data) => {
+      const dataSort = data.sort(
+        (a, b) => new Date(a.created_at) - new Date(b.created_at)
+      );
 
-        // Chỉ thêm tin nhắn nếu thuộc cuộc trò chuyện hiện tại
-        if (
-          msg.receiver_id === userMain.id ||
-          msg.receiver_id === selectedChat.user_id
-        ) {
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: `msg-${Date.now()}`, // Tạo ID tạm thời
-              sender: msg.receiver_id === userMain.id ? "other" : "me", // Xác định người gửi
-              avatar:
-                msg.receiver_id === userMain.id
-                  ? selectedChat.user.avt || "/default-avatar.jpg"
-                  : userMain.avatar || "/default-avatar.jpg",
-              text: msg.message,
-              time: new Date().toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              }),
-              status: msg.status || "sent", // Trạng thái tin nhắn
-            },
-          ]);
-        }
-      });
+      const formattedMessages = dataSort.map((msg) => ({
+        id: msg.message_id,
+        sender: msg.sender_id === userMain.id ? "me" : "other",
+        avatar:
+          msg.sender_id === userMain.id
+            ? userMain.avatar || "/default-avatar.jpg"
+            : selectedChat.user.avt || "/default-avatar.jpg",
+        text: msg.message,
+        time: new Date(msg.created_at).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      }));
 
-      // Dọn dẹp sự kiện khi component unmount hoặc khi conversation_id thay đổi
-      return () => {
-        socket.off("new_message");
-      };
-    }
-  }, [
-    selectedChat?.conversation_id,
-    setMessages,
-    userMain.id,
-  ]);
+      setMessages(formattedMessages);
+    });
+
+    // Khi nhận tin nhắn mới từ server
+    socket.emit("new_message", (msg) => {
+      console.log("New message received:", msg);
+
+      const isCurrentChat =
+        msg.sender_id === selectedChat.user_id ||
+        msg.receiver_id === selectedChat.user_id;
+      console.log("Is current chat:", isCurrentChat);
+
+      if (!isCurrentChat) return; // Nếu không phải đoạn chat hiện tại thì bỏ qua
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: msg.message_id,
+          sender: msg.sender_id === userMain.id ? "me" : "other",
+          avatar:
+            msg.sender_id === userMain.id
+              ? userMain.avatar || "/default-avatar.jpg"
+              : selectedChat.user.avt || "/default-avatar.jpg",
+          text: msg.message,
+          time: new Date(msg.created_at).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        },
+      ]);
+    });
+    return () => {
+      socket.off("list_messages");
+      socket.off("new_message");
+    };
+  }, [selectedChat?.conversation_id, selectedChat?.user_id, userMain.id]);
   const sendMessage = () => {
-    if (!input.trim()) return; // Không làm gì nếu input rỗng
+    if (!input.trim()) return;
 
     const msg = {
-      receiver_id: selectedChat?.user_id || "default-receiver", // ID người nhận
-      message: input, // Nội dung tin nhắn
-      type: "text", // Loại tin nhắn
-      status: "pending", // Trạng thái ban đầu là "pending"
+      receiver_id: selectedChat?.user_id || "default-receiver",
+      message: input,
+      type: "text",
+      status: "sent",
     };
-
-    // Gửi tin nhắn qua socket
     socket.emit("send_private_message", msg, (response) => {
       if (response.status === "success") {
         console.log("Message sent successfully:", response);
-        // Cập nhật trạng thái tin nhắn thành "sent"
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === msg.id ? { ...m, status: "sent", time: response.time } : m
-          )
-        );
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: msg.message_id,
+            sender: msg.sender_id === userMain.id ? "me" : "other",
+            avatar:
+              msg.sender_id === userMain.id
+                ? userMain.avatar || "/default-avatar.jpg"
+                : selectedChat.user.avt || "/default-avatar.jpg",
+            text: msg.message,
+            time: new Date(msg.created_at).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          },
+        ]);
       } else {
         console.error("Failed to send message:", response.error);
-        // Cập nhật trạng thái tin nhắn thành "failed"
-        setMessages((prev) =>
-          prev.map((m) => (m.id === msg.id ? { ...m, status: "failed" } : m))
-        );
       }
     });
-
-    // Cập nhật tin nhắn vào danh sách với trạng thái "pending"
     setMessages((prev) => [
       ...prev,
       {
         id: `msg-${Date.now()}`, // Tạo ID tạm thời cho tin nhắn
-        sender: "me", // Người gửi là bạn
+        sender: "me",
         avatar: userMain.avatar || "/default-avatar.jpg", // Avatar của người gửi
         text: input, // Nội dung tin nhắn
         time: new Date().toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
         }),
-        status: "pending", // Trạng thái ban đầu
+        status: "pending",
       },
     ]);
 
-    setInput(""); // Xóa nội dung trong ô nhập sau khi gửi
+    setInput("");
   };
 
   if (!selectedChat) {
@@ -126,13 +149,13 @@ const ChatWindow = ({
     );
   }
   console.log("Selected chat:", selectedChat);
-
+  
   return (
     <div className="flex-1 flex flex-col bg-white">
       <div className="bg-white p-4 shadow flex items-center justify-between">
         <div className="flex items-center">
           <Avatar
-            src={selectedChat.user.avt || "/default-avatar.jpg"}
+            src={selectedChat?.user?.avt || "/default-avatar.jpg"}
             size="large"
             className="mr-3"
           />
