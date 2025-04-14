@@ -44,7 +44,12 @@ const ChatSidebar = ({ chats, openChat }) => {
             onClick={openModal}
             className="text-gray-500 text-lg cursor-pointer hover:text-blue-500"
           />
-          {isModalVisible && <AddFriendModal onClose={closeModal} />}
+          {isModalVisible && (
+            <AddFriendModal
+              onClose={closeModal}
+              isModalVisible={isModalVisible}
+            />
+          )}
         </div>
         <div className="flex gap-2 ml-2" onClick={openModalGroup}>
           <UsergroupAddOutlined className="text-gray-500 text-lg cursor-pointer hover:text-blue-500" />

@@ -21,14 +21,17 @@ const ChatWindow = ({
   setMessages,
 }) => {
   const userMain = useSelector((state) => state.user.user);
+
   useEffect(() => {
     // console.log("Selected chat:", selectedChat);
 
     if (!selectedChat?.conversation_id) return;
+
     // Gửi yêu cầu lấy danh sách tin nhắn khi chọn đoạn chat
     socket.emit("get_messages", {
       conversation_id: selectedChat.conversation_id,
     });
+
     // Nhận danh sách tin nhắn
     socket.on("list_messages", (data) => {
       console.log("Received messages:", data);
@@ -39,10 +42,10 @@ const ChatWindow = ({
       const formattedMessages = dataSort.map((msg) => ({
         id: msg.message_id,
         sender: msg.sender_id === userMain.id ? "me" : "other",
-        avatar:
-          msg.sender_id === userMain.id
-            ? userMain.avatar || "/default-avatar.jpg"
-            : selectedChat.user.avt || "/default-avatar.jpg",
+        avatar: "/default-avatar.jpg",
+        // msg.sender_id === userMain.id
+        //   ? userMain.avatar || "/default-avatar.jpg"
+        //   : selectedChat.user.avt || "/default-avatar.jpg",
         text: msg.message,
         time: new Date(msg.created_at).toLocaleTimeString([], {
           hour: "2-digit",
@@ -53,17 +56,14 @@ const ChatWindow = ({
       setMessages(formattedMessages);
     });
 
+    return () => {
+      socket.off("list_messages");
+    };
+  }, [selectedChat?.conversation_id, selectedChat?.user_id, userMain.id]);
+  useEffect(() => {
     // Khi nhận tin nhắn mới từ server
-    socket.emit("new_message", (msg) => {
+    socket.on("new_message", (msg) => {
       console.log("New message received:", msg);
-
-      const isCurrentChat =
-        msg.sender_id === selectedChat.user_id ||
-        msg.receiver_id === selectedChat.user_id;
-      console.log("Is current chat:", isCurrentChat);
-
-      if (!isCurrentChat) return; // Nếu không phải đoạn chat hiện tại thì bỏ qua
-
       setMessages((prev) => [
         ...prev,
         {
@@ -82,10 +82,9 @@ const ChatWindow = ({
       ]);
     });
     return () => {
-      socket.off("list_messages");
       socket.off("new_message");
     };
-  }, [selectedChat?.conversation_id, selectedChat?.user_id, userMain.id]);
+  }, [userMain.id, selectedChat?.user_id]);
   const sendMessage = () => {
     if (!input.trim()) return;
     const msg = {
@@ -95,6 +94,9 @@ const ChatWindow = ({
       status: "sent",
     };
     socket.emit("send_private_message", msg, (response) => {
+      console.log("====================================");
+      console.log(msg + " " + userMain.id);
+      console.log("====================================");
       if (response.status === "success") {
         console.log("Message sent successfully:", response);
         setMessages((prev) => [
