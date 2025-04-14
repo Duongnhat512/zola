@@ -22,7 +22,7 @@ const ChatWindow = ({
 }) => {
   const userMain = useSelector((state) => state.user.user);
   useEffect(() => {
-    console.log("Selected chat:", selectedChat);
+    // console.log("Selected chat:", selectedChat);
     
     if (!selectedChat?.conversation_id) return;
     // Gửi yêu cầu lấy danh sách tin nhắn khi chọn đoạn chat
@@ -31,6 +31,7 @@ const ChatWindow = ({
     });
     // Nhận danh sách tin nhắn
     socket.on("list_messages", (data) => {
+      console.log("Received messages:", data);
       const dataSort = data.sort(
         (a, b) => new Date(a.created_at) - new Date(b.created_at)
       );
@@ -87,9 +88,8 @@ const ChatWindow = ({
   }, [selectedChat?.conversation_id, selectedChat?.user_id, userMain.id]);
   const sendMessage = () => {
     if (!input.trim()) return;
-
     const msg = {
-      receiver_id: selectedChat?.user_id || "default-receiver",
+      receiver_id: selectedChat?.list_user_id[0],
       message: input,
       type: "text",
       status: "sent",
@@ -148,8 +148,6 @@ const ChatWindow = ({
       </div>
     );
   }
-  console.log("Selected chat:", selectedChat);
-  
   return (
     <div className="flex-1 flex flex-col bg-white">
       <div className="bg-white p-4 shadow flex items-center justify-between">

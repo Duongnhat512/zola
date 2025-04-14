@@ -27,8 +27,6 @@ const ChatSidebar = ({ chats, openChat }) => {
   const closeModalGroup = () => {
     setIsModalGroupVisible(false);
   };
-  console.log("Chats:", chats);
-  
   return (
     <div className="w-1/4 border-r border-gray-300 flex flex-col bg-white shadow-lg " style={{width: "350px"}}>
       {/* Header */}
