@@ -7,7 +7,7 @@ const server = http.createServer(app);
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "exp://192.168.2.5:8081"], // Địa chỉ của client
+    origin: ["http://localhost:5173", "exp://192.168.2.5:8081"],
     credentials: true, // Cho phép cookie được gửi từ client
   })
 );

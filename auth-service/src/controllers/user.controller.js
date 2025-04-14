@@ -115,4 +115,32 @@ UserController.getUserByUsername = async (req, res) => {
 
 }
 
+UserController.updateUserStatus = async (req, res) => {
+  const { id, status } = req.body;
+
+  if (!id || !status) {
+    return res.status(400).send({ message: "Thiếu id hoặc status." });
+  }
+
+  try {
+    const data = await UserModel.updateUserStatus(id, status);
+    if (!data) {
+      return res.status(400).send({ message: "Người dùng không tồn tại." });
+    }
+    return res.json({
+      status: "success",
+      message: "Cập nhật trạng thái người dùng thành công",
+      user: {
+        id: id,
+        status: status,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send({
+      message: "Có lỗi xảy ra trong quá trình cập nhật trạng thái người dùng.",
+    });
+  }
+}
+
 exports.UserController = UserController;

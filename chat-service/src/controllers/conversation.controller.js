@@ -118,6 +118,13 @@ ConversationController.getConversationsByUserId = async (req, res) => {
     const conversations = await ConversationModel.getConversationByUserId(
       user_id
     );
+
+    // const allMembers = []
+    // conversations.forEach(async (conversation) => {
+    //   const members = await ConversationModel.getAllUserInConversation(conversation.id)
+    //   allMembers.push(members)
+    // })
+
     res.status(200).json({
       status: "success",
       message: "Lấy danh sách hội thoại thành công",
@@ -128,5 +135,27 @@ ConversationController.getConversationsByUserId = async (req, res) => {
     res.status(500).json({ message: "Có lỗi khi lấy danh sách hội thoại" });
   }
 };
+
+ConversationController.getAllUserInConversation = async (req, res) => {
+  const { conversation_id } = req.query;
+
+  if (!conversation_id) {
+    return res.status(400).json({ message: "Thiếu conversation_id" });
+  }
+
+  try {
+    const users = await ConversationModel.getAllUserInConversation(
+      conversation_id
+    );
+    res.status(200).json({
+      status: "success",
+      message: "Lấy danh sách thành viên hội thoại thành công",
+      users,
+    });
+  } catch (error) {
+    console.error("Có lỗi khi lấy danh sách thành viên hội thoại:", error);
+    res.status(500).json({ message: "Có lỗi khi lấy danh sách thành viên hội thoại" });
+  }
+}
 
 module.exports = ConversationController;

@@ -262,7 +262,27 @@ const ConversationModel = {
             console.error("Có lỗi khi lấy hội thoại:", error);
             throw new Error("Có lỗi khi lấy hội thoại");
         }
+    },
+
+    getAllUserInConversation: async (conversationId) => {
+        const params = {
+            TableName: memberTableName,
+            IndexName: "conversationId-index",
+            KeyConditionExpression: "conversation_id = :conversationId",
+            ExpressionAttributeValues: {
+                ":conversationId": conversationId
+            }
+        };
+
+        try {
+            const result = await dynamodb.query(params).promise();
+            return result.Items;
+        } catch (error) {
+            console.error("Có lỗi khi lấy danh sách thành viên hội thoại:", error);
+            throw new Error("Có lỗi khi lấy danh sách thành viên hội thoại");
+        }
     }
+
 };
 
 module.exports = ConversationModel;

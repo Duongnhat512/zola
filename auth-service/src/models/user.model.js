@@ -6,6 +6,12 @@ require("dotenv").config();
 const tableName = "users";
 
 const UserModel = {
+
+  /**
+   * Tạo user 
+   * @param {Object} userData 
+   * @returns 
+   */
   createUser: async (userData) => {
     const userId = uuidv4();
     const imageUrl = process.env.DEFAULT_AVT_URL;
@@ -29,6 +35,12 @@ const UserModel = {
     await dynamodb.put(params).promise();
     return userData;
   },
+
+  /**
+   * Lấy thông tin user bằng username
+   * @param {Object} username 
+   * @returns 
+   */
   getUser: async (username) => {
     const params = {
       TableName: tableName,
@@ -49,6 +61,12 @@ const UserModel = {
       throw error;
     }
   },
+
+  /**
+   * Cập nhật refresh token cho user
+   * @param {String} id 
+   * @param {String} refreshToken 
+   */
   updateRefreshToken: async (id, refreshToken) => {
     const params = {
       TableName: tableName,
@@ -63,6 +81,13 @@ const UserModel = {
 
     await dynamodb.update(params).promise();
   },
+
+  /**
+   * Cập nhật fullname, dob, gender cho user
+   * @param {Object} id 
+   * @param {Object} userData 
+   * @returns 
+   */
   updateUser: async (id, userData) => {
     const params = {
       TableName: tableName,
@@ -87,6 +112,13 @@ const UserModel = {
       throw error;
     }
   },
+
+  /**
+   * Cập nhật avt cho user
+   * @param {String} id 
+   * @param {String} avt 
+   * @returns 
+   */
   updateAvt: async (id, avt) => {
     const params = {
       TableName: tableName,
@@ -108,6 +140,13 @@ const UserModel = {
       throw error;
     }
   },
+
+  /**
+   * Đổi mật khẩu
+   * @param {String} id 
+   * @param {String} password 
+   * @returns 
+   */
   updatePassword: async (id, password) => {
     const params = {
       TableName: tableName,
@@ -129,6 +168,14 @@ const UserModel = {
       throw error;
     }
   },
+
+  /**
+   * Cập nhật OTP cho user
+   * @param {String} id 
+   * @param {String} otp 
+   * @param {*} expiryTime 
+   * @returns 
+   */
   updateOTP: async (id, otp, expiryTime) => {
     const params = {
       TableName: tableName,
@@ -151,6 +198,11 @@ const UserModel = {
       throw error;
     }
   },
+
+  /**
+   * Xóa user
+   * @param {String} id 
+   */
   deleteUser: async (id) => {
     const params = {
       TableName: tableName,
@@ -161,6 +213,12 @@ const UserModel = {
 
     await dynamodb.delete(params).promise();
   },
+
+  /**
+   * Lấy thông tin user theo id
+   * @param {String} userId 
+   * @returns 
+   */
   getUserById: async (userId) => {
     const params = {
       TableName: tableName,
@@ -177,6 +235,34 @@ const UserModel = {
       throw error;
     }
   },
+
+  /**
+   * Cập nhật trạng thái cho user
+   * @param {String} id 
+   * @param {String} status 
+   * @returns 
+   */
+  updateUserStatus: async (id, status) => {
+    const params = {
+      TableName: tableName,
+      Key: {
+        id,
+      },
+      UpdateExpression: "set status = :status",
+      ExpressionAttributeValues: {
+        ":status": status,
+      },
+      ReturnValues: "ALL_NEW",
+    };
+
+    try {
+      const data = await dynamodb.update(params).promise();
+      return data.Attributes;
+    } catch (error) {
+      console.error("Error updating user status: ", error);
+      throw error;
+    }
+  }
 };
 
 module.exports = UserModel;
