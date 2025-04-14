@@ -5,12 +5,23 @@ const http = require("http");
 const app = express();
 const server = http.createServer(app);
 
-app.use(
-  cors({
-    origin: ["http://localhost:5173", "exp://192.168.2.5:8081"],
-    credentials: true, // Cho phép cookie được gửi từ client
-  })
-);
+// Cho phép 2 origin cụ thể
+const allowedOrigins = [
+  'http://localhost:5173', // Web (Vite)
+  'http://localhost:8081'  // Mobile (React Native/Web dev khác)
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('❌ Not allowed by CORS: ' + origin));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true, // Nếu dùng cookie/token thì bật cái này
+}));
 app.use(express.json());
 
 // Service URL
