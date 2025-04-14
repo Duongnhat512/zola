@@ -45,11 +45,17 @@ ConversationController.leaveRoom = async (socket, data) => {
 
 ConversationController.create = async (req, res) => {
   try {
-    console.log("req.body", req.query);
-    // if (!req.body) {
-    //   return res.status(400).json({ message: "Thiếu thông tin hội thoại" });
-    // }
+    console.log("req.body:", req.body);
+    
+    if (!req.body.created_by) {
+      return res.status(400).json({
+        status: "error",
+        message: "Missing required field: created_by"
+      });
+    }
+
     const conversation = await ConversationModel.createConversation(req.body);
+
     res.status(201).json({
       status: "success",
       message: "Tạo hội thoại thành công",
@@ -100,9 +106,7 @@ ConversationController.update = async (req, res) => {
 };
 
 ConversationController.getConversationsByUserId = async (req, res) => {
-  const { user_id } = req.params;
-
-  console.log("user_id", user_id);
+  const { user_id } = req.query;
 
   console.log("user_id", user_id);
 

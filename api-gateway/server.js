@@ -17,7 +17,7 @@ app.use(express.json());
 const services = {
   authService: process.env.AUTH_SERVICE_URL || "http://localhost:5001",
   chatService: process.env.CHAT_SERVICE_URL || "http://localhost:5002",
-  chatService: process.env.FRIEND_SERVICE_URL || "http://localhost:5003",
+  friendService: process.env.FRIEND_SERVICE_URL || "http://localhost:5003",
 };
 
 const serviceRoutes = {
@@ -37,17 +37,16 @@ const {
 
 app.use(
   "/api/v1/auth-service",
-  createProxyMiddleware(serviceRoutes["/api/v1/auth-service"])
+  createProxyMiddleware(services.authService)
 );
 app.use(
   "/api/v1/friend-service",
-  createProxyMiddleware(serviceRoutes["/api/v1/friend-service"])
+  createProxyMiddleware(services.friendService)
 );
-
-for (const [path, serviceUrl] of Object.entries(serviceRoutes)) {
-  app.use(path, createWebSocketProxyMiddleware(path, serviceUrl));
-  console.log(`Setup proxy for ${path} -> ${serviceUrl} (supports WebSocket)`);
-}
+app.use(
+  "/api/v1/chat-service",
+  createProxyMiddleware(services.chatService)
+);
 
 // Health check
 app.get("/", (req, res) => res.send("API Gateway is running..."));
