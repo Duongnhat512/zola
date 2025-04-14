@@ -1,6 +1,4 @@
-const { sendImage } = require("../controllers/message.controller");
 const { dynamodb } = require("../utils/aws.helper");
-const ConversationModel = require("./conversation.model");
 const { v4: uuidv4 } = require("uuid");
 
 const tableName = "messages"
@@ -223,10 +221,7 @@ const MessageModel = {
         
         try {
             const queryResult = await dynamodb.query(queryParams).promise();
-            if (queryResult.Items.length === 0) {
-                throw new Error("Không tìm thấy tin nhắn");
-            }
-            
+
             const message = queryResult.Items[0];
             
             const updateParams = {
