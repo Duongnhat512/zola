@@ -17,6 +17,9 @@ import Setting  from '../screens/Setting';
 import EditProfile from '../screens/EditProfile';
 import Profile from '../screens/Profile';
 
+import ChatRoomScreen from '../screens/ChatRoomScreen';
+import MessagesScreen from '../screens/MessagesScreen';
+
 // Define navigation types
 export type RootStackParamList = {
   Welcome: undefined;
@@ -107,6 +110,8 @@ const AppNavigator: React.FC = () => {
           <Stack.Screen name="Edit" component={EditProfile} />
           <Stack.Screen name="Setting" component={Setting} />
           <Stack.Screen name="Welcome" component={WelcomeScreen} />
+          <Stack.Screen name="Messages" component={MessagesScreen} />
+          <Stack.Screen name="ChatRoom" component={ChatRoomScreen} /> 
         </Stack.Navigator>
       ) : (
         <AuthStack />

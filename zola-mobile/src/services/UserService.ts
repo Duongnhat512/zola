@@ -97,3 +97,14 @@ export const sendOTPCode = async (phoneNumber) => {
     throw error;
   }
 }
+
+
+export const getUserById = async (id) => {
+  try {
+    const response = await axios.get(`/auth-service/me/get-user?id=${id}`);
+    return response;
+  } catch (error) {
+    console.error("Failed to get user by ID", error);
+    throw error;
+  }
+};

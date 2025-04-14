@@ -1,9 +1,9 @@
 import { StyleSheet } from 'react-native';
 
-const styles = StyleSheet.create({
+export default StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFF',
   },
   header: {
     backgroundColor: "#006AF5",
@@ -26,65 +26,81 @@ const styles = StyleSheet.create({
   icon2: {
     width: 18,
     height: 18,
-    resizeMode: 'contain',
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    color: '#FFFFFF',
-    fontSize: 18,
+    tintColor: '#FFFFFF',
+    marginRight: 6,
   },
   headerIcons: {
     flexDirection: 'row',
-    alignItems: 'center',
+    gap: 10,
   },
   iconButton: {
-    marginLeft: 16,
+    marginLeft: 10,
   },
   tabContainer: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EBEBEB',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    marginTop: 10,
   },
   tab: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    position: 'relative',
+    marginRight: 20,
+    paddingBottom: 6,
   },
-  activeTab: {},
+  activeTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#0068FF',
+  },
   tabText: {
     fontSize: 16,
     color: '#888',
   },
   activeTabText: {
-    color: '#000',
-    fontWeight: '500',
+    color: '#0068FF',
+    fontWeight: 'bold',
   },
   activeTabIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    left: 16,
-    right: 16,
     height: 2,
-    backgroundColor: '#000',
+    backgroundColor: '#0068FF',
+    marginTop: 4,
   },
   filterContainer: {
-    flex: 1,
-    alignItems: 'flex-end',
-    paddingRight: 16,
-    justifyContent: 'center',
+    marginLeft: 'auto',
   },
   filterButton: {
-    padding: 5,
-  },
-  chatItem: {
-
+    padding: 4,
   },
   chatList: {
-    padding: 16,
-  }
+    paddingHorizontal: 15,
+    paddingTop: 10,
+  },
+  chatItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEE',
+  },
+  avatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 12,
+  },
+  chatInfo: {
+    flex: 1,
+  },
+  chatName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  chatMessage: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 2,
+  },
+  chatTime: {
+    fontSize: 12,
+    color: '#999',
+  },
 });
-
-export default styles; 
