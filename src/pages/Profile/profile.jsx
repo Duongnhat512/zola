@@ -38,7 +38,6 @@ const Profile = ({ isModalOpen, setModalOpen }) => {
     });
   };
   const formatDate = (dateString) => {
-    console.log(dateString);
     const [day, month, year] = dateString.split("/");
     // Ensure the date is properly formatted
     const date = new Date(`${year}-${month}-${day}`);

@@ -10,14 +10,7 @@ const HomeDetails = () => {
   const [selectedChat, setSelectedChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [chats, setChats] = useState([
-    {
-      user_id: "c6c7efab-5a27-45bd-938e-b14b6e80f409",
-      created_at: "2025-04-13T15:12:22.364Z",
-      id: "f58979ec-f3b6-4b0a-8393-c06c94c8701f",
-      conversation_id: "1cbc07fc-5918-4d46-9da3-e6b2418f49da",
-    },
-  ]);
+  const [chats, setChats] = useState([]);
   const user = useSelector((state) => state.user.user);
   const messagesData = {
     "Nguyễn Văn A": Array.from({ length: 25 }, (_, i) => ({
@@ -145,11 +138,11 @@ const HomeDetails = () => {
 
   const fetchConversations = async () => {
     try {
-      const response = await getAllConversationById(user.id); // Thay bằng URL API của bạn
+      const response = await getAllConversationById(user.id);
       console.log("Conversations:", response);
       if (response.status === "success") {
-        
-        // setChats(response.conversations);
+        setChats(response.conversations);
+        fetchUserDetails(response.conversations);
       } else {
         console.error("Lỗi khi lấy danh sách hội thoại:", response.message);
       }
@@ -157,55 +150,40 @@ const HomeDetails = () => {
       console.error("Lỗi khi gọi API:", error);
     }
   };
-  const fetchUserDetails = async () => {
+  const fetchUserDetails = async (chatList) => {
+    console.log("Fetching user details...", chats);
+
     try {
       const updatedChats = await Promise.all(
-        chats.map(async (chat) => {
+        chatList.map(async (chat) => {
           console.log(chat);
-          
-          const response = await getUserById(chat.user_id); // Gọi API với user_id
+
+          const response = await getUserById(
+            "288345ba-5605-4528-9fe0-01bcf716cb84"
+          );
           console.log(response);
           if (response.status === "success") {
             return {
               ...chat,
-              user:response.user
+              user: response.user,
             };
           }
           return chat; // Nếu lỗi, giữ nguyên dữ liệu cũ
         })
       );
       console.log("Updated Chats:", updatedChats);
-      
+
       setChats(updatedChats); // Cập nhật danh sách chats
     } catch (error) {
       console.error("Lỗi khi lấy thông tin người dùng:", error);
     }
   };
   useEffect(() => {
-    fetchConversations();
-    fetchUserDetails()
+    fetchConversations(); // Đợi fetchConversations hoàn tất
   }, []);
 
   return (
     <div className="flex h-screen w-full bg-gray-100">
-      {/* <ChatSidebar
-        onSelectChat={(chat) => {
-          setSelectedChat(chat);
-          // Gửi yêu cầu lấy tin nhắn cho hội thoại được chọn
-          socket.emit("get_messages", { conversation_id: chat.id });
-
-          socket.once("message_list", (data) => {
-            setMessages(data);
-          });
-        }}
-      />
-      <ChatWindow
-        selectedChat={selectedChat}
-        messages={messages}
-        input={input}
-        setInput={setInput}
-        sendMessage={sendMessage}
-      /> */}
       <ChatSidebar chats={chats} openChat={openChat} />
       <ChatWindow
         chat={selectedChat}

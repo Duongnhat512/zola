@@ -26,7 +26,6 @@ const FriendInvitations = () => {
             resSent.data.map(async (request) => {
               try {
                 const userDetail = await getUserById(request.user_friend_id);
-                console.log(userDetail);
 
                 return userDetail?.user || null; // Ensure safe access to data
               } catch (error) {
@@ -78,7 +77,7 @@ const FriendInvitations = () => {
   const handleAccept = async (id) => {
     try {
       const res = await acceptFriendRequest(user.id, id);
-      console.log(res);
+      (res);
 
       if (res.code === 200) {
         console.log("Accepted friend request successfully");

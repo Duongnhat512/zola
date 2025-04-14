@@ -25,11 +25,6 @@ export const createFriendRequest = async (userId, friendId) => {
     const response = await axios.post(
       `/friend-service/friends/request?user_id=${userId}&user_friend_id=${friendId}`
     );
-
-    console.log("====================================");
-    console.log(response);
-    console.log("====================================");
-
     return response;
   } catch (error) {
     console.error(

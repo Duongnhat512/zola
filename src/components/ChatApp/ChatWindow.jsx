@@ -25,50 +25,57 @@ const ChatWindow = ({
 
   useEffect(() => {
     if (selectedChat?.conversation_id) {
-      // Gửi yêu cầu lấy lịch sử tin nhắn qua socket
-      socket.emit("get_messages", {
-        conversation_id: selectedChat.conversation_id,
+      // Lắng nghe sự kiện `new_message`
+      socket.on("new_message", (msg) => {
+        console.log("New message received:", msg);
+
+        // Chỉ thêm tin nhắn nếu thuộc cuộc trò chuyện hiện tại
+        if (
+          msg.receiver_id === userMain.id ||
+          msg.receiver_id === selectedChat.user_id
+        ) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `msg-${Date.now()}`, // Tạo ID tạm thời
+              sender: msg.receiver_id === userMain.id ? "other" : "me", // Xác định người gửi
+              avatar:
+                msg.receiver_id === userMain.id
+                  ? selectedChat.user.avt || "/default-avatar.jpg"
+                  : userMain.avatar || "/default-avatar.jpg",
+              text: msg.message,
+              time: new Date().toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+              status: msg.status || "sent", // Trạng thái tin nhắn
+            },
+          ]);
+        }
       });
-  
-      // Lắng nghe sự kiện trả về danh sách tin nhắn
-      socket.on("list_messages", (data) => {
-        console.log("Received messages:", data);
-  
-        const formattedMessages = data.map((msg) => ({
-          id: msg.message_id,
-          sender: msg.sender_id === userMain.id ? "me" : "other", // So sánh với userMain.id
-          avatar:
-            msg.sender_id === userMain.id
-              ? userMain.avatar || "/default-avatar.jpg" // Avatar của bạn
-              : selectedChat.user.avt || "/default-avatar.jpg", // Avatar của người nhận
-          text: msg.message,
-          time: new Date(msg.created_at).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        }));
-  
-        setMessages(formattedMessages);
-      });
-  
+
+      // Dọn dẹp sự kiện khi component unmount hoặc khi conversation_id thay đổi
       return () => {
-        socket.off("list_messages");
+        socket.off("new_message");
       };
     }
-  }, [selectedChat?.conversation_id, setMessages, userMain.id]);
+  }, [
+    selectedChat?.conversation_id,
+    setMessages,
+    userMain.id,
+  ]);
   const sendMessage = () => {
     if (!input.trim()) return; // Không làm gì nếu input rỗng
-  
+
     const msg = {
-      conversation_id: selectedChat?.conversation_id || "default-id", // ID cuộc trò chuyện
       receiver_id: selectedChat?.user_id || "default-receiver", // ID người nhận
       message: input, // Nội dung tin nhắn
       type: "text", // Loại tin nhắn
       status: "pending", // Trạng thái ban đầu là "pending"
     };
-  
+
     // Gửi tin nhắn qua socket
-    socket.emit("send_message", msg, (response) => {
+    socket.emit("send_private_message", msg, (response) => {
       if (response.status === "success") {
         console.log("Message sent successfully:", response);
         // Cập nhật trạng thái tin nhắn thành "sent"
@@ -85,7 +92,7 @@ const ChatWindow = ({
         );
       }
     });
-  
+
     // Cập nhật tin nhắn vào danh sách với trạng thái "pending"
     setMessages((prev) => [
       ...prev,
@@ -101,7 +108,7 @@ const ChatWindow = ({
         status: "pending", // Trạng thái ban đầu
       },
     ]);
-  
+
     setInput(""); // Xóa nội dung trong ô nhập sau khi gửi
   };
 
