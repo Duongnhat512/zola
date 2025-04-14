@@ -3,12 +3,14 @@ const cors = require("cors");
 
 const app = express();
 
-app.use(cors({
-  origin: "http://localhost:5173",
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Authorization", "Content-Type"],
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Authorization", "Content-Type"],
+    credentials: true,
+  })
+);
 
 app.use(express.json());
 

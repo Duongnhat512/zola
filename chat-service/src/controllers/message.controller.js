@@ -251,11 +251,22 @@ MessageController.getConversationMessages = async (req, res) => {
   const { conversation_id } = req.params;
   try {
     const messages = await MessageModel.getMessages(conversation_id);
+
+    // Gửi dữ liệu về client HTTP (REST API)
+    res.status(200).json(messages);
+
+    // Gửi thêm qua socket nếu cần
     socket.emit("get_conversation_messages", messages);
   } catch (error) {
     console.error("Lỗi khi nhận tin nhắn:", error);
+
+    // Gửi lỗi về HTTP response
+    res.status(500).json({ message: "Lỗi khi nhận tin nhắn" });
+
+    // Gửi thêm lỗi qua socket nếu cần
     socket.emit("error", { message: "Lỗi khi nhận tin nhắn" });
   }
 };
+
 
 module.exports = MessageController;

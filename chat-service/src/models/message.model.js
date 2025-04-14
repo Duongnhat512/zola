@@ -79,14 +79,18 @@ const MessageModel = {
      * @returns 
      */
     getMessages: async (conversation_id) => {
+        if (!conversation_id) {
+            throw new Error("conversation_id is required");
+        }
+    
         const params = {
             TableName: tableName,
             KeyConditionExpression: "conversation_id = :conversation_id",
             ExpressionAttributeValues: {
                 ":conversation_id": conversation_id,
             },
-            
         };
+    
         try {
             const data = await dynamodb.query(params).promise();
             return data.Items;

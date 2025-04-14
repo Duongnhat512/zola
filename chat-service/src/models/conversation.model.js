@@ -27,7 +27,7 @@ const ConversationModel = {
     },
 
     /**
-     * 
+     * Tạo conversation
      * @param {Object} conversation 
      * @returns {Object} conversation
      */
@@ -38,7 +38,7 @@ const ConversationModel = {
             Item: {
                 id: conversation.id,
                 created_by: conversation.created_by,
-                name: conversation.name,
+                name: conversation.name || "",
                 description: conversation.description,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
