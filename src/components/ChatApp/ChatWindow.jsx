@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { SmileOutlined, SendOutlined } from "@ant-design/icons";
-import { Input, Avatar, Button } from "antd";
+import { Input, Avatar, Button, Dropdown } from "antd";
 import {
   UserOutlined,
   SearchOutlined,
@@ -21,6 +21,9 @@ const ChatWindow = ({
   setMessages,
 }) => {
   const selectedChatRef = useRef();
+  const [emojiList, setEmojiList] = useState({});
+  const [isEmojiPickerVisible, setIsEmojiPickerVisible] = useState(false);
+
   useEffect(() => {
     selectedChatRef.current = selectedChat;
   }, [selectedChat]);
@@ -82,11 +85,53 @@ const ChatWindow = ({
         },
       ]);
     });
-  
+
     return () => {
       socket.off("new_message");
     };
   }, [userMain.id]);
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+  useEffect(() => {
+    // Gọi API để lấy danh sách emoji
+    const fetchEmojis = async () => {
+      try {
+        const response = await fetch("https://api.github.com/emojis");
+        const data = await response.json();
+        setEmojiList(data);
+      } catch (error) {
+        console.error("Failed to fetch emojis:", error);
+      }
+    };
+
+    fetchEmojis();
+  }, []);
+  const addEmojiToInput = (emojiUrl) => {
+    const emojiUnicode = String.fromCodePoint(
+      ...emojiUrl
+        .split("/")
+        .pop()
+        .split(".")[0]
+        .split("-")
+        .map((hex) => parseInt(hex, 16))
+    );
+    setInput((prev) => prev + emojiUnicode);
+    setIsEmojiPickerVisible(false);
+  };
+  const emojiDropdown = (
+    <div className="grid grid-cols-8 gap-2 p-2 bg-white shadow-lg rounded-lg max-h-64 overflow-y-auto">
+      {Object.entries(emojiList).map(([name, url]) => (
+        <img
+          key={name}
+          src={url}
+          alt={name}
+          className="w-8 h-8 cursor-pointer"
+          onClick={() => addEmojiToInput(url)} // Thêm emoji Unicode vào Input
+        />
+      ))}
+    </div>
+  );
   const sendMessage = () => {
     if (!input.trim()) return;
     const msg = {
@@ -143,9 +188,7 @@ const ChatWindow = ({
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   };
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+
   if (!selectedChat) {
     return (
       <div className="flex items-center justify-center flex-col text-center flex-1">
@@ -159,6 +202,8 @@ const ChatWindow = ({
       </div>
     );
   }
+
+
   return (
     <div className="flex-1 flex flex-col bg-white">
       <div className="bg-white p-4 shadow flex items-center justify-between">
@@ -234,9 +279,16 @@ const ChatWindow = ({
           <button className="hover:text-blue-500" title="Gửi ảnh">
             <PictureOutlined style={{ fontSize: "20px" }} />
           </button>
-          <button className="hover:text-blue-500" title="Gửi sticker">
-            <SmileOutlined style={{ fontSize: "20px" }} />
-          </button>
+          <Dropdown
+            overlay={emojiDropdown}
+            trigger={["click"]}
+            visible={isEmojiPickerVisible}
+            onVisibleChange={(visible) => setIsEmojiPickerVisible(visible)}
+          >
+            <button className="hover:text-blue-500" title="Chọn Emoji">
+              <SmileOutlined style={{ fontSize: "20px" }} />
+            </button>
+          </Dropdown>
           <button className="hover:text-blue-500" title="Gửi file">
             <PaperClipOutlined style={{ fontSize: "20px" }} />
           </button>
