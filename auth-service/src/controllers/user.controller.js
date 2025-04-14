@@ -93,11 +93,19 @@ UserController.getUserByUsername = async (req, res) => {
     if (!user) {
       return res.status(400).send({ message: "Người dùng không tồn tại." });
     }
-    return {
+    return res.json({
       status: "success",
       message: "Lấy thông tin người dùng thành công",
-      user
-    }
+      user: {
+        id: user.id,
+        phone: user.phone,
+        avt: user.avt,
+        fullname: user.fullname,
+        dob: user.dob,
+        gender: user.dob,
+        status: user.status,
+      }
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).send({
