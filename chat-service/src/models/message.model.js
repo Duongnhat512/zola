@@ -3,6 +3,8 @@ const { v4: uuidv4 } = require("uuid");
 
 const tableName = "messages"
 
+const hiddenMessageTable = "hidden_messages"
+
 const MessageModel = {
     /**
      * Gửi text message
@@ -243,7 +245,44 @@ const MessageModel = {
             console.error("Lỗi khi xóa tin nhắn:", error);
             throw new Error("Lỗi khi xóa tin nhắn");
         }
-    }
+    },
+
+    getHiddenMessages: async (user_id) => {
+        const params = {
+            TableName: hiddenMessageTable,
+            KeyConditionExpression: "user_id = :user_id",
+            ExpressionAttributeValues: {
+                ":user_id": user_id,
+            },
+        };
+    
+        try {
+            const data = await dynamodb.query(params).promise();
+            return data.Items;
+        } catch (error) {
+            console.error("Error getting hidden messages:", error);
+            throw new Error("Error getting hidden messages");
+        }
+    },
+
+    setHiddenMessage: async (user_id, message_id) => {
+        const params = {
+            TableName: hiddenMessageTable,
+            Item: {
+                user_id: user_id,
+                message_id: message_id,
+                created_at: new Date().toISOString(),
+            },
+        };
+    
+        try {
+            await dynamodb.put(params).promise();
+            return { message: "Ẩn tin nhắn thành công" };
+        } catch (error) {
+            console.error("Error hiding message:", error);
+            throw new Error("Error hiding message");
+        }
+    },
 }
 
 module.exports = MessageModel;

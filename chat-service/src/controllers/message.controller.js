@@ -280,4 +280,26 @@ MessageController.deleteMessage = async (req, res) => {
   }
 };
 
+MessageController.setHiddenMessage = async (req, res) => {
+  const { user_id, message_id } = req.body;
+  if (!user_id || !message_id) {
+    return res.status(400).json({ message: "Thiếu user_id hoặc message_id" });
+  }
+  try {
+    const result = await MessageModel.setHiddenMessage(user_id, message_id);
+    return res.status(200).json({
+      status: "success",
+      message: "Ẩn tin nhắn thành công",
+      result,
+    });
+  } catch (error) {
+    console.error("Lỗi khi đánh dấu ẩn:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Lỗi khi đánh dấu ẩn",
+      error: error.message,
+    });
+  }
+}
+
 module.exports = MessageController;
