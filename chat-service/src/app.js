@@ -3,25 +3,16 @@ const cors = require("cors");
 
 const app = express();
 
-<<<<<<< HEAD
 app.use(
   cors({
-    origin: "*", // Chấp nhận tất cả nguồn
+    origin: "http://localhost:5173",
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Authorization", "Content-Type"],
     credentials: true,
   })
 );
-=======
-app.use(cors({
-  origin: "http://localhost:5173",
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Authorization", "Content-Type"],
-  credentials: true,
-}));
 
 app.use(express.json());
->>>>>>> 0e988d70127c0c86f7b8416abb0f821d64b327c4
 
 // Middleware để parse body
 app.use(express.json()); // Parse JSON request body
