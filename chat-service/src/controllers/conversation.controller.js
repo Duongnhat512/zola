@@ -96,7 +96,9 @@ ConversationController.update = async (req, res) => {
 };
 
 ConversationController.getConversationsByUserId = async (req, res) => {
-  const { user_id } = req.query;
+  const { user_id } = req.params;
+
+  console.log("user_id", user_id);
 
   if (!user_id) {
     return res.status(400).json({ message: "Thiếu user_id" });

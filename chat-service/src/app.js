@@ -9,6 +9,7 @@ app.use(cors({
   allowedHeaders: ["Authorization", "Content-Type"],
   credentials: true,
 }));
+
 app.use(express.json());
 
 app.use("/conversations", require("./routes/conversation.route"));
