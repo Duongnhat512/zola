@@ -70,15 +70,14 @@ UserController.getUserById = async (req, res) => {
         dob: data.dob,
         avt: data.avt,
         gender: data.gender,
+        id: data.id,
       },
     });
   } catch (error) {
     console.error(error);
-    return res
-      .status(500)
-      .send({
-        message: "Có lỗi xảy ra trong quá trình lấy thông tin người dùng.",
-      });
+    return res.status(500).send({
+      message: "Có lỗi xảy ra trong quá trình lấy thông tin người dùng.",
+    });
   }
 };
 
