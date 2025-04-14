@@ -120,17 +120,17 @@ ConversationController.getConversationsByUserId = async (req, res) => {
       user_id
     );
 
-    const all_members = []
+    const all_members = [];
     for (const conversation of conversations) {
       const members = await ConversationModel.getAllUserInConversation(
         conversation.conversation_id
       );
 
-      list_user_id = []
+      list_user_id = [];
 
       for (const member of members) {
         if (member.user_id !== user_id) {
-          list_user_id.push(member.user_id)
+          list_user_id.push(member.user_id);
         }
       }
 
@@ -138,7 +138,7 @@ ConversationController.getConversationsByUserId = async (req, res) => {
         conversation.conversation_id
       );
 
-      let last_message = {}
+      let last_message = {};
 
       if (!last_message_id) {
         all_members.push({
@@ -147,13 +147,10 @@ ConversationController.getConversationsByUserId = async (req, res) => {
           list_user_id,
         });
         continue;
-      }else {
+      } else {
         console.log("last_message_id", last_message_id);
-        last_message = await MessageModel.getMessageById(
-          last_message_id
-        );
+        last_message = await MessageModel.getMessageById(last_message_id);
       }
-
 
       all_members.push({
         conversation_id: conversation.conversation_id,
@@ -194,6 +191,72 @@ ConversationController.getAllUserInConversation = async (req, res) => {
     res
       .status(500)
       .json({ message: "Có lỗi khi lấy danh sách thành viên hội thoại" });
+  }
+};
+
+ConversationController.findPrivateConversation = async (req, res) => {
+  const { user_id, friend_id } = req.query;
+
+  if (!user_id || !friend_id) {
+    return res.status(400).json({ message: "Thiếu thông tin" });
+  }
+
+  try {
+    const conversation = await ConversationModel.findPrivateConversation(
+      user_id,
+      friend_id
+    );
+    if (conversation === null) {
+      return res.status(202).json({
+        status: "success",
+        message: "Không tìm thấy hội thoại",
+        conversation: null,
+      });
+    }
+
+    const members = await ConversationModel.getAllUserInConversation(
+      conversation.id
+    );
+
+    console.log("====================================");
+    console.log(members);
+    console.log("====================================");
+
+    list_user_id = [];
+
+    for (const member of members) {
+      if (member.user_id !== user_id) {
+        list_user_id.push(member.user_id);
+      }
+    }
+
+    const last_message_id = await ConversationModel.getLastMessage(
+      conversation.id
+    );
+
+    let last_message = {};
+
+    if (!last_message_id) {
+      conversation.last_message = last_message;
+      conversation.list_user_id = list_user_id;
+      conversation.conversation_id = conversation.id;
+    } else {
+      console.log("last_message_id", last_message_id);
+      last_message = await MessageModel.getMessageById(last_message_id);
+    }
+
+    conversation.last_message = last_message;
+    conversation.list_user_id = list_user_id;
+    conversation.conversation_id = conversation.id;
+
+    res.status(200).json({
+      status: "success",
+      message: "Lấy cuộc hội thoại thành công",
+      conversation,
+    });
+  } catch (error) {
+    console.error("Có lỗi khi lấy hội thoại:", error);
+    res.status(500).json({ message: "Có lỗi khi lấy hội thoại" });
   }
 };
 

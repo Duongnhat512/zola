@@ -16,4 +16,10 @@ router.get(
   isAuthExpress,
   ConversationController.getAllUserInConversation
 );
+
+router.get(
+  "/get-private-conversation",
+  isAuthExpress,
+  ConversationController.findPrivateConversation
+);
 module.exports = router;
