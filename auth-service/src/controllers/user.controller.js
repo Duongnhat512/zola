@@ -81,4 +81,30 @@ UserController.getUserById = async (req, res) => {
   }
 };
 
+UserController.getUserByUsername = async (req, res) => {
+  const { username } = req.query;
+
+  if (!username) {
+    return res.status(400).send({ message: "Thiếu username." });
+  }
+
+  try {
+    const user = await UserModel.getUser(username);
+    if (!user) {
+      return res.status(400).send({ message: "Người dùng không tồn tại." });
+    }
+    return {
+      status: "success",
+      message: "Lấy thông tin người dùng thành công",
+      user
+    }
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send({
+      message: "Có lỗi xảy ra trong quá trình lấy thông tin người dùng.",
+    });
+  }
+
+}
+
 exports.UserController = UserController;

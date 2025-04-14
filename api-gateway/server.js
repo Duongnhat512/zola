@@ -32,7 +32,6 @@ const serviceRoutes = {
 const {
   createProxyMiddleware,
   setupWebSocketProxy,
-  createWebSocketProxyMiddleware,
 } = require("./src/middlewares/gateway.middleware");
 
 app.use(
@@ -47,6 +46,9 @@ app.use(
   "/api/v1/chat-service",
   createProxyMiddleware(services.chatService)
 );
+
+const socketProxy = setupWebSocketProxy(server, '/socket.io', services.chatService);
+app.use('/socket.io', socketProxy);
 
 // Health check
 app.get("/", (req, res) => res.send("API Gateway is running..."));

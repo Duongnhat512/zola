@@ -30,20 +30,30 @@ module.exports.createProxyMiddleware = (serviceUrl) => async (req, res) => {
   }
 };
 
-// WebSocket proxy middleware
-module.exports.createWebSocketProxyMiddleware = (path, serviceUrl) => {
-  return proxyMiddleware({
-    target: serviceUrl,
+module.exports.setupWebSocketProxy = (server, path, targetUrl) => {
+  const wsProxy = proxyMiddleware({
+    target: targetUrl,
     changeOrigin: true,
     ws: true,
-    pathRewrite: { [`^${path}`]: "" },
-    logLevel: "debug",
-    onError: (err, req, res) => {
-      console.error("Proxy error:", err);
-      if (res && res.writeHead) {
-        res.writeHead(500, { "Content-Type": "text/plain" });
-        res.end("Proxy error: " + err.message);
+    logLevel: 'debug',
+    onProxyReq: (proxyReq, req, res) => {
+      if (req.headers.authorization) {
+        proxyReq.setHeader('Authorization', req.headers.authorization);
       }
     },
+    onError: (err, req, res) => {
+      console.error('WebSocket Proxy Error:', err);
+      if (res && res.writeHead) {
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end('WebSocket Proxy Error: ' + err.message);
+      }
+    }
   });
+
+  server.on('upgrade', function(req, socket, head) {
+    console.log(`Proxying WebSocket request: ${req.url} -> ${targetUrl}`);
+    wsProxy.upgrade(req, socket, head);
+  });
+
+  return wsProxy;
 };

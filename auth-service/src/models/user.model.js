@@ -40,8 +40,14 @@ const UserModel = {
       limit: 1,
     };
 
-    const data = await dynamodb.query(params).promise();
-    return data.Items[0];
+    try {
+      const data = await dynamodb.query(params).promise();
+      return data.Items[0];
+
+    } catch (error) {
+      console.error("Error getting user: ", error);
+      throw error;
+    }
   },
   updateRefreshToken: async (id, refreshToken) => {
     const params = {
