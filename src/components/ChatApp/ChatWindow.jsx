@@ -158,9 +158,7 @@ const ChatWindow = ({
             className="mr-3"
           />
           <div>
-            <h2 className="font-semibold">
-              {selectedChat.members[0].userDetails.fullname}
-            </h2>
+            <h2 className="font-semibold">{selectedChat.user?.fullname}</h2>
             <p className="text-sm text-gray-500">Vừa truy cập</p>
           </div>
         </div>

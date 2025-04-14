@@ -28,7 +28,10 @@ const ChatSidebar = ({ chats, openChat }) => {
     setIsModalGroupVisible(false);
   };
   return (
-    <div className="w-1/4 border-r border-gray-300 flex flex-col bg-white shadow-lg " style={{width: "350px"}}>
+    <div
+      className="w-1/4 border-r border-gray-300 flex flex-col bg-white shadow-lg "
+      style={{ width: "350px" }}
+    >
       {/* Header */}
       <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
         <Input
@@ -75,7 +78,7 @@ const ChatSidebar = ({ chats, openChat }) => {
                 </Badge>
                 <div className="w-48">
                   <div className="text-sm font-semibold leading-5 text-gray-800 truncate">
-                    {chat.user?.name || "Người dùng"}
+                    {chat.user?.fullname || "Người dùng"}
                   </div>
                   <div className="text-xs text-gray-500 truncate">
                     {chat?.last_message?.message || "Không có tin nhắn"}
@@ -83,10 +86,13 @@ const ChatSidebar = ({ chats, openChat }) => {
                 </div>
               </div>
               <div className="text-xs text-gray-400 whitespace-nowrap">
-                {new Date(chat?.last_message?.created_at).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                {new Date(chat?.last_message?.created_at).toLocaleTimeString(
+                  [],
+                  {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }
+                )}
               </div>
             </div>
           </div>
