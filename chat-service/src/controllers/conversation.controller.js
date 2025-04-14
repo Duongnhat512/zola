@@ -1,4 +1,5 @@
 const ConversationModel = require("../models/conversation.model");
+const MessageModel = require("../models/message.model");
 const ConversationController = {};
 
 ConversationController.joinRoom = async (socket, data) => {
@@ -119,16 +120,52 @@ ConversationController.getConversationsByUserId = async (req, res) => {
       user_id
     );
 
-    // const allMembers = []
-    // conversations.forEach(async (conversation) => {
-    //   const members = await ConversationModel.getAllUserInConversation(conversation.id)
-    //   allMembers.push(members)
-    // })
+    const all_members = []
+    for (const conversation of conversations) {
+      const members = await ConversationModel.getAllUserInConversation(
+        conversation.conversation_id
+      );
+
+      list_user_id = []
+
+      for (const member of members) {
+        if (member.user_id !== user_id) {
+          list_user_id.push(member.user_id)
+        }
+      }
+
+      const last_message_id = await ConversationModel.getLastMessage(
+        conversation.conversation_id
+      );
+
+      let last_message = {}
+
+      if (!last_message_id) {
+        all_members.push({
+          conversation_id: conversation.conversation_id,
+          last_message: last_message,
+          list_user_id,
+        });
+        continue;
+      }else {
+        console.log("last_message_id", last_message_id);
+        last_message = await MessageModel.getMessageById(
+          last_message_id
+        );
+      }
+
+
+      all_members.push({
+        conversation_id: conversation.conversation_id,
+        last_message: last_message,
+        list_user_id,
+      });
+    }
 
     res.status(200).json({
       status: "success",
       message: "Lấy danh sách hội thoại thành công",
-      conversations,
+      all_members,
     });
   } catch (error) {
     console.error("Có lỗi khi lấy danh sách hội thoại:", error);

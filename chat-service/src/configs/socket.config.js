@@ -25,8 +25,24 @@ function setupSocket(server) {
 
   io.use(isAuth);
 
-  io.on("connection", (socket) => {
+  io.on("connection", async (socket) => {
     console.log(`User connected: ${socket.user.username}, UserID: ${socket.user.id}`);
+
+    try {
+      await axios.put(`${process.env.BASE_URL}/auth-service/me/update-status`,
+        {
+          id: socket.user.id,
+          status: "Online"
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${socket.handshake.headers.authorization}`
+          }
+        }
+      );
+    } catch (error) {
+      console.error("Error updating user status to online:", error.message);
+    }
 
     addUser(socket.user.id, socket.id);
 
@@ -114,25 +130,25 @@ function setupSocket(server) {
     socket.on("send_private_file", async (data) => {
       console.log(`Received private file from ${socket.user.username} to ${data.receiver_id}`);
       try {
-          const fileMessage = await messageController.sendPrivateFile(socket, {
-              ...data,
-              conversation_id: data.conversation_id || null
+        const fileMessage = await messageController.sendPrivateFile(socket, {
+          ...data,
+          conversation_id: data.conversation_id || null
+        });
+
+        if (!data.conversation_id) {
+          await messageController.sendPrivateMessage(socket, {
+            receiver_id: data.receiver_id,
+            type: "file",
+            message: `Đã gửi file: ${data.file_name}`,
+            media: fileMessage.file_url,
+            file_data: null // Không gửi lại file data
           });
-          
-          if (!data.conversation_id) {
-              await messageController.sendPrivateMessage(socket, {
-                  receiver_id: data.receiver_id,
-                  type: "file",
-                  message: `Đã gửi file: ${data.file_name}`,
-                  media: fileMessage.file_url,
-                  file_data: null // Không gửi lại file data
-              });
-          }
+        }
       } catch (error) {
-          console.error("Error handling private file:", error);
-          socket.emit('error', { message: "Lỗi khi gửi file" });
+        console.error("Error handling private file:", error);
+        socket.emit('error', { message: "Lỗi khi gửi file" });
       }
-  });
+    });
 
     // Nhận tin nhắn
     socket.on("get_messages", async (data) => {
@@ -164,11 +180,27 @@ function setupSocket(server) {
     });
 
     // Disconnect
-    socket.on("disconnect", () => {
+    socket.on("disconnect", async () => {
       console.log(`User disconnected: ${socket.id}, UserID: ${socket.user.id}`);
       removeUser(socket.user.id, socket.id);
       io.emit('user_offline', { userId: socket.user.id });
       console.log(`Emitted user_offline for UserID: ${socket.user.id}`);
+
+      try {
+        await axios.put(`${process.env.BASE_URL}/auth-service/me/update-status`,
+          {
+            id: socket.user.id,
+            status: "Offline"
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${socket.handshake.headers.authorization}`
+            }
+          }
+        );
+      } catch (error) {
+        console.error("Error updating user status to offline:", error.message);
+      }
     });
   });
 }

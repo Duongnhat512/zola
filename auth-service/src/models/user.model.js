@@ -248,7 +248,10 @@ const UserModel = {
       Key: {
         id,
       },
-      UpdateExpression: "set status = :status",
+      UpdateExpression: "set #userStatus = :status",
+      ExpressionAttributeNames: {
+        "#userStatus": "status"
+      },
       ExpressionAttributeValues: {
         ":status": status,
       },

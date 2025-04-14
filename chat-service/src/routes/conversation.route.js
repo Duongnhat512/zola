@@ -8,7 +8,7 @@ router.get(
   ConversationController.getConversationsByUserId
 );
 // router.get('/', isAuthExpress, ConversationController.get);
-router.post("/create", ConversationController.create);
+router.post("/create", isAuthExpress, ConversationController.create);
 // router.delete('/:id', isAuthExpress, ConversationController.delete);
 // router.put('/:id', isAuthExpress, ConversationController.update);
 router.get(

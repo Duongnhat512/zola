@@ -103,7 +103,7 @@ const MessageModel = {
     deleteMessage: async (message_id) => {
         const params = {
             TableName: tableName,
-            IndexName: "message_id_index",
+            IndexName: "message-id-index",
         };
         try {
             await dynamodb.delete(params).promise();
@@ -139,21 +139,23 @@ const MessageModel = {
         }
     },
 
-    // getMessageById: async (message_id) => {
-    //     const params = {
-    //         TableName: tableName,
-    //         Key: {
-    //             message_id: message_id,
-    //         },
-    //     };
-    //     try {
-    //         const data = await dynamodb.get(params).promise();
-    //         return data.Item;
-    //     } catch (error) {
-    //         console.error("Error getting message:", error);
-    //         throw new Error("Error getting message");
-    //     }
-    // },
+    getMessageById: async (message_id) => {
+        const params = {
+            TableName: tableName,
+            IndexName: "message-id-index",
+            KeyConditionExpression: "message_id = :message_id",
+            ExpressionAttributeValues: {
+                ":message_id": message_id,
+            },
+        };
+        try {
+            const data = await dynamodb.query(params).promise();
+            return data.Items[0]; 
+        } catch (error) {
+            console.error("Error getting message:", error);
+            throw new Error("Error getting message");
+        }
+    },
     
     getMessagesByConversationId: async (conversation_id) => {
         const params = {
@@ -209,6 +211,23 @@ const MessageModel = {
         }
     },
     
+    deleteMessageById: async (message_id) => {
+        const params = {
+            TableName: tableName,
+            IndexName: "message-id-index",
+            Key: {
+                message_id: message_id,
+            },
+            ConditionExpression: "attribute_exists(message_id)",
+        };
+        try {
+            await dynamodb.delete(params).promise();
+            return { message: "Message deleted successfully" };
+        } catch (error) {
+            console.error("Error deleting message:", error);
+            throw new Error("Error deleting message");
+        }
+    }
 }
 
 module.exports = MessageModel;
