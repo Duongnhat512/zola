@@ -281,6 +281,23 @@ const ConversationModel = {
             console.error("Có lỗi khi lấy danh sách thành viên hội thoại:", error);
             throw new Error("Có lỗi khi lấy danh sách thành viên hội thoại");
         }
+    },
+
+    getLastMessage: async (conversationId) => {
+        const params = {
+            TableName: tableName,
+            Key: {
+                id: conversationId
+            }
+        };
+
+        try {
+            const result = await dynamodb.get(params).promise();
+            return result.Item ? result.Item.last_message_id : null;
+        } catch (error) {
+            console.error("Có lỗi khi lấy hội thoại:", error);
+            throw new Error("Có lỗi khi lấy hội thoại");
+        }
     }
 
 };
