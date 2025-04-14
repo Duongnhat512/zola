@@ -3,17 +3,17 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons, Ionicons, FontAwesome } from '@expo/vector-icons';
 import styles from '../styles/TabNavigator.styles';
 import { useNavigation } from '@react-navigation/native';
+import ContactScreen from '../screens/ContactScreen';
 // Import the actual MessagesScreen
 import MessagesScreen from '../screens/MessagesScreen';
 
 // Placeholder screens
 import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { useSelector } from 'react-redux';
+import { TextInput } from 'react-native-gesture-handler';
 
 const ContactsScreen = () => (
-  <View style={styles.container}>
-    <Text>Danh bạ</Text>
-  </View>
+  <ContactScreen/>
 );
 
 const GroupsScreen = () => (
@@ -33,6 +33,7 @@ const ProfileScreen = () => {
           style={styles.icon2}
         />
         <View style={styles.middle}>
+          
           <Text style={styles.text3}>Tìm kiếm</Text>
         </View>
         <TouchableOpacity onPress={() => navigation.navigate('Setting')}>
