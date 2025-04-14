@@ -221,10 +221,7 @@ const MessageModel = {
         
         try {
             const queryResult = await dynamodb.query(queryParams).promise();
-            if (queryResult.Items.length === 0) {
-                throw new Error("Không tìm thấy tin nhắn");
-            }
-            
+
             const message = queryResult.Items[0];
             
             const updateParams = {
@@ -240,7 +237,7 @@ const MessageModel = {
                 }
             };
             
-            await dynamodb.put(updateParams).promise();
+            await dynamodb.update(updateParams).promise();
             return { message: "Đánh dấu xóa tin nhắn thành công" };
         } catch (error) {
             console.error("Lỗi khi xóa tin nhắn:", error);
