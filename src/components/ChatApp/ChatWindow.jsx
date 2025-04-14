@@ -11,15 +11,17 @@ import {
   FileTextOutlined,
 } from "@ant-design/icons";
 import socket from "../../services/Socket";
+import { useSelector } from "react-redux";
 
 const ChatWindow = ({
   selectedChat,
-  messages,
-  setMessages,
   input,
   setInput,
+  messages,
+  setMessages,
 }) => {
-  const [showAddFriendModal, setShowAddFriendModal] = useState(false);
+  const userMain = useSelector((state) => state.user.user);
+  console.log("User Main:", userMain);
 
   useEffect(() => {
     if (selectedChat?.conversation_id) {
@@ -28,48 +30,83 @@ const ChatWindow = ({
         conversation_id: selectedChat.conversation_id,
       });
 
-      // Lắng nghe sự kiện trả về danh sách tin nhắn
-      socket.on("message_list", (data) => {
-        console.log("Received messages:", data);
-
-        setMessages(data);
+      socket.emit("get_messages", {
+        conversation_id: selectedChat.conversation_id,
       });
 
-      // Dọn dẹp sự kiện khi component unmount hoặc khi conversation_id thay đổi
+      // Lắng nghe sự kiện trả về danh sách tin nhắn
+      socket.on("list_messages", (data) => {
+        console.log("Received messages:", data);
+
+        const formattedMessages = data.map((msg) => ({
+          id: msg.message_id,
+          sender: msg.sender_id === userMain.id ? "me" : "other", // So sánh với userMain.id
+          avatar:
+            msg.sender_id === userMain.id
+              ? userMain.avatar || "/default-avatar.jpg" // Avatar của bạn
+              : selectedChat.user.avt || "/default-avatar.jpg", // Avatar của người nhận
+          text: msg.message,
+          time: new Date(msg.created_at).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        }));
+
+        setMessages(formattedMessages);
+      });
+
       return () => {
-        socket.off("message_list");
+        socket.off("list_messages");
       };
     }
-  }, [selectedChat?.conversation_id, setMessages]);
+  }, [selectedChat?.conversation_id, setMessages, userMain.id]);
   const sendMessage = () => {
-    if (!input.trim()) return;
+    if (!input.trim()) return; // Không làm gì nếu input rỗng
 
     const msg = {
-      conversation_id: selectedChat?.conversation_id || "default-id",
-      receiver_id: selectedChat?.user_id || "default-receiver",
-      message: input,
-      type: "text",
-      status: "sent",
+      conversation_id: selectedChat?.conversation_id || "default-id", // ID cuộc trò chuyện
+      receiver_id: selectedChat?.user_id || "default-receiver", // ID người nhận
+      message: input, // Nội dung tin nhắn
+      type: "text", // Loại tin nhắn
+      status: "pending", // Trạng thái ban đầu là "pending"
     };
 
     // Gửi tin nhắn qua socket
-    socket.emit("send_message", msg);
+    socket.emit("send_message", msg, (response) => {
+      if (response.status === "success") {
+        console.log("Message sent successfully:", response);
+        // Cập nhật trạng thái tin nhắn thành "sent"
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === msg.id ? { ...m, status: "sent", time: response.time } : m
+          )
+        );
+      } else {
+        console.error("Failed to send message:", response.error);
+        // Cập nhật trạng thái tin nhắn thành "failed"
+        setMessages((prev) =>
+          prev.map((m) => (m.id === msg.id ? { ...m, status: "failed" } : m))
+        );
+      }
+    });
 
-    // Cập nhật tin nhắn vào danh sách
+    // Cập nhật tin nhắn vào danh sách với trạng thái "pending"
     setMessages((prev) => [
       ...prev,
       {
-        ...msg,
-        sender: "me",
+        id: `msg-${Date.now()}`, // Tạo ID tạm thời cho tin nhắn
+        sender: "me", // Người gửi là bạn
+        avatar: userMain.avatar || "/default-avatar.jpg", // Avatar của người gửi
+        text: input, // Nội dung tin nhắn
         time: new Date().toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
         }),
+        status: "pending", // Trạng thái ban đầu
       },
     ]);
 
-    // Xóa nội dung trong ô nhập
-    setInput("");
+    setInput(""); // Xóa nội dung trong ô nhập sau khi gửi
   };
 
   if (!selectedChat) {
@@ -85,28 +122,25 @@ const ChatWindow = ({
       </div>
     );
   }
+  console.log("Selected chat:", selectedChat);
 
   return (
     <div className="flex-1 flex flex-col bg-white">
-      {/* Header */}
       <div className="bg-white p-4 shadow flex items-center justify-between">
         <div className="flex items-center">
           <Avatar
-            src={selectedChat.avatar || "/default-avatar.jpg"}
+            src={selectedChat.user?.avt || "/default-avatar.jpg"}
             size="large"
             className="mr-3"
           />
           <div>
-            <h2 className="font-semibold">{selectedChat.name}</h2>
+            <h2 className="font-semibold">{selectedChat.user.fullname}</h2>
             <p className="text-sm text-gray-500">Vừa truy cập</p>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
-          <Button
-            onClick={() => setShowAddFriendModal(true)}
-            className="flex gap-2 ml-2"
-          >
+          <Button className="flex gap-2 ml-2">
             <UserOutlined className="text-gray-500 text-lg cursor-pointer hover:text-blue-500" />
           </Button>
           <button className="text-gray-600 hover:text-blue-500">
@@ -124,7 +158,6 @@ const ChatWindow = ({
         </div>
       </div>
 
-      {/* Chat body */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg) => (
           <div
@@ -160,7 +193,6 @@ const ChatWindow = ({
         ))}
       </div>
 
-      {/* Input and send button */}
       <div className="p-4 bg-white border-t">
         <div className="flex items-center gap-4 mb-2 text-gray-600">
           <button className="hover:text-blue-500" title="Gửi ảnh">
@@ -172,26 +204,24 @@ const ChatWindow = ({
           <button className="hover:text-blue-500" title="Gửi file">
             <PaperClipOutlined style={{ fontSize: "20px" }} />
           </button>
-          <button className="hover:text-blue-500" title="Tạo tài liệu">
+          <button className="hover:text-blue-500" title="Gửi tài liệu">
             <FileTextOutlined style={{ fontSize: "20px" }} />
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
-          <input
-            className="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none"
-            placeholder={`Nhập @, tin nhắn tới ${selectedChat.name}`}
+        <div className="flex">
+          <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+            placeholder="Nhập tin nhắn"
+            onPressEnter={sendMessage}
+            className="rounded-full py-2 px-4 flex-1 mr-2"
           />
-          <button
-            className="bg-blue-500 text-white px-4 py-2 rounded-full hover:bg-blue-600 flex items-center gap-1"
+          <Button
+            icon={<SendOutlined />}
             onClick={sendMessage}
-          >
-            <SendOutlined />
-            Gửi
-          </button>
+            className="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-400"
+          />
         </div>
       </div>
     </div>

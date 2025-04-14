@@ -11,7 +11,6 @@ import AddGroupModal from "./AddGroupModal";
 const ChatSidebar = ({ chats, openChat }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isModalGroupVisible, setIsModalGroupVisible] = useState(false);
-  console.log(chats);
 
   const openModal = () => {
     setIsModalVisible(true);
@@ -60,9 +59,9 @@ const ChatSidebar = ({ chats, openChat }) => {
 
       {/* Chat List */}
       <div className="overflow-y-auto flex-1">
-        {chats.map((chat, idx) => (
+        {chats.map((chat) => (
           <div
-            key={idx}
+            key={chat.conversation_id}
             className="px-4 py-3 border-b border-gray-100 hover:bg-gray-100 cursor-pointer transition-all duration-200"
             onClick={() => openChat(chat)}
           >
@@ -71,13 +70,13 @@ const ChatSidebar = ({ chats, openChat }) => {
                 <Badge count={0} size="small">
                   <Avatar
                     size="large"
-                    src={chat.avt || "https://via.placeholder.com/150"}
-                    icon={!chat.avt && <UserOutlined />}
+                    src={chat.user?.avt || "https://via.placeholder.com/150"}
+                    icon={!chat.user?.avt && <UserOutlined />}
                   />
                 </Badge>
                 <div className="w-48">
                   <div className="text-sm font-semibold leading-5 text-gray-800 truncate">
-                    {chat.fullname || "Người dùng"}
+                    {chat.user?.fullname || "Người dùng"}
                   </div>
                   <div className="text-xs text-gray-500 truncate">
                     {chat.last_message || "Không có tin nhắn"}
