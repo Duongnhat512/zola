@@ -135,7 +135,17 @@ const ChatWindow = ({
 
     setInput("");
   };
+  const messagesEndRef = useRef(null); // Tham chiếu đến phần cuối danh sách tin nhắn
 
+  // Hàm cuộn đến tin nhắn cuối cùng
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
   if (!selectedChat) {
     return (
       <div className="flex items-center justify-center flex-col text-center flex-1">
@@ -216,6 +226,7 @@ const ChatWindow = ({
             </div>
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
 
       <div className="p-4 bg-white border-t">
