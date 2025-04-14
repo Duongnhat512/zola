@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { SmileOutlined, SendOutlined } from "@ant-design/icons";
-import { Input, Avatar, Button, Dropdown } from "antd";
+import {
+  EllipsisOutlined,
+  CopyOutlined,
+  DeleteOutlined,
+  UndoOutlined,
+} from "@ant-design/icons";
+import { Input, Avatar, Button, Dropdown, Menu } from "antd";
 import {
   UserOutlined,
   SearchOutlined,
@@ -188,7 +194,53 @@ const ChatWindow = ({
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   };
+  const messageOptions = (msg) => (
+    <Menu>
+      <Menu.Item
+        key="copy"
+        icon={<CopyOutlined />}
+        onClick={() => copyMessage(msg.text)}
+      >
+        Copy tin nhắn
+      </Menu.Item>
+      <Menu.Item
+        key="delete"
+        icon={<DeleteOutlined />}
+        onClick={() => deleteMessage(msg.id)}
+      >
+        Xóa tin nhắn ở phía tôi
+      </Menu.Item>
+      <Menu.Item
+        key="revoke"
+        icon={<UndoOutlined />}
+        onClick={() => revokeMessage(msg.id)}
+      >
+        Thu hồi tin nhắn
+      </Menu.Item>
+    </Menu>
+  );
 
+  const copyMessage = (text) => {
+    navigator.clipboard.writeText(text);
+    console.log("Copied:", text);
+  };
+
+  const deleteMessage = (id) => {
+    setMessages((prev) => prev.filter((msg) => msg.id !== id));
+    console.log("Deleted message with ID:", id);
+  };
+
+  const revokeMessage = (id) => {
+    // Gửi yêu cầu thu hồi tin nhắn qua socket
+    socket.emit("revoke_message", { message_id: id }, (response) => {
+      if (response.status === "success") {
+        setMessages((prev) => prev.filter((msg) => msg.id !== id));
+        console.log("Message revoked:", id);
+      } else {
+        console.error("Failed to revoke message:", response.error);
+      }
+    });
+  };
   if (!selectedChat) {
     return (
       <div className="flex items-center justify-center flex-col text-center flex-1">
@@ -202,7 +254,6 @@ const ChatWindow = ({
       </div>
     );
   }
-
 
   return (
     <div className="flex-1 flex flex-col bg-white">
@@ -259,15 +310,53 @@ const ChatWindow = ({
               }`}
             >
               <div
-                className={`px-4 py-2 rounded-xl max-w-xs whitespace-pre-line ${
-                  msg.sender === "me"
-                    ? "bg-blue-100 text-right"
-                    : "bg-white shadow"
-                }`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  position: "relative",
+                }}
               >
-                {msg.text}
+                <div
+                  style={{
+                    padding: "8px 12px",
+                    borderRadius: "12px",
+                    maxWidth: "300px",
+                    backgroundColor:
+                      msg.sender === "me" ? "#d1e7ff" : "#ffffff",
+                    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                  }}
+                >
+                  {msg.text}
+                </div>
+                <Dropdown
+                  overlay={messageOptions(msg)}
+                  trigger={["click"]}
+                  placement={msg.sender === "me" ? "bottomRight" : "bottomLeft"}
+                  getPopupContainer={(triggerNode) => triggerNode.parentNode}
+                  overlayStyle={{
+                    width: "200px", // Chiều rộng cố định
+                    maxWidth: "300px", // Chiều rộng tối đa
+                    wordWrap: "break-word", // Đảm bảo nội dung không tràn
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: "16px",
+                      marginLeft: msg.sender === "me" ? "-50px" : "100px",
+                      cursor: "pointer",
+                      color: "#888",
+                      position: "absolute",
+                    }}
+                  >
+                    ⋮
+                  </span>
+                </Dropdown>
               </div>
-              <span className="text-xs text-gray-500 mt-1">{msg.time}</span>
+              <span
+                style={{ fontSize: "12px", color: "#888", marginTop: "4px" }}
+              >
+                {msg.time}
+              </span>
             </div>
           </div>
         ))}
