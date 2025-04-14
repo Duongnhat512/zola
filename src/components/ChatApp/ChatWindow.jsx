@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { SmileOutlined, SendOutlined } from "@ant-design/icons";
-import { Input, Avatar, Button } from "antd";
+import {
+  EllipsisOutlined,
+  CopyOutlined,
+  DeleteOutlined,
+  UndoOutlined,
+} from "@ant-design/icons";
+import { Input, Avatar, Button, Dropdown, Menu } from "antd";
 import {
   UserOutlined,
   SearchOutlined,
@@ -12,7 +18,7 @@ import {
 } from "@ant-design/icons";
 import socket from "../../services/Socket";
 import { useSelector } from "react-redux";
-
+import { useRef } from "react";
 const ChatWindow = ({
   selectedChat,
   input,
@@ -20,6 +26,13 @@ const ChatWindow = ({
   messages,
   setMessages,
 }) => {
+  const selectedChatRef = useRef();
+  const [emojiList, setEmojiList] = useState({});
+  const [isEmojiPickerVisible, setIsEmojiPickerVisible] = useState(false);
+
+  useEffect(() => {
+    selectedChatRef.current = selectedChat;
+  }, [selectedChat]);
   const userMain = useSelector((state) => state.user.user);
 
   useEffect(() => {
@@ -60,10 +73,10 @@ const ChatWindow = ({
       socket.off("list_messages");
     };
   }, [selectedChat?.conversation_id, selectedChat?.user_id, userMain.id]);
+
   useEffect(() => {
-    // Khi nhận tin nhắn mới từ server
     socket.on("new_message", (msg) => {
-      console.log("New message received:", msg);
+      const currentChat = selectedChatRef.current;
       setMessages((prev) => [
         ...prev,
         {
@@ -72,7 +85,7 @@ const ChatWindow = ({
           avatar:
             msg.sender_id === userMain.id
               ? userMain.avatar || "/default-avatar.jpg"
-              : selectedChat.user.avt || "/default-avatar.jpg",
+              : currentChat?.user?.avt || "/default-avatar.jpg",
           text: msg.message,
           time: new Date(msg.created_at).toLocaleTimeString([], {
             hour: "2-digit",
@@ -81,10 +94,53 @@ const ChatWindow = ({
         },
       ]);
     });
+
     return () => {
       socket.off("new_message");
     };
-  }, [userMain.id, selectedChat?.user_id]);
+  }, [userMain.id]);
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+  useEffect(() => {
+    // Gọi API để lấy danh sách emoji
+    const fetchEmojis = async () => {
+      try {
+        const response = await fetch("https://api.github.com/emojis");
+        const data = await response.json();
+        setEmojiList(data);
+      } catch (error) {
+        console.error("Failed to fetch emojis:", error);
+      }
+    };
+
+    fetchEmojis();
+  }, []);
+  const addEmojiToInput = (emojiUrl) => {
+    const emojiUnicode = String.fromCodePoint(
+      ...emojiUrl
+        .split("/")
+        .pop()
+        .split(".")[0]
+        .split("-")
+        .map((hex) => parseInt(hex, 16))
+    );
+    setInput((prev) => prev + emojiUnicode);
+    setIsEmojiPickerVisible(false);
+  };
+  const emojiDropdown = (
+    <div className="grid grid-cols-8 gap-2 p-2 bg-white shadow-lg rounded-lg max-h-64 overflow-y-auto">
+      {Object.entries(emojiList).map(([name, url]) => (
+        <img
+          key={name}
+          src={url}
+          alt={name}
+          className="w-8 h-8 cursor-pointer"
+          onClick={() => addEmojiToInput(url)} // Thêm emoji Unicode vào Input
+        />
+      ))}
+    </div>
+  );
   const sendMessage = () => {
     if (!input.trim()) return;
     const msg = {
@@ -136,7 +192,61 @@ const ChatWindow = ({
 
     setInput("");
   };
+  const messagesEndRef = useRef(null); // Tham chiếu đến phần cuối danh sách tin nhắn
 
+  // Hàm cuộn đến tin nhắn cuối cùng
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+  const messageOptions = (msg) => (
+    <Menu>
+      <Menu.Item
+        key="copy"
+        icon={<CopyOutlined />}
+        onClick={() => copyMessage(msg.text)}
+      >
+        Copy tin nhắn
+      </Menu.Item>
+      <Menu.Item
+        key="delete"
+        icon={<DeleteOutlined />}
+        onClick={() => deleteMessage(msg.id)}
+      >
+        Xóa tin nhắn ở phía tôi
+      </Menu.Item>
+      <Menu.Item
+        key="revoke"
+        icon={<UndoOutlined />}
+        onClick={() => revokeMessage(msg.id)}
+      >
+        Thu hồi tin nhắn
+      </Menu.Item>
+    </Menu>
+  );
+
+  const copyMessage = (text) => {
+    navigator.clipboard.writeText(text);
+    console.log("Copied:", text);
+  };
+
+  const deleteMessage = (id) => {
+    setMessages((prev) => prev.filter((msg) => msg.id !== id));
+    console.log("Deleted message with ID:", id);
+  };
+
+  const revokeMessage = (id) => {
+    // Gửi yêu cầu thu hồi tin nhắn qua socket
+    socket.emit("revoke_message", { message_id: id }, (response) => {
+      if (response.status === "success") {
+        setMessages((prev) => prev.filter((msg) => msg.id !== id));
+        console.log("Message revoked:", id);
+      } else {
+        console.error("Failed to revoke message:", response.error);
+      }
+    });
+  };
   if (!selectedChat) {
     return (
       <div className="flex items-center justify-center flex-col text-center flex-1">
@@ -150,6 +260,7 @@ const ChatWindow = ({
       </div>
     );
   }
+
   return (
     <div className="flex-1 flex flex-col bg-white">
       <div className="bg-white p-4 shadow flex items-center justify-between">
@@ -205,18 +316,57 @@ const ChatWindow = ({
               }`}
             >
               <div
-                className={`px-4 py-2 rounded-xl max-w-xs whitespace-pre-line ${
-                  msg.sender === "me"
-                    ? "bg-blue-100 text-right"
-                    : "bg-white shadow"
-                }`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  position: "relative",
+                }}
               >
-                {msg.text}
+                <div
+                  style={{
+                    padding: "8px 12px",
+                    borderRadius: "12px",
+                    maxWidth: "300px",
+                    backgroundColor:
+                      msg.sender === "me" ? "#d1e7ff" : "#ffffff",
+                    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                  }}
+                >
+                  {msg.text}
+                </div>
+                <Dropdown
+                  overlay={messageOptions(msg)}
+                  trigger={["click"]}
+                  placement={msg.sender === "me" ? "bottomRight" : "bottomLeft"}
+                  getPopupContainer={(triggerNode) => triggerNode.parentNode}
+                  overlayStyle={{
+                    width: "200px", // Chiều rộng cố định
+                    maxWidth: "300px", // Chiều rộng tối đa
+                    wordWrap: "break-word", // Đảm bảo nội dung không tràn
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: "16px",
+                      marginLeft: msg.sender === "me" ? "-50px" : "100px",
+                      cursor: "pointer",
+                      color: "#888",
+                      position: "absolute",
+                    }}
+                  >
+                    ⋮
+                  </span>
+                </Dropdown>
               </div>
-              <span className="text-xs text-gray-500 mt-1">{msg.time}</span>
+              <span
+                style={{ fontSize: "12px", color: "#888", marginTop: "4px" }}
+              >
+                {msg.time}
+              </span>
             </div>
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
 
       <div className="p-4 bg-white border-t">
@@ -224,9 +374,16 @@ const ChatWindow = ({
           <button className="hover:text-blue-500" title="Gửi ảnh">
             <PictureOutlined style={{ fontSize: "20px" }} />
           </button>
-          <button className="hover:text-blue-500" title="Gửi sticker">
-            <SmileOutlined style={{ fontSize: "20px" }} />
-          </button>
+          <Dropdown
+            overlay={emojiDropdown}
+            trigger={["click"]}
+            visible={isEmojiPickerVisible}
+            onVisibleChange={(visible) => setIsEmojiPickerVisible(visible)}
+          >
+            <button className="hover:text-blue-500" title="Chọn Emoji">
+              <SmileOutlined style={{ fontSize: "20px" }} />
+            </button>
+          </Dropdown>
           <button className="hover:text-blue-500" title="Gửi file">
             <PaperClipOutlined style={{ fontSize: "20px" }} />
           </button>
