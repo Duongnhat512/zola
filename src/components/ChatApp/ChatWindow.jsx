@@ -23,7 +23,7 @@ const ChatWindow = ({
   const userMain = useSelector((state) => state.user.user);
   useEffect(() => {
     // console.log("Selected chat:", selectedChat);
-    
+
     if (!selectedChat?.conversation_id) return;
     // Gửi yêu cầu lấy danh sách tin nhắn khi chọn đoạn chat
     socket.emit("get_messages", {
@@ -53,14 +53,16 @@ const ChatWindow = ({
       setMessages(formattedMessages);
     });
 
-    
     return () => {
       socket.off("list_messages");
     };
   }, [selectedChat?.conversation_id, selectedChat?.user_id, userMain.id]);
+  console.log("Selected chat:", selectedChat);
   useEffect(() => {
     // Khi nhận tin nhắn mới từ server
     socket.on("new_message", (msg) => {
+
+      
       console.log("New message received:", msg);
       setMessages((prev) => [
         ...prev,
