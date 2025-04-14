@@ -100,7 +100,7 @@ ConversationController.update = async (req, res) => {
 };
 
 ConversationController.getConversationsByUserId = async (req, res) => {
-  const { user_id } = req.params;
+  const { user_id } = req.query;
 
   console.log("user_id", user_id);
 
