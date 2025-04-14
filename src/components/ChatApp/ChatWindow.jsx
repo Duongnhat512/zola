@@ -21,36 +21,26 @@ const ChatWindow = ({
 }) => {
   const [showAddFriendModal, setShowAddFriendModal] = useState(false);
 
-  // useEffect(() => {
-
-  //   if (selectedChat?.conversation_id) {
-  //     // Gửi yêu cầu lấy lịch sử tin nhắn qua socket
-  //     socket.emit("get_messages", { conversation_id: selectedChat.conversation_id });
-
-  //     // Lắng nghe sự kiện trả về danh sách tin nhắn
-  //     socket.on("message_list", (data) => {
-  //       setMessages(data);
-  //     });
-
-  //     // Dọn dẹp sự kiện khi component unmount hoặc khi conversation_id thay đổi
-  //     return () => {
-  //       socket.off("message_list");
-  //     };
-  //   }
-  // }, [selectedChat?.conversation_id, setMessages]);
   useEffect(() => {
-    console.log("Socket connected:", socket.connected); // Kiểm tra trạng thái kết nối
-    try {
-      socket.on("connect", () => {
-        console.log("Socket connected successfully");
+    if (selectedChat?.conversation_id) {
+      // Gửi yêu cầu lấy lịch sử tin nhắn qua socket
+      socket.emit("get_messages", {
+        conversation_id: selectedChat.conversation_id,
       });
-      socket.on("disconnect", () => {
-        console.log("Socket disconnected");
+
+      // Lắng nghe sự kiện trả về danh sách tin nhắn
+      socket.on("message_list", (data) => {
+        console.log("Received messages:", data);
+
+        setMessages(data);
       });
-    } catch (error) {
-      console.error("Socket connection error:", error);
+
+      // Dọn dẹp sự kiện khi component unmount hoặc khi conversation_id thay đổi
+      return () => {
+        socket.off("message_list");
+      };
     }
-  }, []);
+  }, [selectedChat?.conversation_id, setMessages]);
   const sendMessage = () => {
     if (!input.trim()) return;
 

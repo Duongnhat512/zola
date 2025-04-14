@@ -12,7 +12,14 @@ const HomeDetails = () => {
   const [selectedChat, setSelectedChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [chats, setChats] = useState([]);
+  const [chats, setChats] = useState([
+    {
+      user_id: "dbebb8ee-93c8-4d2e-a707-03fe75c54b42",
+      created_at: "2025-04-13T15:12:22.364Z",
+      id: "f58979ec-f3b6-4b0a-8393-c06c94c8701f",
+      conversation_id: "1cbc07fc-5918-4d46-9da3-e6b2418f49da",
+    },
+  ]);
   const user = useSelector((state) => state.user.user);
   const chat = [
     {
@@ -233,7 +240,6 @@ const HomeDetails = () => {
   useEffect(() => {
     fetchConversations();
 
-    // Lắng nghe sự kiện từ socket
     socket.on("new_message", (message) => {
       setMessages((prev) => [...prev, message]);
     });
@@ -251,11 +257,11 @@ const HomeDetails = () => {
       status: "sent",
     };
 
-    socket.emit("send_message", msg);
-    setMessages((prev) => [
-      ...prev,
-      { ...msg, sender: "me", time: new Date().toLocaleTimeString() },
-    ]);
+    // socket.emit("send_message", msg);
+    // setMessages((prev) => [
+    //   ...prev,
+    //   { ...msg, sender: "me", time: new Date().toLocaleTimeString() },
+    // ]);
   };
   return (
     <div className="flex h-screen w-full bg-gray-100">
