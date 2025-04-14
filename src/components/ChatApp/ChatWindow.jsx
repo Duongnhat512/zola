@@ -12,7 +12,7 @@ import {
 } from "@ant-design/icons";
 import socket from "../../services/Socket";
 import { useSelector } from "react-redux";
-
+import { useRef } from "react";
 const ChatWindow = ({
   selectedChat,
   input,
@@ -20,6 +20,10 @@ const ChatWindow = ({
   messages,
   setMessages,
 }) => {
+  const selectedChatRef = useRef();
+  useEffect(() => {
+    selectedChatRef.current = selectedChat;
+  }, [selectedChat]);
   const userMain = useSelector((state) => state.user.user);
   useEffect(() => {
     // console.log("Selected chat:", selectedChat);
@@ -57,13 +61,10 @@ const ChatWindow = ({
       socket.off("list_messages");
     };
   }, [selectedChat?.conversation_id, selectedChat?.user_id, userMain.id]);
-  console.log("Selected chat:", selectedChat);
-  useEffect(() => {
-    // Khi nhận tin nhắn mới từ server
-    socket.on("new_message", (msg) => {
 
-      
-      console.log("New message received:", msg);
+  useEffect(() => {
+    socket.on("new_message", (msg) => {
+      const currentChat = selectedChatRef.current;
       setMessages((prev) => [
         ...prev,
         {
@@ -72,7 +73,7 @@ const ChatWindow = ({
           avatar:
             msg.sender_id === userMain.id
               ? userMain.avatar || "/default-avatar.jpg"
-              : selectedChat.user.avt || "/default-avatar.jpg",
+              : currentChat?.user?.avt || "/default-avatar.jpg",
           text: msg.message,
           time: new Date(msg.created_at).toLocaleTimeString([], {
             hour: "2-digit",
@@ -81,10 +82,11 @@ const ChatWindow = ({
         },
       ]);
     });
+  
     return () => {
       socket.off("new_message");
     };
-  }, [userMain.id, selectedChat?.user_id]);
+  }, [userMain.id]);
   const sendMessage = () => {
     if (!input.trim()) return;
     const msg = {
