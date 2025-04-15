@@ -1,8 +1,8 @@
-const MessageModel = require('../models/message.model.js')
-const ConversationModel = require('../models/conversation.model.js')
-const { userSocketMap, getUserSocketId } = require('../utils/online.helper.js')
-const { uploadFile } = require('../services/file.service.js')
-const MessageController = {}
+const MessageModel = require("../models/message.model.js");
+const ConversationModel = require("../models/conversation.model.js");
+const { userSocketMap, getUserSocketId } = require("../utils/online.helper.js");
+const { uploadFile } = require("../services/file.service.js");
+const MessageController = {};
 
 MessageController.getMessages = async (socket, data) => {
   try {
@@ -38,18 +38,22 @@ MessageController.sendMessage = async (socket, data) => {
 };
 
 MessageController.sendFile = async (socket, data) => {
-  data.sender_id = socket.user.id
+  data.sender_id = socket.user.id;
   try {
     const fileBuffer = Buffer.from(
-      data.file_data.split('base64,')[1] || data.file_data,
-      'base64'
+      data.file_data.split("base64,")[1] || data.file_data,
+      "base64"
     );
+
+    console.log("====================================");
+    console.log(data.receiver_id);
+    console.log("====================================");
 
     const file = {
       originalname: data.file_name,
       mimetype: data.file_type || getMimeTypeFromFileName(data.file_name),
       buffer: fileBuffer,
-      size: data.file_size || fileBuffer.length
+      size: data.file_size || fileBuffer.length,
     };
 
     const fileUrl = await uploadFile(file);
@@ -65,34 +69,34 @@ MessageController.sendFile = async (socket, data) => {
       file_name: data.file_name,
       file_type: file.mimetype,
       created_at: timestamp,
-      updated_at: timestamp
+      updated_at: timestamp,
     };
 
     const savedMessage = await MessageModel.sendMessage(fileMessage);
 
     if (data.conversation_id) {
-      socket.to(data.conversation_id).emit('new_message', fileMessage);
+      socket.to(data.conversation_id).emit("new_message", fileMessage);
     }
 
-    socket.emit('file_sent', {
+    socket.emit("file_sent", {
       success: true,
       message_id: savedMessage.message_id,
-      file_url: fileUrl
+      file_url: fileUrl,
     });
 
     return {
       ...fileMessage,
-      file_url: fileUrl
+      file_url: fileUrl,
     };
   } catch (error) {
     console.error("Error sending file:", error);
-    socket.emit('error', {
+    socket.emit("error", {
       message: "Không thể gửi file",
-      details: error.message
+      details: error.message,
     });
     throw error;
   }
-}
+};
 
 MessageController.sendPrivateFile = async (socket, data) => {
   try {
@@ -107,7 +111,7 @@ MessageController.sendPrivateFile = async (socket, data) => {
         name: "",
         type: "private",
         status: "active",
-        members: [socket.user.id, data.receiver_id]
+        members: [socket.user.id, data.receiver_id],
       });
     }
 
@@ -115,7 +119,7 @@ MessageController.sendPrivateFile = async (socket, data) => {
 
     const fileResult = await MessageController.sendFile(socket, {
       ...data,
-      conversation_id: conversation.id
+      conversation_id: conversation.id,
     });
 
     const receiverSocketId = getUserSocketId(data.receiver_id);
@@ -128,22 +132,21 @@ MessageController.sendPrivateFile = async (socket, data) => {
         receiverSocket.join(conversation.id);
 
         if (!conversation.last_message_id) {
-          receiverSocket.emit('new_conversation', {
+          receiverSocket.emit("new_conversation", {
             conversation: conversation,
-            message: fileResult
+            message: fileResult,
           });
         }
-
       }
     }
 
     return fileResult;
   } catch (error) {
-    console.error('Error sending private file:', error);
-    socket.emit('error', { message: 'Lỗi khi gửi file' });
+    console.error("Error sending private file:", error);
+    socket.emit("error", { message: "Lỗi khi gửi file" });
     throw error;
   }
-}
+};
 
 MessageController.updateMessage = async (socket, data) => {
   try {
@@ -173,7 +176,7 @@ MessageController.sendPrivateMessage = async (socket, data) => {
         name: "",
         type: "private",
         status: "active",
-        members: [socket.user.id, data.receiver_id]
+        members: [socket.user.id, data.receiver_id],
       });
 
       console.log("Đã tạo conversation mới:", conversation.id);
@@ -190,7 +193,7 @@ MessageController.sendPrivateMessage = async (socket, data) => {
       type: data.type || "text",
       media: data.media || "",
       status: "sent",
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     };
 
     const message = await MessageModel.sendMessage(messageData);
@@ -208,20 +211,19 @@ MessageController.sendPrivateMessage = async (socket, data) => {
       if (receiverSocket) {
         receiverSocket.join(conversation.id);
 
-        receiverSocket.emit('new_conversation', {
+        receiverSocket.emit("new_conversation", {
           conversation: conversation,
-          message: message
+          message: message,
         });
-
       }
     }
 
-    socket.emit('message_sent', {
+    socket.emit("message_sent", {
       success: true,
-      message: message
+      message: message,
     });
 
-    socket.to(conversation.id).emit('new_message', message);
+    socket.to(conversation.id).emit("new_message", message);
 
     await ConversationModel.updateLastMessage(
       conversation.id,
@@ -230,8 +232,8 @@ MessageController.sendPrivateMessage = async (socket, data) => {
 
     return { conversation, message };
   } catch (error) {
-    console.error('Error sending first message:', error);
-    socket.emit('error', { message: 'Lỗi khi gửi tin nhắn đầu tiên' });
+    console.error("Error sending first message:", error);
+    socket.emit("error", { message: "Lỗi khi gửi tin nhắn đầu tiên" });
     throw error;
   }
 };
@@ -291,6 +293,6 @@ MessageController.setHiddenMessage = async (req, res) => {
       error: error.message,
     });
   }
-}
+};
 
 module.exports = MessageController;

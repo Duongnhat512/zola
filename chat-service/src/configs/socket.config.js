@@ -14,30 +14,33 @@ function setupSocket(server) {
       origin: "*",
       methods: ["GET", "POST", "OPTIONS"],
       credentials: true,
-      allowedHeaders: ["Authorization", "Content-Type"]
+      allowedHeaders: ["Authorization", "Content-Type"],
     },
     path: "/socket.io/",
-    transports: ['websocket', 'polling'],
+    transports: ["websocket", "polling"],
     pingTimeout: 30000,
     pingInterval: 10000,
-    maxHttpBufferSize: 1e8 // 100MB max file size
+    maxHttpBufferSize: 1e8, // 100MB max file size
   });
 
   io.use(isAuth);
 
   io.on("connection", async (socket) => {
-    console.log(`User connected: ${socket.user.username}, UserID: ${socket.user.id}`);
+    console.log(
+      `User connected: ${socket.user.username}, UserID: ${socket.user.id}`
+    );
 
     try {
-      await axios.put(`${process.env.BASE_URL}/auth-service/me/update-status`,
+      await axios.put(
+        `${process.env.BASE_URL}/auth-service/me/update-status`,
         {
           id: socket.user.id,
-          status: "Online"
+          status: "Online",
         },
         {
           headers: {
-            Authorization: `Bearer ${socket.handshake.headers.authorization}`
-          }
+            Authorization: `Bearer ${socket.handshake.headers.authorization}`,
+          },
         }
       );
     } catch (error) {
@@ -47,9 +50,9 @@ function setupSocket(server) {
     addUser(socket.user.id, socket.id);
 
     // Thông báo cho các user khác về user online
-    io.emit('user_online', {
+    io.emit("user_online", {
       userId: socket.user.id,
-      username: socket.user.username
+      username: socket.user.username,
     });
 
     // socket.emit('online_users', Array.from(onlineUsers));
@@ -62,17 +65,17 @@ function setupSocket(server) {
       const clients = io.sockets.adapter.rooms.get(data.conversation_id);
       const users = [];
       if (clients) {
-        clients.forEach(clientId => {
+        clients.forEach((clientId) => {
           const clientSocket = io.sockets.sockets.get(clientId);
           if (clientSocket && clientSocket.user) {
             users.push({
               userId: clientSocket.user.id,
-              username: clientSocket.user.username
+              username: clientSocket.user.username,
             });
           }
         });
       }
-      io.to(data.conversation_id).emit('room_users', users);
+      io.to(data.conversation_id).emit("room_users", users);
     });
 
     // Rời phòng chat
@@ -90,23 +93,30 @@ function setupSocket(server) {
         if (roomClients) {
           const receiptInfo = {
             message_id: message.message_id,
-            readers: []
+            readers: [],
           };
 
           // Đánh dấu tất cả người dùng trong phòng đã nhận tin nhắn
-          roomClients.forEach(clientId => {
+          roomClients.forEach((clientId) => {
             const clientSocket = io.sockets.sockets.get(clientId);
-            if (clientSocket && clientSocket.user && clientSocket.user.id !== socket.user.id) {
+            if (
+              clientSocket &&
+              clientSocket.user &&
+              clientSocket.user.id !== socket.user.id
+            ) {
               receiptInfo.readers.push(clientSocket.user.id);
             }
           });
 
           // Gửi thông tin đã nhận cho người gửi
-          socket.emit('message_receipt', receiptInfo);
+          socket.emit("message_receipt", receiptInfo);
         }
       } catch (error) {
         console.error("Error handling send_message:", error);
-        socket.emit('error', { message: "Lỗi xử lý tin nhắn", error: error.message });
+        socket.emit("error", {
+          message: "Lỗi xử lý tin nhắn",
+          error: error.message,
+        });
       }
     });
 
@@ -115,24 +125,29 @@ function setupSocket(server) {
       console.log(`Received file upload request from ${socket.user.username}`);
       try {
         // Xử lý giới hạn kích thước file nếu cần
-        if (data.file_size && data.file_size > 50 * 1024 * 1024) { // 50MB
-          return socket.emit('error', { message: "File quá lớn, vui lòng upload file nhỏ hơn 5MB" });
+        if (data.file_size && data.file_size > 50 * 1024 * 1024) {
+          // 50MB
+          return socket.emit("error", {
+            message: "File quá lớn, vui lòng upload file nhỏ hơn 5MB",
+          });
         }
 
         await messageController.sendFile(socket, data);
       } catch (error) {
         console.error("Error handling send_file:", error);
-        socket.emit('error', { message: "Lỗi khi gửi file" });
+        socket.emit("error", { message: "Lỗi khi gửi file" });
       }
     });
 
     // Gửi file private khi chưa tạo conversation
     socket.on("send_private_file", async (data) => {
-      console.log(`Received private file from ${socket.user.username} to ${data.receiver_id}`);
+      console.log(
+        `Received private file from ${socket.user.username} to ${data.receiver_id}`
+      );
       try {
         const fileMessage = await messageController.sendPrivateFile(socket, {
           ...data,
-          conversation_id: data.conversation_id || null
+          conversation_id: data.conversation_id || null,
         });
 
         if (!data.conversation_id) {
@@ -141,12 +156,12 @@ function setupSocket(server) {
             type: "file",
             message: `Đã gửi file: ${data.file_name}`,
             media: fileMessage.file_url,
-            file_data: null // Không gửi lại file data
+            file_data: null, // Không gửi lại file data
           });
         }
       } catch (error) {
         console.error("Error handling private file:", error);
-        socket.emit('error', { message: "Lỗi khi gửi file" });
+        socket.emit("error", { message: "Lỗi khi gửi file" });
       }
     });
 
@@ -157,7 +172,7 @@ function setupSocket(server) {
         await messageController.getMessages(socket, data);
       } catch (error) {
         console.error("Error handling get_messages:", error);
-        socket.emit('error', { message: "Lỗi xử lý tin nhắn" });
+        socket.emit("error", { message: "Lỗi xử lý tin nhắn" });
       }
     });
 
@@ -167,7 +182,7 @@ function setupSocket(server) {
         await messageController.sendPrivateMessage(socket, data);
       } catch (error) {
         console.error("Error handling first message:", error);
-        socket.emit('error', { message: "Lỗi khi gửi tin nhắn đầu tiên" });
+        socket.emit("error", { message: "Lỗi khi gửi tin nhắn đầu tiên" });
       }
     });
 
@@ -175,7 +190,7 @@ function setupSocket(server) {
       socket.to(data.conversation_id).emit("user_typing", {
         userId: socket.user.id,
         username: socket.user.username,
-        isTyping: data.isTyping
+        isTyping: data.isTyping,
       });
     });
 
@@ -185,7 +200,7 @@ function setupSocket(server) {
         await messageController.deleteMessage(socket, data);
       } catch (error) {
         console.error("Error handling delete_message:", error);
-        socket.emit('error', { message: "Lỗi xử lý xóa tin nhắn" });
+        socket.emit("error", { message: "Lỗi xử lý xóa tin nhắn" });
       }
     });
 
@@ -193,19 +208,20 @@ function setupSocket(server) {
     socket.on("disconnect", async () => {
       console.log(`User disconnected: ${socket.id}, UserID: ${socket.user.id}`);
       removeUser(socket.user.id, socket.id);
-      io.emit('user_offline', { userId: socket.user.id });
+      io.emit("user_offline", { userId: socket.user.id });
       console.log(`Emitted user_offline for UserID: ${socket.user.id}`);
 
       try {
-        await axios.put(`${process.env.BASE_URL}/auth-service/me/update-status`,
+        await axios.put(
+          `${process.env.BASE_URL}/auth-service/me/update-status`,
           {
             id: socket.user.id,
-            status: "Offline"
+            status: "Offline",
           },
           {
             headers: {
-              Authorization: `Bearer ${socket.handshake.headers.authorization}`
-            }
+              Authorization: `Bearer ${socket.handshake.headers.authorization}`,
+            },
           }
         );
       } catch (error) {
