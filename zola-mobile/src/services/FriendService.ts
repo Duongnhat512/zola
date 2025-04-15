@@ -9,9 +9,11 @@ export const getFriendRequests = async (userId) => {
 };
 // Gửi yêu cầu chấp nhận lời mời kết bạn
 export const acceptFriendRequest = async (user_id: string, user_friend_id: string) => {
+  console.log("user_id"+user_id);
+  console.log("user_friend_id"+user_friend_id);
     const response = await axios.post("friend-service/friends/accept", {
-      user_id,
-      user_friend_id,
+      user_id: user_id,
+      user_friend_id:user_friend_id,
     });
     console.log(response);
     return response;

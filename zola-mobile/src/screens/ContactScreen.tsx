@@ -23,7 +23,7 @@ const ContactScreen = () => {
     const handleAcceptRequest = async (user_friend_id: string) => {
         try {
           //
-          await acceptFriendRequest(user.id,user_friend_id);
+          await acceptFriendRequest(user_friend_id,user.id);
           Alert.alert("Thành công", "Đã chấp nhận lời mời kết bạn.");
           // gọi lại fetchFriendRequestsWithDetails để cập nhật danh sách
           fetchFriendsRequestWithDetails();
@@ -236,7 +236,7 @@ const ContactScreen = () => {
       <TouchableOpacity style={{ marginHorizontal: 10 }} onPress={()=>{handleRejectRequest(item.friendInfo.id)}}>
         <Text>Từ chối</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={{ marginHorizontal: 10 }}  onPress={()=>{handleAcceptRequest(user.id)}}>
+      <TouchableOpacity style={{ marginHorizontal: 10 }}  onPress={()=>{handleAcceptRequest(item.friendInfo.id)}}>
         <Text>Đồng ý kết bạn</Text>
       </TouchableOpacity>
     </View>
