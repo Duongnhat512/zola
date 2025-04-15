@@ -85,14 +85,11 @@ const FriendList = () => {
             conversation_id: null,
             list_user_id: [friendId],
             list_message: [],
-            user: {
-              fullname: "Hiep",
-            },
           });
         } else {
           setSelectedChat(response.conversation);
         }
-        fetchUserDetails(response.conversation); // Fetch user details for the conversation
+        fetchUserDetails(response.conversation, friendId); // Fetch user details for the conversation
       } else {
         console.error("Error fetching conversation:", response.message);
       }
@@ -100,8 +97,15 @@ const FriendList = () => {
       console.error("Error fetching conversation:", error);
     }
   };
-  const fetchUserDetails = async (chat) => {
+  const fetchUserDetails = async (chat, friendId) => {
     console.log("Fetching user details...", chat);
+
+    if (!chat || !chat.list_user_id) {
+      chat = {
+        list_user_id: [friendId],
+        list_message: [],
+      };
+    }
 
     try {
       const updatedChats = await Promise.all(

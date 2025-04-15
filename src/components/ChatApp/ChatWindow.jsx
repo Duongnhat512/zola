@@ -60,6 +60,8 @@ const ChatWindow = ({
         //   ? userMain.avatar || "/default-avatar.jpg"
         //   : selectedChat.user.avt || "/default-avatar.jpg",
         text: msg.message,
+        media: msg.media,
+        type: msg.type,
         time: new Date(msg.created_at).toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
@@ -87,6 +89,8 @@ const ChatWindow = ({
               ? userMain.avatar || "/default-avatar.jpg"
               : currentChat?.user?.avt || "/default-avatar.jpg",
           text: msg.message,
+          media: msg.media,
+          type: msg.type,
           time: new Date(msg.created_at).toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
@@ -192,6 +196,116 @@ const ChatWindow = ({
 
     setInput("");
   };
+  const sendFile = (file) => {
+    if (!file) return;
+
+    const msg = {
+      receiver_id: selectedChat?.list_user_id[0],
+      file, // File to be sent
+      type: "file",
+      status: "sent",
+    };
+
+    socket.emit("send_private_file", msg, (response) => {
+      if (response.status === "success") {
+        console.log("File sent successfully:", response);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: response.message_id,
+            sender: "me",
+            avatar: userMain.avatar || "/default-avatar.jpg",
+            text: file.name, // Display file name
+            time: new Date().toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            type: "file",
+            fileUrl: response.file_url, // URL of the uploaded file
+          },
+        ]);
+      } else {
+        console.error("Failed to send file:", response.error);
+      }
+    });
+  };
+
+  const sendImage = async (image) => {
+    if (!image) return;
+
+    const tempId = `msg-${Date.now()}`;
+    const now = new Date();
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64Data = reader.result.split(",")[1];
+
+      const fileMessage = {
+        conversation_id: selectedChat?.conversation_id,
+        sender_id: userMain.id,
+        receiver_id: selectedChat?.list_user_id[0],
+        file_name: image.name,
+        file_type: image.type,
+        file_size: image.size,
+        file_data: `data:${image.type};base64,${base64Data}`,
+        message: `Đã gửi ảnh: ${image.name}`,
+        type: "image",
+      };
+
+      // Add temporary message to UI
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: tempId,
+          sender: "me",
+          avatar: userMain.avatar || "/default-avatar.jpg",
+          text: "[Đang gửi ảnh...]",
+          time: now.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          status: "pending",
+          type: "image",
+        },
+      ]);
+
+      socket.emit("send_private_file", fileMessage, (response) => {
+        if (response.success) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === tempId
+                ? {
+                    ...m,
+                    id: response.message_id || tempId,
+                    status: "sent",
+                    text: "[Ảnh đã gửi]",
+                    time: response.time
+                      ? new Date(response.time).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : m.time,
+                    imageUrl: response.file_url,
+                    sender: response.sender_id === userMain.id ? "me" : "other",
+                    avatar:
+                      response.sender_id === userMain.id
+                        ? userMain.avatar || "/default-avatar.jpg"
+                        : selectedChat?.user?.avt || "/default-avatar.jpg",
+                  }
+                : m
+            )
+          );
+        } else {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === tempId ? { ...m, status: "failed" } : m))
+          );
+        }
+      });
+    };
+
+    reader.readAsDataURL(image);
+  };
+
   const messagesEndRef = useRef(null); // Tham chiếu đến phần cuối danh sách tin nhắn
 
   // Hàm cuộn đến tin nhắn cuối cùng
@@ -332,17 +446,30 @@ const ChatWindow = ({
                     boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
                   }}
                 >
-                  {msg.text}
+                  {msg.type === "file" ? (
+                    <img
+                      src={msg.media}
+                      alt={msg.message || "Đã gửi ảnh"}
+                      style={{
+                        maxWidth: "100%",
+                        height: "auto",
+                        borderRadius: "8px",
+                      }}
+                    />
+                  ) : (
+                    msg.message || msg.text
+                  )}
                 </div>
+
                 <Dropdown
                   overlay={messageOptions(msg)}
                   trigger={["click"]}
                   placement={msg.sender === "me" ? "bottomRight" : "bottomLeft"}
                   getPopupContainer={(triggerNode) => triggerNode.parentNode}
                   overlayStyle={{
-                    width: "200px", // Chiều rộng cố định
-                    maxWidth: "300px", // Chiều rộng tối đa
-                    wordWrap: "break-word", // Đảm bảo nội dung không tràn
+                    width: "200px",
+                    maxWidth: "300px",
+                    wordWrap: "break-word",
                   }}
                 >
                   <span
@@ -358,6 +485,7 @@ const ChatWindow = ({
                   </span>
                 </Dropdown>
               </div>
+
               <span
                 style={{ fontSize: "12px", color: "#888", marginTop: "4px" }}
               >
@@ -371,7 +499,17 @@ const ChatWindow = ({
 
       <div className="p-4 bg-white border-t">
         <div className="flex items-center gap-4 mb-2 text-gray-600">
-          <button className="hover:text-blue-500" title="Gửi ảnh">
+          <button
+            className="hover:text-blue-500"
+            title="Gửi ảnh"
+            onClick={() => {
+              const image = document.createElement("input");
+              image.type = "file";
+              image.accept = "image/*";
+              image.onchange = (e) => sendImage(e.target.files[0]);
+              image.click();
+            }}
+          >
             <PictureOutlined style={{ fontSize: "20px" }} />
           </button>
           <Dropdown
@@ -384,7 +522,16 @@ const ChatWindow = ({
               <SmileOutlined style={{ fontSize: "20px" }} />
             </button>
           </Dropdown>
-          <button className="hover:text-blue-500" title="Gửi file">
+          <button
+            className="hover:text-blue-500"
+            title="Gửi file"
+            onClick={() => {
+              const file = document.createElement("input");
+              file.type = "file";
+              file.onchange = (e) => sendFile(e.target.files[0]);
+              file.click();
+            }}
+          >
             <PaperClipOutlined style={{ fontSize: "20px" }} />
           </button>
           <button className="hover:text-blue-500" title="Gửi tài liệu">
