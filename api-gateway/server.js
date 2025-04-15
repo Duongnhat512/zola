@@ -16,11 +16,11 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('❌ Not allowed by CORS: ' + origin));
+      callback(new Error('Not allowed by CORS: ' + origin));
     }
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true, // Nếu dùng cookie/token thì bật cái này
+  credentials: true,
 }));
 app.use(express.json());
 
