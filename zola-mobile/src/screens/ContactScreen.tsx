@@ -8,8 +8,11 @@ import { sendFriendRequest, getFriendRequests, getSentFriendRequests, getListFri
 import {GetUserById} from '../services/UserService';
 import UserModal from '../screens/UserModal';
 import { useSelector } from 'react-redux';
+import { useNavigation } from '@react-navigation/native';
+
 const Tabs = ['Bạn bè', 'Danh sách lời mời kết bạn','Danh sách lời mời kết bạn đã gửi'];
 const ContactScreen = () => {
+    const navigation = useNavigation();
       const user = useSelector((state: any) => state.user.user);
     const [friendRequests, setFriendRequests] = useState([]);
     const [sentRequests, setSentRequests] = useState([]);
@@ -19,7 +22,8 @@ const ContactScreen = () => {
     const [selectedUser, setSelectedUser] = useState(null);
     const handleAcceptRequest = async (user_friend_id: string) => {
         try {
-          await acceptFriendRequest(user.id, user_friend_id);
+          //
+          await acceptFriendRequest(user.id,user_friend_id);
           Alert.alert("Thành công", "Đã chấp nhận lời mời kết bạn.");
           // gọi lại fetchFriendRequestsWithDetails để cập nhật danh sách
           fetchFriendsRequestWithDetails();
@@ -43,7 +47,7 @@ const ContactScreen = () => {
       const handleUndoRequest = async (user_friend_id: string) => {
         try {
           await rejectFriendRequest(user_friend_id,user.id);
-          fetchFriendsRequestWithDetails();
+          fetchSendRequestWithDetails();
         } catch (error) {
           console.error("Lỗi khi thu hồi:", error);
           Alert.alert("Lỗi", "Không thể thu hồi lời mời.");
@@ -115,7 +119,7 @@ const ContactScreen = () => {
           // Duyệt từng item để lấy thông tin user_friend_id
           const requestsWithDetails = await Promise.all(
             pendingRequests.map(async (req) => {
-              const userDetailRes = await GetUserById(req.user_friend_id);
+              const userDetailRes = await GetUserById(req.user_id);
               console.log(userDetailRes);
               return {
                 ...req,
@@ -160,18 +164,34 @@ const ContactScreen = () => {
 
 
 
-    const handleSendFriendRequest = async () => {
+    const handleSendFriendRequest = async (friend_user_id) => {
         try {
           // user_id = người đang đăng nhập (hardcode ví dụ), bạn có thể lấy từ context hoặc AsyncStorage
-          const currentUserId = '123'; // <-- sửa thành ID thực tế của user hiện tại
-      
-          const res = await sendFriendRequest(currentUserId, selectedUser.id);
-          alert(res); // hiển thị thông báo thành công
-          setModalVisible(false);
-        } catch (err) {
-          console.log(err);
-          alert(err.message || 'Gửi lời mời thất bại');
-        }
+          // console.log(friend_user_id);
+          // friendsList.forEach(friend => {
+          //   console.log(friend.id);
+          // });
+          const isFriend = friendsList.some(friend => friend.friendInfo.id === friend_user_id);
+          console.log(isFriend);
+          if (isFriend) {
+            console.log("Đã là bạn bè");
+            Alert.alert("đã kết bạn với người này");
+            setModalVisible(false);
+          } else {
+            console.log("Chưa kết bạn");
+            const res = await sendFriendRequest(friend_user_id,user.id);      
+            await fetchSendRequestWithDetails();
+             //alert(res); // hiển thị thông báo thành công
+             Alert.alert("Gửi lời mời kết bạn thành công!");
+             setModalVisible(false);
+           } 
+          }
+          catch (err) {
+            console.log(err);
+            alert(err.message || 'Gửi lời mời thất bại');
+          }
+          
+     
       };
       
     const handleSearch = async () => {
@@ -190,6 +210,7 @@ const ContactScreen = () => {
     
     const [activeTab, setActiveTab] = useState('Bạn bè');
     const renderFriendItem = ({ item }) => (
+      <TouchableOpacity>
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 15 }}>
       <Image
         source={{ uri: item.friendInfo.avt }}
@@ -203,6 +224,7 @@ const ContactScreen = () => {
         <Text>🎥</Text>
       </TouchableOpacity>
     </View>
+    </TouchableOpacity>
   );
   const renderFriendRequest = ({ item }) => (
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 15 }}>

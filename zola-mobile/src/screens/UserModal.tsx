@@ -19,7 +19,7 @@ const UserModal = ({ visible, user, onClose, onSendFriendRequest }) => {
 
           <TouchableOpacity
             style={{ marginTop: 15, backgroundColor: '#007bff', padding: 10, borderRadius: 5 }}
-            onPress={onSendFriendRequest}
+            onPress={()=>{onSendFriendRequest(user.id)}}
           >
             <Text style={{ color: '#fff', textAlign: 'center' }}>Gửi lời mời kết bạn</Text>
           </TouchableOpacity>
