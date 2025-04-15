@@ -68,3 +68,15 @@ export const getUserById = async (id) => {
   }
 };
 
+export const hiddenMessage = async (idMessage,idUser) => {
+  try {
+    const response = await axios.post(`/chat-service/messages/set-hidden-message`, {
+      message_id:idMessage,
+      user_id:idUser
+    });
+    return response;
+  } catch (error) {
+    console.error("Failed to hidden message", error);
+    throw error;
+  }
+}

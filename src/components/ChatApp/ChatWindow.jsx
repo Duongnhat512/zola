@@ -19,6 +19,7 @@ import {
 import socket from "../../services/Socket";
 import { useSelector } from "react-redux";
 import { useRef } from "react";
+import { hiddenMessage } from "../../services/UserService";
 const ChatWindow = ({
   selectedChat,
   input,
@@ -225,9 +226,20 @@ const ChatWindow = ({
     console.log("Copied:", text);
   };
 
-  const deleteMessage = (id) => {
-    setMessages((prev) => prev.filter((msg) => msg.id !== id));
-    console.log("Deleted message with ID:", id);
+  const deleteMessage = async (idMessage) => {
+    try {
+      // Gọi API để ẩn tin nhắn
+      const response = await hiddenMessage(idMessage, userMain.id);
+      if (response.status === "success") {
+        // Nếu thành công, ẩn tin nhắn khỏi giao diện
+        setMessages((prev) => prev.filter((msg) => msg.id !== idMessage));
+        console.log("Message hidden successfully:", idMessage);
+      } else {
+        console.error("Failed to hide message:", response.data);
+      }
+    } catch (error) {
+      console.error("Error while hiding message:", error);
+    }
   };
 
   const revokeMessage = (id) => {
