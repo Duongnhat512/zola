@@ -58,8 +58,8 @@ MessageController.sendFile = async (socket, data) => {
     const timestamp = new Date().toISOString();
     const fileMessage = {
       conversation_id: data.conversation_id,
-      user_id: socket.user.id,
-      user_target: data.receiver_id || null,
+      sender_id: socket.user.id,
+      reciver_id: data.receiver_id || null,
       type: "file",
       message: data.message || `Đã gửi file: ${data.file_name}`,
       media: fileUrl,
