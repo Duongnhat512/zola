@@ -22,9 +22,10 @@ export const getRequestFriend = async (userId) => {
 };
 export const createFriendRequest = async (userId, friendId) => {
   try {
-    const response = await axios.post(
-      `/friend-service/friends/request?user_id=${userId}&user_friend_id=${friendId}`
-    );
+    const response = await axios.post("/friend-service/friends/request", {
+      user_id: userId,
+      user_friend_id: friendId,
+    });
     return response;
   } catch (error) {
     console.error(
@@ -50,11 +51,23 @@ export const getReceivedFriendRequests = async (userId) => {
 export const acceptFriendRequest = async (userId, friendId) => {
   try {
     const response = await axios.put(
-      `/friend-service/friends/accept?user_id=${userId}&user_friend_id=${friendId}`
+      "/friend-service/friends/accept",
+      {
+        user_id: userId,
+        user_friend_id: friendId,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
     );
     return response;
   } catch (error) {
-    console.error("Failed to accept friend request", error);
+    console.error(
+      "Failed to accept friend request",
+      error.response?.data || error.message
+    );
     throw error;
   }
 };

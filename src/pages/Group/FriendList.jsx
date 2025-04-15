@@ -100,12 +100,12 @@ const FriendList = () => {
   const fetchUserDetails = async (chat, friendId) => {
     console.log("Fetching user details...", chat);
 
-    if (!chat || !chat.list_user_id) {
-      chat = {
-        list_user_id: [friendId],
-        list_message: [],
-      };
-    }
+    // if (!chat || !chat.list_user_id) {
+    //   chat = {
+    //     list_user_id: [friendId],
+    //     list_message: [],
+    //   };
+    // }
 
     try {
       const updatedChats = await Promise.all(
@@ -187,7 +187,7 @@ const FriendList = () => {
                       <Avatar
                         size={40}
                         icon={<UserOutlined />}
-                        src={friend.avatar}
+                        src={friend.avt}
                       />
                       <span>{friend.fullname}</span>
                     </div>

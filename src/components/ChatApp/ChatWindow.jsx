@@ -55,7 +55,7 @@ const ChatWindow = ({
         avatar:
           msg.sender_id === userMain.id
             ? userMain.avatar || "/default-avatar.jpg"
-            : selectedChat.user.avt || "/default-avatar.jpg",
+            : selectedChat?.user?.avt || "/default-avatar.jpg",
         text: msg.message,
         media: msg.media,
         type: msg.type,
