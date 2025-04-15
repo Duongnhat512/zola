@@ -21,7 +21,6 @@ exports.isAuth = async (socket, next) => {
         },
       }
     );
-    console.log("res", res.data.user);
     socket.user = res.data.user;
     next();
   } catch (err) {

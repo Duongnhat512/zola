@@ -104,7 +104,7 @@ UserController.getUserByUsername = async (req, res) => {
         dob: user.dob,
         gender: user.dob,
         status: user.status,
-      }
+      },
     });
   } catch (error) {
     console.error(error);
@@ -112,8 +112,7 @@ UserController.getUserByUsername = async (req, res) => {
       message: "Có lỗi xảy ra trong quá trình lấy thông tin người dùng.",
     });
   }
-
-}
+};
 
 UserController.updateUserStatus = async (req, res) => {
   const { id, status } = req.body;
@@ -141,6 +140,6 @@ UserController.updateUserStatus = async (req, res) => {
       message: "Có lỗi xảy ra trong quá trình cập nhật trạng thái người dùng.",
     });
   }
-}
+};
 
 exports.UserController = UserController;
