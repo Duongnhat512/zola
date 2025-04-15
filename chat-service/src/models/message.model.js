@@ -98,6 +98,7 @@ const MessageModel = {
             if (user_id) {
                 const hiddenParams = {
                     TableName: hiddenMessageTable,
+                    IndexName: "user-id-index",
                     KeyConditionExpression: "user_id = :user_id",
                     ExpressionAttributeValues: {
                         ":user_id": user_id,
