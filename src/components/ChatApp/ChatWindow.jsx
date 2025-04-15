@@ -35,14 +35,17 @@ const ChatWindow = ({
     selectedChatRef.current = selectedChat;
   }, [selectedChat]);
   const userMain = useSelector((state) => state.user.user);
+
   useEffect(() => {
     // console.log("Selected chat:", selectedChat);
 
     if (!selectedChat?.conversation_id) return;
+
     // Gửi yêu cầu lấy danh sách tin nhắn khi chọn đoạn chat
     socket.emit("get_messages", {
       conversation_id: selectedChat.conversation_id,
     });
+
     // Nhận danh sách tin nhắn
     socket.on("list_messages", (data) => {
       console.log("Received messages:", data);
@@ -53,10 +56,10 @@ const ChatWindow = ({
       const formattedMessages = dataSort.map((msg) => ({
         id: msg.message_id,
         sender: msg.sender_id === userMain.id ? "me" : "other",
-        avatar:
-          msg.sender_id === userMain.id
-            ? userMain.avatar || "/default-avatar.jpg"
-            : selectedChat.user.avt || "/default-avatar.jpg",
+        avatar: "/default-avatar.jpg",
+        // msg.sender_id === userMain.id
+        //   ? userMain.avatar || "/default-avatar.jpg"
+        //   : selectedChat.user.avt || "/default-avatar.jpg",
         text: msg.message,
         time: new Date(msg.created_at).toLocaleTimeString([], {
           hour: "2-digit",
@@ -148,6 +151,9 @@ const ChatWindow = ({
       status: "sent",
     };
     socket.emit("send_private_message", msg, (response) => {
+      console.log("====================================");
+      console.log(msg + " " + userMain.id);
+      console.log("====================================");
       if (response.status === "success") {
         console.log("Message sent successfully:", response);
         setMessages((prev) => [
@@ -277,7 +283,7 @@ const ChatWindow = ({
             className="mr-3"
           />
           <div>
-            <h2 className="font-semibold">{selectedChat.user.fullname}</h2>
+            <h2 className="font-semibold">{selectedChat.user?.fullname}</h2>
             <p className="text-sm text-gray-500">Vừa truy cập</p>
           </div>
         </div>

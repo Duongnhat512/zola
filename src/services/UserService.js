@@ -67,6 +67,7 @@ export const getUserById = async (id) => {
     throw error;
   }
 };
+<<<<<<< HEAD
 
 export const hiddenMessage = async (idMessage,idUser) => {
   try {
@@ -80,3 +81,5 @@ export const hiddenMessage = async (idMessage,idUser) => {
     throw error;
   }
 }
+=======
+>>>>>>> 73c7aba10a7eeb893e027bb64409ed3b9f097597

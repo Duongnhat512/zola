@@ -28,7 +28,10 @@ const ChatSidebar = ({ chats, openChat }) => {
     setIsModalGroupVisible(false);
   };
   return (
-    <div className="w-1/4 border-r border-gray-300 flex flex-col bg-white shadow-lg " style={{width: "350px"}}>
+    <div
+      className="w-1/4 border-r border-gray-300 flex flex-col bg-white shadow-lg "
+      style={{ width: "350px" }}
+    >
       {/* Header */}
       <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
         <Input
@@ -41,7 +44,12 @@ const ChatSidebar = ({ chats, openChat }) => {
             onClick={openModal}
             className="text-gray-500 text-lg cursor-pointer hover:text-blue-500"
           />
-          {isModalVisible && <AddFriendModal onClose={closeModal} />}
+          {isModalVisible && (
+            <AddFriendModal
+              onClose={closeModal}
+              isModalVisible={isModalVisible}
+            />
+          )}
         </div>
         <div className="flex gap-2 ml-2" onClick={openModalGroup}>
           <UsergroupAddOutlined className="text-gray-500 text-lg cursor-pointer hover:text-blue-500" />
@@ -83,10 +91,13 @@ const ChatSidebar = ({ chats, openChat }) => {
                 </div>
               </div>
               <div className="text-xs text-gray-400 whitespace-nowrap">
-                {new Date(chat?.last_message?.created_at).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                {new Date(chat?.last_message?.created_at).toLocaleTimeString(
+                  [],
+                  {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }
+                )}
               </div>
             </div>
           </div>
