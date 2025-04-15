@@ -44,7 +44,6 @@ const ChatWindow = ({
     });
 
     socket.on("list_messages", (data) => {
-      console.log("Received messages:", data);
       const dataSort = data.sort(
         (a, b) => new Date(a.created_at) - new Date(b.created_at)
       );
@@ -151,11 +150,7 @@ const ChatWindow = ({
       status: "sent",
     };
     socket.emit("send_private_message", msg, (response) => {
-      console.log("====================================");
-      console.log(msg + " " + userMain.id);
-      console.log("====================================");
       if (response.status === "success") {
-        console.log("Message sent successfully:", response);
         setMessages((prev) => [
           ...prev,
           {
@@ -207,7 +202,7 @@ const ChatWindow = ({
     };
 
     socket.emit("send_private_file", msg, (response) => {
-      if (response.status === "success") {
+      // if (response.status === "success") {
         console.log("File sent successfully:", response);
         setMessages((prev) => [
           ...prev,
@@ -224,10 +219,13 @@ const ChatWindow = ({
             fileUrl: response.file_url, // URL of the uploaded file
           },
         ]);
-      } else {
-        console.error("Failed to send file:", response.error);
-      }
+      // } else {
+        // console.error("Failed to send file:", response.error);
+      // }
     });
+    console.log("Emitting file_sent event with data:");
+    
+    
   };
 
   const sendImage = async (image) => {
@@ -259,22 +257,22 @@ const ChatWindow = ({
       // Add temporary message to UI
       setMessages((prev) => [
         ...prev,
-        {
-          id: tempId,
-          sender: "me",
-          avatar: userMain.avatar || "/default-avatar.jpg",
-          text: "[Đang gửi ảnh...]",
-          time: now.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          status: "pending",
-          type: "image",
-        },
+        // {
+        //   id: tempId,
+        //   sender: "me",
+        //   avatar: userMain.avatar || "/default-avatar.jpg",
+        //   text: "[Đang gửi ảnh...]",
+        //   time: now.toLocaleTimeString([], {
+        //     hour: "2-digit",
+        //     minute: "2-digit",
+        //   }),
+        //   status: "pending",
+        //   type: "image",
+        // },
       ]);
 
       socket.emit("send_private_file", fileMessage, (response) => {
-        if (response.success) {
+        // if (response.success) {
           setMessages((prev) =>
             prev.map((m) =>
               m.id === tempId
@@ -299,15 +297,33 @@ const ChatWindow = ({
                 : m
             )
           );
-        } else {
-          setMessages((prev) =>
-            prev.map((m) => (m.id === tempId ? { ...m, status: "failed" } : m))
-          );
-        }
+        // } else {
+        //   setMessages((prev) =>
+        //     prev.map((m) => (m.id === tempId ? { ...m, status: "failed" } : m))
+        //   );
+        // }
       });
     };
-
+    socket.on("file_sent", (data) => {
+      console.log("File sent:", data);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: data.message_id,
+          sender: "me",
+          avatar: userMain.avatar || "/default-avatar.jpg",
+          text: "Ảnh", // Display file name
+          time: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          type: "file",
+          fileUrl: data.file_url, // URL of the uploaded file
+        },
+      ]);
+    })
     reader.readAsDataURL(image);
+
   };
 
   const messagesEndRef = useRef(null); // Tham chiếu đến phần cuối danh sách tin nhắn
@@ -387,7 +403,8 @@ const ChatWindow = ({
       </div>
     );
   }
-
+  console.log(messages);
+  
   return (
     <div className="flex-1 flex flex-col bg-white">
       <div className="bg-white p-4 shadow flex items-center justify-between">
@@ -461,7 +478,7 @@ const ChatWindow = ({
                 >
                   {msg.type === "file" ? (
                     <img
-                      src={msg.media}
+                      src={msg.media || msg.fileUrl}
                       alt={msg.message || "Đã gửi ảnh"}
                       style={{
                         maxWidth: "100%",
