@@ -56,7 +56,7 @@ const MessagesScreen = () => {
           return chat;
         })
       );
-      
+      console.log("chat", chats);
       setChats(updatedChats);
       console.log("Danh sách hội thoại:", updatedChats);
     } catch (error) {
@@ -78,7 +78,7 @@ const MessagesScreen = () => {
             {item.user?.fullname || 'Chưa đặt tên'}
           </Text>
           <Text style={styles.chatMessage}>
-            Nhấn để bắt đầu trò chuyện
+            {item.last_message?.message || 'Chưa có tin nhắn'}
           </Text>
         </View>
       </View>

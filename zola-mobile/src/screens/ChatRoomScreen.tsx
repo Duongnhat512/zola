@@ -11,12 +11,14 @@ import {
   Image,
   Modal,
 } from 'react-native';
+import { Buffer } from 'buffer';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as DocumentPicker from 'expo-document-picker';
 import styles from '../styles/ChatRoomScreen.styles';
 import setupSocket from '../services/Socket';
 import { useSelector } from 'react-redux';
+import { deleteMessage as deleteMessageAPI } from '../services/ChatService';
 
 const ChatRoomScreen = ({ route, navigation }) => {
   const { conversationId, ortherUser } = route.params;
@@ -38,20 +40,22 @@ const ChatRoomScreen = ({ route, navigation }) => {
         setSocket(s);
 
         s.on("connect", () => {
-          // console.log("✅ Socket connected");
+          console.log("Socket connected");
           s.emit("get_messages", { conversation_id: conversationId });
         });
-
         s.on("list_messages", (data) => {
-          const sortedData = data.sort((a, b) =>
+          console.log("list_messages", data);
+          const sortedData = data
+          .filter((msg) => !msg.is_deleted)
+          .sort((a, b) =>
             new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
           );
           const formatted = sortedData.map((msg) => ({
             id: msg.message_id,
             sender: msg.sender_id === currentUser.id ? "me" : "other",
-            senderName: msg.sender_id === currentUser.id ? currentUser.fullname : "Người dùng",
+            senderName: msg.sender_id === currentUser.id ? currentUser.fullname : ortherUser.fullname,
             text: msg.message,
-            avatar: msg.sender_id === currentUser.id ? currentUser.avt : "/default.jpg",
+            avatar: msg.sender_id === currentUser.id ? currentUser.avt : ortherUser.avt,
             time: new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
             file: msg.media ? { uri: msg.media, name: msg.media.split("/").pop() } : undefined,
             status: "sent",
@@ -60,11 +64,11 @@ const ChatRoomScreen = ({ route, navigation }) => {
           setLoading(false);
         });
 
-        intervalRef.current = setInterval(() => {
+        s.emit("get_messages", { conversation_id: conversationId });
+
+        intervalRef.current = setTimeout(() => {
           s.emit("get_messages", { conversation_id: conversationId });
         }, 1000);
-
-        return () => clearInterval(intervalRef.current);
       } catch (error) {
         console.error("Lỗi khi thiết lập socket:", error);
         setLoading(false);
@@ -80,7 +84,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
         socket.off("new_message");
         socket.off("connect_error");
       }
-      clearInterval(intervalRef.current);
+      clearTimeout(intervalRef.current);
     };
   }, [conversationId]);
 
@@ -91,7 +95,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
     }
   };
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!inputText.trim() && !file) {
       Alert.alert('Thông báo', 'Vui lòng nhập tin nhắn hoặc chọn tệp đính kèm.');
       return;
@@ -115,32 +119,76 @@ const ChatRoomScreen = ({ route, navigation }) => {
     setInputText('');
     setFile(null);
 
-    const messageData = {
-      conversation_id: conversationId,
-      user_id: currentUser.id,
-      sender_id: currentUser.id,
-      receiver_id: ortherUser?.id,
-      message: inputText,
-      type: file ? 'file' : 'text',
-      media: file ? file.uri : '',
-      status: 'sent',
-      created_at: now.toISOString(),
-      temp_id: tempId,
-    };
+    if (file) {
+      try {
+        const response = await fetch(file.uri);
+        const blob = await response.blob();
 
-    socket?.emit('send_private_message', messageData, (response) => {
-      if (response.status === 'success') {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === tempId ? { ...m, status: 'sent', time: response.time || m.time } : m
-          )
-        );
-      } else {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64Data = reader.result.split(',')[1];
+
+          const fileMessage = {
+            conversation_id: conversationId,
+            sender_id: currentUser.id,
+            receiver_id: ortherUser?.id,
+            file_name: file.name,
+            file_type: file.mimeType,
+            file_size: file.size,
+            file_data: `data:${file.mimeType};base64,${base64Data}`,
+            message: `Đã gửi file: ${file.name}`,
+          };
+
+          socket?.emit('send_private_file', fileMessage, (response) => {
+            if (response.success) {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === tempId ? { ...m, status: 'sent', time: response.time || m.time } : m
+                )
+              );
+            } else {
+              setMessages((prev) =>
+                prev.map((m) => (m.id === tempId ? { ...m, status: 'failed' } : m))
+              );
+            }
+          });
+        };
+        reader.readAsDataURL(blob);
+      } catch (error) {
+        console.error("Lỗi khi xử lý file:", error);
         setMessages((prev) =>
           prev.map((m) => (m.id === tempId ? { ...m, status: 'failed' } : m))
         );
       }
-    });
+    }
+
+    if (inputText.trim()) {
+      const textMessage = {
+        conversation_id: conversationId,
+        user_id: currentUser.id,
+        sender_id: currentUser.id,
+        receiver_id: ortherUser?.id,
+        message: inputText,
+        type: 'text',
+        status: 'sent',
+        created_at: now.toISOString(),
+        temp_id: tempId + '-text',
+      };
+
+      socket?.emit('send_private_message', textMessage, (response) => {
+        if (response.status === 'success') {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === textMessage.temp_id ? { ...m, status: 'sent', time: response.time || m.time } : m
+            )
+          );
+        } else {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === textMessage.temp_id ? { ...m, status: 'failed' } : m))
+          );
+        }
+      });
+    }
   };
 
   const handleLongPressMessage = (msg) => {
@@ -150,9 +198,18 @@ const ChatRoomScreen = ({ route, navigation }) => {
     }
   };
 
-  const deleteMessage = () => {
-    setMessages((prev) => prev.filter((m) => m.id !== selectedMessage.id));
-    setModalVisible(false);
+  const deleteMessage = async () => {
+    try {
+      // Gọi API xóa tin nhắn
+      await deleteMessageAPI(selectedMessage.id);
+
+      // Cập nhật UI sau khi xóa tin nhắn
+      setMessages((prev) => prev.filter((m) => m.id !== selectedMessage.id));
+      setModalVisible(false);
+    } catch (error) {
+      console.error("Lỗi khi xóa tin nhắn:", error);
+      Alert.alert("Lỗi", "Không thể xóa tin nhắn. Vui lòng thử lại.");
+    }
   };
 
   const editMessage = () => {
@@ -170,7 +227,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
         </View>
 
         <View style={[styles.messageBubble, item.sender === 'me' ? styles.myMessage : styles.theirMessage]}>
-          {item.text && <Text style={styles.messageText}>{item.text}</Text>}
+          {/* Hiển thị file (nếu có) trước */}
           {item.file && (
             <View>
               {item.file.uri.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i) ? (
@@ -180,6 +237,10 @@ const ChatRoomScreen = ({ route, navigation }) => {
               )}
             </View>
           )}
+
+          {/* Hiển thị tin nhắn văn bản nếu có */}
+          {item.text && <Text style={styles.messageText}>{item.text}</Text>}
+
           <Text style={styles.messageTime}>
             {item.time}{' '}
             {item.status === 'pending' ? '🕓' : item.status === 'sent' ? '✅' : item.status === 'failed' ? '❌' : ''}

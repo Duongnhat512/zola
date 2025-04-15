@@ -24,3 +24,19 @@ export const getMessages = async (conversationId) => {
   }
 };
 
+
+export const deleteMessage = async (messageId) => {
+  try {
+    const res = await axios.put(`/chat-service/messages/delete-message?message_id=${messageId}`);
+    if (res.status==="success") {
+      console.log("Xóa tin nhắn thành công:", res.data);
+      return res.data;
+    } else {
+      console.error("Failed to delete message:", res.data);
+    }
+  } catch (error) {
+    console.error("Lỗi khi gọi API xóa tin nhắn:", error);
+    throw error;
+  }
+}
+
