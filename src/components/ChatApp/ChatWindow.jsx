@@ -37,16 +37,12 @@ const ChatWindow = ({
   const userMain = useSelector((state) => state.user.user);
 
   useEffect(() => {
-    // console.log("Selected chat:", selectedChat);
-
     if (!selectedChat?.conversation_id) return;
 
-    // Gửi yêu cầu lấy danh sách tin nhắn khi chọn đoạn chat
     socket.emit("get_messages", {
       conversation_id: selectedChat.conversation_id,
     });
 
-    // Nhận danh sách tin nhắn
     socket.on("list_messages", (data) => {
       console.log("Received messages:", data);
       const dataSort = data.sort(
@@ -56,10 +52,10 @@ const ChatWindow = ({
       const formattedMessages = dataSort.map((msg) => ({
         id: msg.message_id,
         sender: msg.sender_id === userMain.id ? "me" : "other",
-        avatar: "/default-avatar.jpg",
-        // msg.sender_id === userMain.id
-        //   ? userMain.avatar || "/default-avatar.jpg"
-        //   : selectedChat.user.avt || "/default-avatar.jpg",
+        avatar:
+          msg.sender_id === userMain.id
+            ? userMain.avatar || "/default-avatar.jpg"
+            : selectedChat.user.avt || "/default-avatar.jpg",
         text: msg.message,
         time: new Date(msg.created_at).toLocaleTimeString([], {
           hour: "2-digit",
@@ -137,7 +133,7 @@ const ChatWindow = ({
           src={url}
           alt={name}
           className="w-8 h-8 cursor-pointer"
-          onClick={() => addEmojiToInput(url)} // Thêm emoji Unicode vào Input
+          onClick={() => addEmojiToInput(url)}
         />
       ))}
     </div>
@@ -164,7 +160,7 @@ const ChatWindow = ({
             avatar:
               msg.sender_id === userMain.id
                 ? userMain.avatar || "/default-avatar.jpg"
-                : selectedChat.user.avt || "/default-avatar.jpg",
+                : selectedChat?.user?.avt || "/default-avatar.jpg",
             text: msg.message,
             time: new Date(msg.created_at).toLocaleTimeString([], {
               hour: "2-digit",
@@ -181,7 +177,10 @@ const ChatWindow = ({
       {
         id: `msg-${Date.now()}`, // Tạo ID tạm thời cho tin nhắn
         sender: "me",
-        avatar: userMain.avatar || "/default-avatar.jpg", // Avatar của người gửi
+        avatar:
+          msg.sender_id === userMain.id
+            ? userMain.avatar || "/default-avatar.jpg"
+            : selectedChat?.user?.avt || "/default-avatar.jpg",
         text: input, // Nội dung tin nhắn
         time: new Date().toLocaleTimeString([], {
           hour: "2-digit",
@@ -234,10 +233,8 @@ const ChatWindow = ({
 
   const deleteMessage = async (idMessage) => {
     try {
-      // Gọi API để ẩn tin nhắn
       const response = await hiddenMessage(idMessage, userMain.id);
       if (response.status === "success") {
-        // Nếu thành công, ẩn tin nhắn khỏi giao diện
         setMessages((prev) => prev.filter((msg) => msg.id !== idMessage));
         console.log("Message hidden successfully:", idMessage);
       } else {
