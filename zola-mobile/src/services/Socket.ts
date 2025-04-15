@@ -8,7 +8,7 @@ const setupSocket = async () => {
     throw new Error("Token không hợp lệ");
   }
 
-  const socket = io("http://192.168.2.58:5002", {
+  const socket = io("http://172.20.10.9:5002", {
     transportOptions: {
       polling: {
         extraHeaders: {

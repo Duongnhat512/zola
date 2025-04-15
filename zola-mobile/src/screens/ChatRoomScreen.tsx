@@ -44,7 +44,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
           s.emit("get_messages", { conversation_id: conversationId });
         });
         s.on("list_messages", (data) => {
-          console.log("list_messages", data);
+          // console.log("list_messages", data);
           const sortedData = data
           .filter((msg) => !msg.is_deleted)
           .sort((a, b) =>
@@ -66,9 +66,12 @@ const ChatRoomScreen = ({ route, navigation }) => {
 
         s.emit("get_messages", { conversation_id: conversationId });
 
-        intervalRef.current = setTimeout(() => {
+        intervalRef.current = setInterval(() => {
           s.emit("get_messages", { conversation_id: conversationId });
         }, 1000);
+
+
+        return () => clearInterval(intervalRef.current);
       } catch (error) {
         console.error("Lỗi khi thiết lập socket:", error);
         setLoading(false);
@@ -306,9 +309,9 @@ const ChatRoomScreen = ({ route, navigation }) => {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContainer}>
               <Text style={styles.modalTitle}>Tuỳ chọn tin nhắn</Text>
-              <TouchableOpacity onPress={editMessage} style={styles.modalButton}>
+              {/* <TouchableOpacity onPress={editMessage} style={styles.modalButton}>
                 <Text style={styles.modalButtonText}>✏️ Sửa</Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
               <TouchableOpacity onPress={deleteMessage} style={styles.modalButton}>
                 <Text style={styles.modalButtonText}>🗑️ Xoá</Text>
               </TouchableOpacity>
