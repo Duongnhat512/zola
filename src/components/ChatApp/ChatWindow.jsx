@@ -252,6 +252,10 @@ const ChatWindow = ({
         type: "image",
       };
 
+      console.log("====================================");
+      console.log(fileMessage);
+      console.log("====================================");
+
       // Add temporary message to UI
       setMessages((prev) => [
         ...prev,
