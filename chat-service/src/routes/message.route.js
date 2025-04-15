@@ -4,5 +4,5 @@ const { isAuthExpress } = require('../middlewares/auth.middleware');
 
 router.get("/get-conversation-messages/:conversation_id", isAuthExpress, MessageController.getConversationMessages)
 router.post("/set-hidden-message", isAuthExpress, MessageController.setHiddenMessage)
-
+router.put("/delete-message", isAuthExpress, MessageController.deleteMessage)
 module.exports = router;
