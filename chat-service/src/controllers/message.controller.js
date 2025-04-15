@@ -6,7 +6,8 @@ const MessageController = {}
 
 MessageController.getMessages = async (socket, data) => {
   try {
-    const messages = await MessageModel.getMessages(data.conversation_id);
+    console.log("user id: ", socket.user.id)
+    const messages = await MessageModel.getMessages(data.conversation_id, socket.user.id);
     socket.emit("list_messages", messages);
   } catch (error) {
     console.error("Lỗi khi nhận tin nhắn:", error);

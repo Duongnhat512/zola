@@ -72,17 +72,17 @@ const MessageModel = {
             throw new Error("Error sending image");
         }
     },
-    
-    /**
+
+    /**`
      * Lấy danh sách tin nhắn trong cuộc hội thoại theo conversation_id
      * @param {String} conversation_id 
      * @returns 
      */
-    getMessages: async (conversation_id) => {
+    getMessages: async (conversation_id, user_id) => {
         if (!conversation_id) {
             throw new Error("conversation_id is required");
         }
-    
+
         const params = {
             TableName: tableName,
             KeyConditionExpression: "conversation_id = :conversation_id",
@@ -90,10 +90,28 @@ const MessageModel = {
                 ":conversation_id": conversation_id,
             },
         };
-    
+
         try {
             const data = await dynamodb.query(params).promise();
-            return data.Items;
+            let messages = data.Items;
+
+            if (user_id) {
+                const hiddenParams = {
+                    TableName: hiddenMessageTable,
+                    KeyConditionExpression: "user_id = :user_id",
+                    ExpressionAttributeValues: {
+                        ":user_id": user_id,
+                    },
+                };
+
+                const hiddenData = await dynamodb.query(hiddenParams).promise();
+                const hiddenMessageIds = hiddenData.Items.map(item => item.message_id);
+
+                // Filter out messages that are in the hidden list
+                messages = messages.filter(message => !hiddenMessageIds.includes(message.message_id));
+            }
+
+            return messages;
         } catch (error) {
             console.error("Error getting messages:", error);
             throw new Error("Error getting messages");
@@ -150,13 +168,13 @@ const MessageModel = {
         };
         try {
             const data = await dynamodb.query(params).promise();
-            return data.Items[0]; 
+            return data.Items[0];
         } catch (error) {
             console.error("Error getting message:", error);
             throw new Error("Error getting message");
         }
     },
-    
+
     getMessagesByConversationId: async (conversation_id) => {
         const params = {
             TableName: tableName,
@@ -210,7 +228,7 @@ const MessageModel = {
             throw new Error("Error getting messages by receiver ID");
         }
     },
-    
+
     deleteMessageById: async (message_id) => {
         const queryParams = {
             TableName: tableName,
@@ -220,12 +238,12 @@ const MessageModel = {
                 ":message_id": message_id
             }
         };
-        
+
         try {
             const queryResult = await dynamodb.query(queryParams).promise();
 
             const message = queryResult.Items[0];
-            
+
             const updateParams = {
                 TableName: tableName,
                 Key: {
@@ -238,7 +256,7 @@ const MessageModel = {
                     ":updated_at": new Date().toISOString()
                 }
             };
-            
+
             await dynamodb.update(updateParams).promise();
             return { message: "Đánh dấu xóa tin nhắn thành công" };
         } catch (error) {
@@ -255,7 +273,7 @@ const MessageModel = {
                 ":user_id": user_id,
             },
         };
-    
+
         try {
             const data = await dynamodb.query(params).promise();
             return data.Items;
@@ -274,7 +292,7 @@ const MessageModel = {
                 created_at: new Date().toISOString(),
             },
         };
-    
+
         try {
             await dynamodb.put(params).promise();
             return { message: "Ẩn tin nhắn thành công" };
@@ -283,6 +301,26 @@ const MessageModel = {
             throw new Error("Error hiding message");
         }
     },
+
+    findHiddenMessage: async (user_id, message_id) => {
+        const params = {
+            TableName: hiddenMessageTable,
+            KeyConditionExpression: "user_id = :user_id and message_id = :message_id",
+            ExpressionAttributeValues: {
+                ":user_id": user_id,
+                ":message_id": message_id,
+            },
+        };
+
+        try {
+            const data = await dynamodb.query(params).promise();
+            return data.Items.length > 0;
+        } catch (error) {
+            console.error("Error finding hidden message:", error);
+            throw new Error("Error finding hidden message");
+        }
+    },
+
 }
 
 module.exports = MessageModel;
