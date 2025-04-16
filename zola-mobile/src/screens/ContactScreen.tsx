@@ -10,7 +10,7 @@ import UserModal from '../screens/UserModal';
 import { useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 
-const Tabs = ['Bạn bè', 'Danh sách lời mời kết bạn','Danh sách lời mời kết bạn đã gửi'];
+const Tabs = ['Bạn bè', 'Lời mời kết bạn','Lời mời kết bạn đã gửi'];
 const ContactScreen = () => {
     const navigation = useNavigation();
       const user = useSelector((state: any) => state.user.user);
@@ -300,7 +300,7 @@ const ContactScreen = () => {
 
         </View>
       )}
-      {activeTab === 'Danh sách lời mời kết bạn' && (
+      {activeTab === 'Lời mời kết bạn' && (
         <View style={{ padding: 20 }}>
           <Text style={{ color: 'gray' }}>Chưa có nhóm nào.</Text>
           <FlatList
@@ -310,7 +310,7 @@ const ContactScreen = () => {
         />
         </View>
       )}
-          {activeTab === 'Danh sách lời mời kết bạn đã gửi' && (
+          {activeTab === 'Lời mời kết bạn đã gửi' && (
         <View style={{ padding: 20 }}>   
           <Text style={{ color: 'gray' }}>Chưa có nhóm nào.</Text>
           <FlatList
