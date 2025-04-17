@@ -20,6 +20,16 @@ const ContactScreen = () => {
     const [searchText, setSearchText] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
+    const sampleGroups = [
+      { id: 'g1', name: 'Nhóm Game Dev', avatar: 'https://i.pravatar.cc/100?img=5' },
+      { id: 'g2', name: 'React Native VN', avatar: 'https://i.pravatar.cc/100?img=12' },
+      { id: 'g3', name: 'Team Dự Án', avatar: 'https://i.pravatar.cc/100?img=20' },
+    ];
+    const handleCreateGroup = () => {
+      Alert.alert('Tạo nhóm', 'Chức năng tạo nhóm sẽ được triển khai sau.');
+      navigation.navigate("GroupCreate");
+    };
+  
     const handleAcceptRequest = async (user_friend_id: string) => {
         try {
           //
@@ -209,6 +219,11 @@ const ContactScreen = () => {
       };
     
     const [activeTab, setActiveTab] = useState('Bạn bè');
+    const renderGroupItem = ({ item }) => (
+      <View style={styles.groupItem}>
+        <Image source={{ uri: item.avatar }} style={styles.groupAvatar} />
+        <Text style={styles.groupName}>{item.name}</Text>
+      </View>);
     const renderFriendItem = ({ item }) => (
       <TouchableOpacity>
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 15 }}>
@@ -254,7 +269,7 @@ const ContactScreen = () => {
     </View>
   );
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>        
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>  
       {/* Tabs Section */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-around', borderBottomWidth: 1, borderColor: '#ddd' }}>
         {Tabs.map(tab => (
@@ -267,8 +282,9 @@ const ContactScreen = () => {
           </TouchableOpacity>
         ))}
       </View>
-      {/* Friends List */}
-      {activeTab === 'Bạn bè' && (
+      <View style={styles.topHalf}>
+ {/* Friends List */}
+ {activeTab === 'Bạn bè' && (
     <View style={{gap:40}}>    
     <View style={{ flex: 1, paddingTop: 40 }}>
       {/* Thanh tìm kiếm */}
@@ -320,6 +336,23 @@ const ContactScreen = () => {
         />
         </View>    
       )}    
+      </View>
+      <View style={styles.bottomHalf}>
+      <View style={styles.groupHeader}>
+          <TouchableOpacity onPress={handleCreateGroup}>
+            <Text>Tạo nhóm</Text>
+          </TouchableOpacity>
+        </View>
+        <FlatList
+          data={sampleGroups}
+          keyExtractor={item => item.id}
+          renderItem={renderGroupItem}
+          contentContainerStyle={styles.groupList}
+        />
+      </View>   
+
+     
+      
     </SafeAreaView>
   );
 };
@@ -358,6 +391,42 @@ const styles = StyleSheet.create({
       height: 40,
       borderRadius: 20,
       marginRight: 12,
+    },
+    container: { flex: 1, backgroundColor: '#fff' },
+    topHalf: { flex: 1, borderBottomWidth: 1, borderColor: '#ddd' },
+    bottomHalf: { flex: 1, padding: 16 },
+    tabs: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      borderBottomWidth: 1,
+      borderColor: '#ddd',
+    },
+    tabButton: { paddingVertical: 10 },
+    tabActive: { borderBottomWidth: 2, borderColor: '#007bff' },
+    tabText: { color: '#333' },
+    tabTextActive: { fontWeight: 'bold', color: '#007bff' },
+    tabContent: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    
+    groupHeader: {
+      marginBottom: 12,
+      alignItems: 'flex-end',
+    },
+    groupList: {
+      // nếu muốn cách đều
+    },
+    groupItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 10,
+    },
+    groupAvatar: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      marginRight: 12,
+    },
+    groupName: {
+      fontSize: 16,
     },
   });
   

@@ -16,7 +16,7 @@ import PasswordScreen from '../screens/PasswordScreen';
 import Setting  from '../screens/Setting';
 import EditProfile from '../screens/EditProfile';
 import Profile from '../screens/Profile';
-
+import GroupCreateScreen from '../screens/GroupCreateScreen';
 import ChatRoomScreen from '../screens/ChatRoomScreen';
 import MessagesScreen from '../screens/MessagesScreen';
 
@@ -29,6 +29,7 @@ export type RootStackParamList = {
   Setting: undefined;
   ProfileScreen:undefined;
   Edit:undefined;
+  GroupCreate:undefined;
 };
 
 // Create navigators
@@ -49,6 +50,7 @@ const AuthStack: React.FC = () => {
       <Stack.Screen name="Name" component={NameScreen} />
       <Stack.Screen name="PrivateInformation" component={PrivateInformationScreen} />
       <Stack.Screen name="Password" component={PasswordScreen} />
+     <Stack.Screen name="GroupCreate" component={GroupCreateScreen} />
     </Stack.Navigator>
   );
 };
@@ -112,6 +114,7 @@ const AppNavigator: React.FC = () => {
           <Stack.Screen name="Welcome" component={WelcomeScreen} />
           <Stack.Screen name="Messages" component={MessagesScreen} />
           <Stack.Screen name="ChatRoom" component={ChatRoomScreen} /> 
+          <Stack.Screen name="GroupCreate" component={GroupCreateScreen} />
         </Stack.Navigator>
       ) : (
         <AuthStack />
