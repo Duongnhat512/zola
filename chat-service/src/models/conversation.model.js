@@ -1,6 +1,7 @@
 const { get, joinRoom } = require("../controllers/conversation.controller");
 const { dynamodb } = require("../utils/aws.helper");
 const { v4: uuidv4 } = require("uuid");
+const { generateConversationId } = require("../utils/conversation.helper");
 
 const memberTableName = "conversation_members";
 const tableName = "conversations";
@@ -30,7 +31,14 @@ const ConversationModel = {
    * @returns {Object} conversation
    */
   createConversation: async (conversation) => {
-    conversation.id = uuidv4();
+    if (conversation.type === "private") {
+      conversation.id = generateConversationId(
+        conversation.members[0],
+        conversation.members[1]
+      );
+    } else {
+      conversation.id = uuidv4();
+    }
 
     const params = {
       TableName: tableName,
@@ -38,7 +46,7 @@ const ConversationModel = {
         id: conversation.id,
         created_by: conversation.created_by,
         name: conversation.name || "",
-        description: conversation.description,
+        description: conversation.description || "",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         last_activity: new Date().toISOString(),
@@ -125,61 +133,20 @@ const ConversationModel = {
    * @returns
    */
   findPrivateConversation: async (user1Id, user2Id) => {
+    const conversationId = generateConversationId(user1Id, user2Id);
+
+    const params = {
+      TableName: tableName,
+      Key: {
+        id: conversationId,
+      },
+    };
     try {
-      const user1ConversationsParams = {
-        TableName: memberTableName,
-        IndexName: "userId-index",
-        KeyConditionExpression: "user_id = :userId",
-        ExpressionAttributeValues: {
-          ":userId": user1Id,
-        },
-      };
-
-      const user1Conversations = await dynamodb
-        .query(user1ConversationsParams)
-        .promise();
-
-      if (!user1Conversations.Items.length) {
-        return null;
-      }
-
-      for (const memberRecord of user1Conversations.Items) {
-        const conversationId = memberRecord.conversation_id;
-
-        const checkUser2Params = {
-          TableName: memberTableName,
-          KeyConditionExpression:
-            "conversation_id = :convId AND user_id = :userId",
-          ExpressionAttributeValues: {
-            ":convId": conversationId,
-            ":userId": user2Id,
-          },
-        };
-
-        const user2InConv = await dynamodb.query(checkUser2Params).promise();
-
-        if (user2InConv.Items.length > 0) {
-          const convParams = {
-            TableName: tableName,
-            Key: { id: conversationId },
-          };
-
-          const conversation = await dynamodb.get(convParams).promise();
-
-          if (
-            conversation.Item &&
-            conversation.Item.type === "private" &&
-            conversation.Item.no_of_member === 2
-          ) {
-            return conversation.Item;
-          }
-        }
-      }
-
-      return null;
+      const result = await dynamodb.get(params).promise();
+      return result.Item;
     } catch (error) {
-      console.error("Lỗi khi tìm kiếm hội thoại:", error);
-      throw new Error("Lỗi khi tìm kiếm hội thoại");
+      console.error("Có lỗi khi tìm hội thoại:", error);
+      throw new Error("Có lỗi khi tìm hội thoại");
     }
   },
 

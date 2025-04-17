@@ -13,7 +13,7 @@ const messageSocket = (io, socket) => {
     });
 
     // Gửi file
-    socket.on("send_file", async (data) => {
+    socket.on("send_group_file", async (data) => {
         console.log(`Received file upload request from ${socket.user.username}`);
         try {
             // Xử lý giới hạn kích thước file nếu cần
@@ -21,7 +21,7 @@ const messageSocket = (io, socket) => {
                 return socket.emit('error', { message: "File quá lớn, vui lòng upload file nhỏ hơn 5MB" });
             }
 
-            await messageController.sendFile(socket, data);
+            await messageController.sendGroupFile(socket, data);
         } catch (error) {
             console.error("Error handling send_file:", error);
             socket.emit('error', { message: "Lỗi khi gửi file" });
