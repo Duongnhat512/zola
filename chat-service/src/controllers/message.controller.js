@@ -31,9 +31,22 @@ MessageController.sendGroupMessage = async (socket, data) => {
   try {
     const message = await MessageModel.sendMessage(data);
 
+    await ConversationModel.updateLastMessage(
+      data.conversation_id,
+      message.message_id,
+    )
+
+    const timestamp = Date.now();
+
     const members = await redisClient.smembers(`group:${data.conversation_id}`);
 
     members.forEach(async (memberId) => {
+      await redisClient.zadd(
+        `chatlist:${memberId}`,
+        timestamp,
+        data.conversation_id
+      )
+
       const socketIds = await redisClient.smembers(`sockets:${memberId}`);
       socketIds.forEach((socketId) => {
         if (socketId !== socket.id) {
@@ -65,6 +78,11 @@ MessageController.sendGroupFile = async (socket, data) => {
     return;
   }
 
+  if (!data.conversation_id) {
+    socket.emit("error", { message: "Thiếu conversation_id" });
+    return;
+  }
+
   try {
     const fileBuffer = Buffer.from(
       data.file_data.split('base64,')[1] || data.file_data,
@@ -82,7 +100,6 @@ MessageController.sendGroupFile = async (socket, data) => {
 
     const fileUrl = await uploadFile(file);
 
-    const timestamp = new Date().toISOString();
     const fileMessage = {
       conversation_id: data.conversation_id,
       sender_id: data.sender_id,
@@ -96,14 +113,27 @@ MessageController.sendGroupFile = async (socket, data) => {
 
     const savedMessage = await MessageModel.sendMessage(fileMessage);
 
-    if (data.conversation_id) {
-      socket.to(data.conversation_id).emit('new_message', fileMessage);
-    }
+    const timestamp = Date.now();
 
-    socket.emit('file_sent', {
-      success: true,
-      message_id: savedMessage.message_id,
-      file_url: fileUrl
+    const members = await redisClient.smembers(`group:${data.conversation_id}`);
+
+    members.forEach(async (memberId) => {
+      await redisClient.zadd(
+        `chatlist:${memberId}`,
+        timestamp,
+        data.conversation_id
+      )
+
+      const socketIds = await redisClient.smembers(`sockets:${memberId}`);
+      socketIds.forEach((socketId) => {
+        if (socketId !== socket.id) {
+          socket.to(socketId).emit("new_message", { ...message });
+        }
+      });
+    });
+
+    socket.emit("message_sent", {
+      ...message
     });
 
     return {
@@ -177,6 +207,20 @@ MessageController.sendPrivateFile = async (socket, data) => {
     };
 
     const savedMessage = await MessageModel.sendMessage(fileMessage);
+
+    const timestamp = Date.now();
+
+    await redisClient.zadd(
+      `chatlist:${socket.user.id}`,
+      timestamp,
+      conversation.id
+    )
+
+    await redisClient.zadd(
+      `chatlist:${data.receiver_id}`,
+      timestamp,
+      conversation.id
+    )
 
     const receiverSockets = await redisClient.smembers(`sockets:${data.receiver_id}`);
     const senderSockets = await redisClient.smembers(`sockets:${socket.user.id}`);

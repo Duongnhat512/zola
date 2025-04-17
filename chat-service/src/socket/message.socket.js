@@ -17,8 +17,8 @@ const messageSocket = (io, socket) => {
         console.log(`Received file upload request from ${socket.user.username}`);
         try {
             // Xử lý giới hạn kích thước file nếu cần
-            if (data.file_size && data.file_size > 50 * 1024 * 1024) { // 50MB
-                return socket.emit('error', { message: "File quá lớn, vui lòng upload file nhỏ hơn 5MB" });
+            if (data.file_size && data.file_size > 50 * 1024 * 1024) { 
+                return socket.emit('error', { message: "File quá lớn, vui lòng upload file nhỏ hơn 50MB" });
             }
 
             await messageController.sendGroupFile(socket, data);

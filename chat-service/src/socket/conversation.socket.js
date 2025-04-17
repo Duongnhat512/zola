@@ -29,13 +29,21 @@ const conversationSocket = (io, socket) => {
 
     socket.on("create_group", async (data) => {
         console.log("Nhận yêu cầu tạo nhóm từ client:", data);
-        
         try{
             await conversationController.createGroup(socket, data);
-            socket.join(data.conversation_id);
         } catch (error) {
             console.error("Lỗi khi tạo nhóm:", error);
             socket.emit("error", { message: "Lỗi khi tạo nhóm" });
+        }
+    });
+
+    socket.on("add_member", async (data) => {
+        console.log("Nhận yêu cầu thêm thành viên vào nhóm từ client:", data);
+        try {
+            await conversationController.addMember(socket, data);
+        } catch (error) {
+            console.error("Lỗi khi thêm thành viên vào nhóm:", error);
+            socket.emit("error", { message: "Lỗi khi thêm thành viên vào nhóm" });
         }
     });
 };

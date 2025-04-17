@@ -277,10 +277,15 @@ ConversationController.addMember = async (socket, data) => {
       conversation_id
     );
 
-    socket.emit("member_added", {
-      user_id,
-      conversation_id,
-      message: "Thêm thành viên thành công",
+    await redisClient.sadd(`group:${conversation_id}`, user_id);
+
+    const socketIds = await redisClient.smembers(`sockets:${user_id}`);
+    socketIds.forEach((socketId) => {
+      socket.to(socketId).emit("new_member", {
+        conversation_id: conversation_id,
+        message: "Bạn đã được thêm vào nhóm",
+        user_id: user_id,
+      });
     });
 
   } catch (error) {

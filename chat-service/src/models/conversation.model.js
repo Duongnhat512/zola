@@ -175,7 +175,7 @@ const ConversationModel = {
   // },
 
   /**
-   *
+   * Lấy thông tin hội thoại theo ID
    * @param {String} conversationId
    * @returns
    */
@@ -201,9 +201,10 @@ const ConversationModel = {
       Key: {
         id: conversationId,
       },
-      UpdateExpression: "set last_message_id = :last_message_id",
+      UpdateExpression: "set last_message_id = :last_message_id, updated_at = :updated_at",
       ExpressionAttributeValues: {
         ":last_message_id": lastMessage,
+        ":updated_at": new Date().toISOString(),
       },
       ReturnValues: "UPDATED_NEW",
     };
@@ -287,7 +288,7 @@ const ConversationModel = {
     };
 
     try {
-      const result = await dynamodb.get(params).promise();
+      const result = await dynamodb.put(params).promise();
       return result.Item;
     } catch (error) {
       console.error("Có lỗi khi tham gia hội thoại:", error);
