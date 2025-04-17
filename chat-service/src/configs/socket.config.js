@@ -1,11 +1,8 @@
 const { Server } = require("socket.io");
-const axios = require("axios");
-const messageController = require("../controllers/message.controller");
-const conversationController = require("../controllers/conversation.controller");
 const { isAuth } = require("../middlewares/auth.middleware");
-const { addUser, removeUser } = require("../utils/online.helper");
 const messageSocket = require("../socket/message.socket");
 const conversationSocket = require("../socket/conversation.socket");
+const redisClient = require("./redis.config");
 
 function setupSocket(server) {
   const io = new Server(server, {
@@ -26,10 +23,11 @@ function setupSocket(server) {
 
   io.on("connection", async (socket) => {
     console.log(`User connected: ${socket.user.username}, UserID: ${socket.user.id}`);
+    
+    const userId = socket.user.id;
 
-    addUser(socket.user.id, socket.id);
+    await redisClient.sadd(`sockets:${userId}`, socket.id);
 
-    // Thông báo cho các user khác về user online
     io.emit('user_online', {
       userId: socket.user.id,
       username: socket.user.username
@@ -41,7 +39,9 @@ function setupSocket(server) {
     // Disconnect
     socket.on("disconnect", async () => {
       console.log(`User disconnected: ${socket.id}, UserID: ${socket.user.id}`);
-      removeUser(socket.user.id, socket.id);
+
+      await redisClient.srem(`sockets:${userId}`, socket.id);
+
       io.emit('user_offline', { userId: socket.user.id });
     });
   });

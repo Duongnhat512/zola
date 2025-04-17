@@ -26,6 +26,18 @@ const conversationSocket = (io, socket) => {
     socket.on("leave_room", (data) => {
         conversationController.leaveRoom(socket, data);
     });
+
+    socket.on("create_group", async (data) => {
+        console.log("Nhận yêu cầu tạo nhóm từ client:", data);
+        
+        try{
+            await conversationController.createGroup(socket, data);
+            socket.join(data.conversation_id);
+        } catch (error) {
+            console.error("Lỗi khi tạo nhóm:", error);
+            socket.emit("error", { message: "Lỗi khi tạo nhóm" });
+        }
+    });
 };
 
 module.exports = conversationSocket;

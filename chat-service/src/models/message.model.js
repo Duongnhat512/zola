@@ -16,14 +16,15 @@ const MessageModel = {
         const params = {
             TableName: tableName,
             Item: {
-                message_id: messageId,
-                conversation_id: message.conversation_id,
+                id: messageId,
+                conversation_id: message.conversation_id || "",
                 sender_id: message.sender_id,
                 receiver_id: message.receiver_id,
                 type: message.type || "text",
                 message: message.message,
                 media: message.media || "",
                 status: message.status,
+                file_name: message.file_name || "",
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
                 is_deleted: false,
@@ -38,38 +39,6 @@ const MessageModel = {
         } catch (error) {
             console.error("Error sending message:", error);
             throw new Error("Error sending message");
-        }
-    },
-
-    /**
-     * Gửi image message
-     * @param {Object} message 
-     * @returns {Object} message
-     */
-    sendImage: async (message) => {
-        const messageId = uuidv4();
-        const params = {
-            TableName: tableName,
-            Item: {
-                message_id: messageId,
-                conversation_id: message.conversation_id,
-                sender_id: message.sender_id,
-                receiver_id: message.receiver_id,
-                type: "image",
-                message: message.message,
-                media: message.media,
-                status: message.status,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-                is_deleted: false,
-            },
-        };
-        try {
-            await dynamodb.put(params).promise();
-            return message;
-        } catch (error) {
-            console.error("Error sending image:", error);
-            throw new Error("Error sending image");
         }
     },
 
@@ -119,25 +88,11 @@ const MessageModel = {
         }
     },
 
-    deleteMessage: async (message_id) => {
-        const params = {
-            TableName: tableName,
-            IndexName: "message-id-index",
-        };
-        try {
-            await dynamodb.delete(params).promise();
-            return { message: "Xóa tin nhắn thành công" };
-        } catch (error) {
-            console.error("Lỗi khi xóa tin nhắn:", error);
-            throw new Error("Lỗi khi xóa tin nhắn");
-        }
-    },
-
     updateMessage: async (message_id, updatedMessage) => {
         const params = {
             TableName: tableName,
             Key: {
-                message_id: message_id,
+                id: message_id,
             },
             UpdateExpression: "set #message = :message, #updated_at = :updated_at",
             ExpressionAttributeNames: {
@@ -161,10 +116,8 @@ const MessageModel = {
     getMessageById: async (message_id) => {
         const params = {
             TableName: tableName,
-            IndexName: "message-id-index",
-            KeyConditionExpression: "message_id = :message_id",
-            ExpressionAttributeValues: {
-                ":message_id": message_id,
+            Key: {
+                id: message_id,
             },
         };
         try {
@@ -179,7 +132,7 @@ const MessageModel = {
     getMessagesByConversationId: async (conversation_id) => {
         const params = {
             TableName: tableName,
-            IndexName: "conversation_id_index",
+            IndexName: "conversation-id-index",
             KeyConditionExpression: "conversation_id = :conversation_id",
             ExpressionAttributeValues: {
                 ":conversation_id": conversation_id,
@@ -197,7 +150,7 @@ const MessageModel = {
     getMessagesBySenderId: async (sender_id) => {
         const params = {
             TableName: tableName,
-            IndexName: "sender_id_index",
+            IndexName: "sender-id-index",
             KeyConditionExpression: "sender_id = :sender_id",
             ExpressionAttributeValues: {
                 ":sender_id": sender_id,
@@ -215,7 +168,7 @@ const MessageModel = {
     getMessagesByReceiverId: async (receiver_id) => {
         const params = {
             TableName: tableName,
-            IndexName: "receiver_id_index",
+            IndexName: "receiver-id-index",
             KeyConditionExpression: "receiver_id = :receiver_id",
             ExpressionAttributeValues: {
                 ":receiver_id": receiver_id,
@@ -233,57 +186,14 @@ const MessageModel = {
     deleteMessageById: async (message_id) => {
         const queryParams = {
             TableName: tableName,
-            IndexName: "message-id-index",
-            KeyConditionExpression: "message_id = :message_id",
-            ExpressionAttributeValues: {
-                ":message_id": message_id
-            }
-        };
-
-        try {
-            const queryResult = await dynamodb.query(queryParams).promise();
-
-            const message = queryResult.Items[0];
-
-            const updateParams = {
-                TableName: tableName,
-                Key: {
-                    conversation_id: message.conversation_id,
-                    message_id: message_id
-                },
-                UpdateExpression: "set is_deleted = :is_deleted, updated_at = :updated_at",
-                ExpressionAttributeValues: {
-                    ":is_deleted": true,
-                    ":updated_at": new Date().toISOString()
-                }
-            };
-
-            await dynamodb.update(updateParams).promise();
-            return { message: "Đánh dấu xóa tin nhắn thành công" };
-        } catch (error) {
-            console.error("Lỗi khi xóa tin nhắn:", error);
-            throw new Error("Lỗi khi xóa tin nhắn");
-        }
-    },
-
-    getHiddenMessages: async (user_id) => {
-        const params = {
-            TableName: hiddenMessageTable,
-            KeyConditionExpression: "user_id = :user_id",
-            ExpressionAttributeValues: {
-                ":user_id": user_id,
+            Key: {
+                id: message_id,
             },
         };
 
-        try {
-            const data = await dynamodb.query(params).promise();
-            return data.Items;
-        } catch (error) {
-            console.error("Error getting hidden messages:", error);
-            throw new Error("Error getting hidden messages");
-        }
+        // Xóa tin nhắn
     },
-
+    
     setHiddenMessage: async (user_id, message_id) => {
         const params = {
             TableName: hiddenMessageTable,

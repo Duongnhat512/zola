@@ -1,33 +1,14 @@
 const messageController = require("../controllers/message.controller");
 
 const messageSocket = (io, socket) => {
-    // Gửi tin nhắn
-    socket.on("send_message", async (data) => {
+    // Gửi tin nhắn nhóm
+    socket.on("send_group_message", async (data) => {
         console.log("Received message data:", JSON.stringify(data));
         try {
-            const message = await messageController.sendMessage(socket, data);
-
-            const roomClients = io.sockets.adapter.rooms.get(data.conversation_id);
-            if (roomClients) {
-                const receiptInfo = {
-                    message_id: message.message_id,
-                    readers: []
-                };
-
-                // Đánh dấu tất cả người dùng trong phòng đã nhận tin nhắn
-                roomClients.forEach(clientId => {
-                    const clientSocket = io.sockets.sockets.get(clientId);
-                    if (clientSocket && clientSocket.user && clientSocket.user.id !== socket.user.id) {
-                        receiptInfo.readers.push(clientSocket.user.id);
-                    }
-                });
-
-                // Gửi thông tin đã nhận cho người gửi
-                socket.emit('message_receipt', receiptInfo);
-            }
+            await messageController.sendGroupMessage(socket, data);
         } catch (error) {
-            console.error("Error handling send_message:", error);
-            socket.emit('error', { message: "Lỗi xử lý tin nhắn", error: error.message });
+            console.error("Error handling send_group_message:", error);
+            socket.emit('error', { message: "Lỗi khi gửi tin nhắn nhóm" });
         }
     });
 
@@ -51,20 +32,7 @@ const messageSocket = (io, socket) => {
     socket.on("send_private_file", async (data) => {
         console.log(`Received private file from ${socket.user.username} to ${data.receiver_id}`);
         try {
-            const fileMessage = await messageController.sendPrivateFile(socket, {
-                ...data,
-                conversation_id: data.conversation_id || null
-            });
-
-            if (!data.conversation_id) {
-                await messageController.sendPrivateMessage(socket, {
-                    receiver_id: data.receiver_id,
-                    type: "file",
-                    message: `Đã gửi file: ${data.file_name}`,
-                    media: fileMessage.file_url,
-                    file_data: null // Không gửi lại file data
-                });
-            }
+            await messageController.sendPrivateFile(socket, data);
         } catch (error) {
             console.error("Error handling private file:", error);
             socket.emit('error', { message: "Lỗi khi gửi file" });
@@ -92,6 +60,7 @@ const messageSocket = (io, socket) => {
         }
     });
 
+    // Xóa tin nhắn
     socket.on("delete_message", async (data) => {
         console.log("Received delete_message data:", JSON.stringify(data));
         try {
@@ -102,6 +71,18 @@ const messageSocket = (io, socket) => {
         }
     });
 
+    // Ẩn tin nhắn 1 phía
+    socket.on("set_hidden_message", async (data) => {
+        console.log("Received set_hidden_message data:", JSON.stringify(data));
+        try {
+            await messageController.setHiddenMessage(socket, data);
+        } catch (error) {
+            console.error("Error handling set_hidden_message:", error);
+            socket.emit('error', { message: "Lỗi xử lý tin nhắn" });
+        }
+    });
+
+    // Sự kiện đang nhập tin nhắn 
     socket.on("typing", (data) => {
         socket.to(data.conversation_id).emit("user_typing", {
             userId: socket.user.id,
@@ -109,6 +90,16 @@ const messageSocket = (io, socket) => {
             isTyping: data.isTyping
         });
     });
+
+    // Ngừng nhập tin nhắn
+    socket.on("stop_typing", (data) => {
+        socket.to(data.conversation_id).emit("user_stop_typing", {
+            userId: socket.user.id,
+            username: socket.user.username,
+            isTyping: data.isTyping
+        });
+    });
+
 };
 
 module.exports = messageSocket;
