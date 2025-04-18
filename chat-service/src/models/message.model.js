@@ -13,6 +13,7 @@ const MessageModel = {
      */
     sendMessage: async (message) => {
         const messageId = uuidv4();
+        const timestamp = new Date().toISOString();
         const params = {
             TableName: tableName,
             Item: {
@@ -25,8 +26,8 @@ const MessageModel = {
                 media: message.media || "",
                 status: message.status,
                 file_name: message.file_name || "",
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
+                created_at: timestamp,
+                updated_at: timestamp,
                 is_deleted: false,
             },
         };
@@ -34,6 +35,7 @@ const MessageModel = {
             const data = await dynamodb.put(params).promise();
             return {
                 message_id: messageId,
+                created_at: timestamp,
                 ...message,
             };
         } catch (error) {
