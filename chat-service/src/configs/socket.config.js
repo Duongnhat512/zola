@@ -3,6 +3,7 @@ const { isAuth } = require("../middlewares/auth.middleware");
 const messageSocket = require("../socket/message.socket");
 const conversationSocket = require("../socket/conversation.socket");
 const redisClient = require("./redis.config");
+const UserCacheService = require("../services/user-cache.service");
 
 function setupSocket(server) {
   const io = new Server(server, {
@@ -27,6 +28,7 @@ function setupSocket(server) {
     const userId = socket.user.id;
 
     await redisClient.sadd(`sockets:${userId}`, socket.id);
+    await UserCacheService.cacheUserProfile(socket.user);
 
     io.emit('user_online', {
       userId: socket.user.id,
@@ -40,6 +42,7 @@ function setupSocket(server) {
     socket.on("disconnect", async () => {
       console.log(`User disconnected: ${socket.id}, UserID: ${socket.user.id}`);
 
+      await UserCacheService.deleteUserProfile(socket.user.id);
       await redisClient.srem(`sockets:${userId}`, socket.id);
 
       io.emit('user_offline', { userId: socket.user.id });
