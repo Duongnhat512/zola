@@ -20,16 +20,13 @@ import socket from "../../services/Socket";
 import { useSelector } from "react-redux";
 import { useRef } from "react";
 import { hiddenMessage } from "../../services/UserService";
-const ChatWindow = ({
-  selectedChat,
-  input,
-  setInput,
-  messages,
-  setMessages,
-}) => {
+const ChatWindow = ({ selectedChat }) => {
   const selectedChatRef = useRef();
   const [emojiList, setEmojiList] = useState({});
   const [isEmojiPickerVisible, setIsEmojiPickerVisible] = useState(false);
+  const [input, setInput] = useState("");
+  const [messages, setMessages] = useState([]);
+  console.log("Selected chat:", selectedChat);
 
   useEffect(() => {
     selectedChatRef.current = selectedChat;
@@ -37,6 +34,8 @@ const ChatWindow = ({
   const userMain = useSelector((state) => state.user.user);
 
   useEffect(() => {
+    console.log(1);
+
     if (!selectedChat?.conversation_id) return;
 
     socket.emit("get_messages", {
@@ -44,6 +43,8 @@ const ChatWindow = ({
     });
 
     socket.on("list_messages", (data) => {
+      console.log("Received messages:", data);
+
       const dataSort = data.sort(
         (a, b) => new Date(a.created_at) - new Date(b.created_at)
       );
@@ -54,7 +55,7 @@ const ChatWindow = ({
         avatar:
           msg.sender_id === userMain.id
             ? userMain.avatar || "/default-avatar.jpg"
-            : selectedChat?.user?.avt || "/default-avatar.jpg",
+            : msg.sender_avatar || "/default-avatar.jpg",
         text: msg.message,
         media: msg.media,
         type: msg.type,
@@ -75,26 +76,31 @@ const ChatWindow = ({
   useEffect(() => {
     socket.on("new_message", (msg) => {
       const currentChat = selectedChatRef.current;
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: msg.message_id,
-          sender: msg.sender_id === userMain.id ? "me" : "other",
-          avatar:
-            msg.sender_id === userMain.id
-              ? userMain.avatar || "/default-avatar.jpg"
-              : currentChat?.user?.avt || "/default-avatar.jpg",
-          text: msg.message,
-          media: msg.media,
-          type: msg.type,
-          time: new Date(msg.created_at).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        },
-      ]);
+      console.log("New message received:", msg);
+      
+      if (
+        currentChat?.conversation_id === msg.conversation_id
+      ) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: msg.message_id,
+            sender: msg.sender_id === userMain.id ? "me" : "other",
+            avatar:
+              msg.sender_id === userMain.id
+                ? userMain.avatar || "/default-avatar.jpg"
+                : msg.sender_avatar || "/default-avatar.jpg",
+            text: msg.message,
+            media: msg.media,
+            type: msg.type,
+            time: new Date(msg.created_at).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          },
+        ]);
+      }
     });
-
     return () => {
       socket.off("new_message");
     };
@@ -143,44 +149,16 @@ const ChatWindow = ({
   );
   const sendMessage = () => {
     if (!input.trim()) return;
-    const msg = {
-      receiver_id: selectedChat?.list_user_id[0],
-      message: input,
-      type: "text",
-      status: "sent",
-    };
-    socket.emit("send_private_message", msg, (response) => {
-      if (response.status === "success") {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: msg.message_id,
-            sender: msg.sender_id === userMain.id ? "me" : "other",
-            avatar:
-              msg.sender_id === userMain.id
-                ? userMain.avatar || "/default-avatar.jpg"
-                : selectedChat?.user?.avt || "/default-avatar.jpg",
-            text: msg.message,
-            time: new Date(msg.created_at).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-          },
-        ]);
-      } else {
-        console.error("Failed to send message:", response.error);
-      }
-    });
+    const tempId = `msg-${Date.now()}`;
+    const isGroup = selectedChat?.list_user_id?.length > 1;
+
     setMessages((prev) => [
       ...prev,
       {
-        id: `msg-${Date.now()}`, // Tạo ID tạm thời cho tin nhắn
+        id: tempId,
         sender: "me",
-        avatar:
-          msg.sender_id === userMain.id
-            ? userMain.avatar || "/default-avatar.jpg"
-            : selectedChat?.user?.avt || "/default-avatar.jpg",
-        text: input, // Nội dung tin nhắn
+        avatar: userMain.avatar || "/default-avatar.jpg",
+        text: input,
         time: new Date().toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
@@ -188,8 +166,72 @@ const ChatWindow = ({
         status: "pending",
       },
     ]);
+    if (isGroup) {
+      let msg = {
+        conversation_id: selectedChat?.conversation_id,
+        message: input,
+        type: "text",
+        status: "sent",
+      };
+      socket.emit("send_group_message", msg, (response) => {
+        if (response.status === "success") {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === tempId
+                ? {
+                    ...m,
+                    id: response.message_id,
+                    status: "sent",
+                    time: new Date(response.created_at).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }),
+                  }
+                : m
+            )
+          );
+        } else {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === tempId ? { ...m, status: "failed" } : m))
+          );
+        }
+      });
+    } else {
+      let msg = {
+        receiver_id: selectedChat?.list_user_id[0],
+        message: input,
+        type: "text",
+        status: "sent",
+      };
+      // Gửi tin nhắn cá nhân
+      socket.emit("send_private_message", msg, (response) => {
+        if (response.status === "success") {
+          // Cập nhật trạng thái tin nhắn thành "sent"
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === tempId
+                ? {
+                    ...m,
+                    id: response.message_id,
+                    status: "sent",
+                    time: new Date(response.created_at).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }),
+                  }
+                : m
+            )
+          );
+        } else {
+          // Nếu gửi thất bại, cập nhật trạng thái thành "failed"
+          setMessages((prev) =>
+            prev.map((m) => (m.id === tempId ? { ...m, status: "failed" } : m))
+          );
+        }
+      });
+    }
 
-    setInput("");
+    setInput(""); // Xóa nội dung trong ô nhập
   };
   const sendFile = (file) => {
     if (!file) return;
@@ -203,37 +245,33 @@ const ChatWindow = ({
 
     socket.emit("send_private_file", msg, (response) => {
       // if (response.status === "success") {
-        console.log("File sent successfully:", response);
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: response.message_id,
-            sender: "me",
-            avatar: userMain.avatar || "/default-avatar.jpg",
-            text: file.name, // Display file name
-            time: new Date().toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-            type: "file",
-            fileUrl: response.file_url, // URL of the uploaded file
-          },
-        ]);
+      console.log("File sent successfully:", response);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: response.message_id,
+          sender: "me",
+          avatar: userMain.avatar || "/default-avatar.jpg",
+          text: file.name, // Display file name
+          time: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          type: "file",
+          fileUrl: response.file_url, // URL of the uploaded file
+        },
+      ]);
       // } else {
-        // console.error("Failed to send file:", response.error);
+      // console.error("Failed to send file:", response.error);
       // }
     });
     console.log("Emitting file_sent event with data:");
-    
-    
   };
 
   const sendImage = async (image) => {
     if (!image) return;
 
     const tempId = `msg-${Date.now()}`;
-    const now = new Date();
-
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64Data = reader.result.split(",")[1];
@@ -249,12 +287,6 @@ const ChatWindow = ({
         message: `Đã gửi ảnh: ${image.name}`,
         type: "image",
       };
-
-      console.log("====================================");
-      console.log(fileMessage);
-      console.log("====================================");
-
-      // Add temporary message to UI
       setMessages((prev) => [
         ...prev,
         // {
@@ -273,35 +305,30 @@ const ChatWindow = ({
 
       socket.emit("send_private_file", fileMessage, (response) => {
         // if (response.success) {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === tempId
-                ? {
-                    ...m,
-                    id: response.message_id || tempId,
-                    status: "sent",
-                    text: "[Ảnh đã gửi]",
-                    time: response.time
-                      ? new Date(response.time).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                      : m.time,
-                    imageUrl: response.file_url,
-                    sender: response.sender_id === userMain.id ? "me" : "other",
-                    avatar:
-                      response.sender_id === userMain.id
-                        ? userMain.avatar || "/default-avatar.jpg"
-                        : selectedChat?.user?.avt || "/default-avatar.jpg",
-                  }
-                : m
-            )
-          );
-        // } else {
-        //   setMessages((prev) =>
-        //     prev.map((m) => (m.id === tempId ? { ...m, status: "failed" } : m))
-        //   );
-        // }
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === tempId
+              ? {
+                  ...m,
+                  id: response.message_id || tempId,
+                  status: "sent",
+                  text: "[Ảnh đã gửi]",
+                  time: response.time
+                    ? new Date(response.time).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : m.time,
+                  imageUrl: response.file_url,
+                  sender: response.sender_id === userMain.id ? "me" : "other",
+                  avatar:
+                    response.sender_id === userMain.id
+                      ? userMain.avatar || "/default-avatar.jpg"
+                      : selectedChat?.user?.avt || "/default-avatar.jpg",
+                }
+              : m
+          )
+        );
       });
     };
     socket.on("file_sent", (data) => {
@@ -321,9 +348,8 @@ const ChatWindow = ({
           fileUrl: data.file_url, // URL of the uploaded file
         },
       ]);
-    })
+    });
     reader.readAsDataURL(image);
-
   };
 
   const messagesEndRef = useRef(null); // Tham chiếu đến phần cuối danh sách tin nhắn
@@ -379,14 +405,20 @@ const ChatWindow = ({
     }
   };
 
-  const revokeMessage = (id) => {
-    // Gửi yêu cầu thu hồi tin nhắn qua socket
-    socket.emit("revoke_message", { message_id: id }, (response) => {
+  const revokeMessage = (idMessage) => {
+    const payload = {
+      user_id: userMain.id, // ID của người dùng hiện tại
+      message_id: idMessage, // ID của tin nhắn cần xóa
+    };
+
+    // Gửi sự kiện delete_message qua socket
+    socket.emit("delete_message", payload, (response) => {
       if (response.status === "success") {
-        setMessages((prev) => prev.filter((msg) => msg.id !== id));
-        console.log("Message revoked:", id);
+        // Xóa tin nhắn khỏi danh sách nếu thành công
+        setMessages((prev) => prev.filter((msg) => msg.id !== idMessage));
+        console.log("Message deleted successfully:", idMessage);
       } else {
-        console.error("Failed to revoke message:", response.error);
+        console.error("Failed to delete message:", response.error);
       }
     });
   };
@@ -403,20 +435,22 @@ const ChatWindow = ({
       </div>
     );
   }
-  console.log(messages);
-  
   return (
     <div className="flex-1 flex flex-col bg-white">
       <div className="bg-white p-4 shadow flex items-center justify-between">
         <div className="flex items-center">
           <Avatar
-            src={selectedChat?.user?.avt || "/default-avatar.jpg"}
+            src={selectedChat?.avatar || "/default-avatar.jpg"}
             size="large"
             className="mr-3"
           />
           <div>
-            <h2 className="font-semibold">{selectedChat.user?.fullname}</h2>
-            <p className="text-sm text-gray-500">Vừa truy cập</p>
+            <h2 className="font-semibold">{selectedChat?.name}</h2>
+            {selectedChat?.list_user_id?.length > 1 ? (
+              <p className="text-sm text-gray-500">{selectedChat?.list_user_id?.length +1} thành viên</p>
+            ) : (
+              <p className="text-sm text-gray-500">Vừa truy cập</p>
+            )}
           </div>
         </div>
 
@@ -476,7 +510,7 @@ const ChatWindow = ({
                     boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
                   }}
                 >
-                  {msg.type === "file" ? (
+                  {msg.type === "image" ? (
                     <img
                       src={msg.media || msg.fileUrl}
                       alt={msg.message || "Đã gửi ảnh"}
@@ -487,7 +521,7 @@ const ChatWindow = ({
                       }}
                     />
                   ) : (
-                    msg.message || msg.text
+                    <span>{msg.message || msg.text}</span>
                   )}
                 </div>
 
@@ -505,7 +539,8 @@ const ChatWindow = ({
                   <span
                     style={{
                       fontSize: "16px",
-                      marginLeft: msg.sender === "me" ? "-50px" : "100px",
+                      marginLeft: msg.sender === "me" ? "-15px" : "0",
+                      right: msg.sender !== "me" && "-15px",
                       cursor: "pointer",
                       color: "#888",
                       position: "absolute",
