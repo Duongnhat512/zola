@@ -249,6 +249,13 @@ MessageController.sendPrivateFile = async (socket, data) => {
       savedMessage.message_id,
     )
 
+    const sender = await UserCacheService.getUserProfile(savedMessage.sender_id);
+    const message = {
+      ...savedMessage,
+      sender_name: sender.fullname,
+      sender_avatar: sender.avt,
+    };
+
     const timestamp = Date.now();
 
     await redisClient.zadd(
@@ -268,7 +275,7 @@ MessageController.sendPrivateFile = async (socket, data) => {
 
     receiverSockets.forEach((socketId) => {
       socket.to(socketId).emit("new_message", {
-        ...fileMessage
+        ...message
       });
     });
 
@@ -280,12 +287,12 @@ MessageController.sendPrivateFile = async (socket, data) => {
 
     senderSockets.forEach((socketId) => {
       socket.to(socketId).emit("new_message", {
-        ...fileMessage
+        ...message
       });
     });
 
     return {
-      ...fileMessage,
+      ...message,
       file_url: fileUrl
     };
   } catch (error) {
