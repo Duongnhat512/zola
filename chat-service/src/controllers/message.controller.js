@@ -136,6 +136,7 @@ MessageController.sendPrivateFile = async (socket, data) => {
         }
 
       }
+      
     }
 
     return fileResult;
