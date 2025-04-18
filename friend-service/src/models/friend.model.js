@@ -128,26 +128,24 @@ const FriendModel = {
 
   rejectFriendRequest: async (user_id, user_friend_id) => {
     try {
-      // Truy vấn trực tiếp bằng khoá chính và khoá phân loại
       const getParams = {
         TableName: friendRequestTableName,
         Key: {
-          user_id: user_friend_id,
-          user_friend_id: user_id,
+          user_id: user_id,
+          user_friend_id: user_friend_id,
         },
       };
-
+  
       const result = await dynamodb.get(getParams).promise();
       if (!result.Item) {
         throw new Error("Friend request not found");
       }
-
-      // Cập nhật trạng thái thành từ chối
+  
       const updateParams = {
         TableName: friendRequestTableName,
         Key: {
-          user_id: user_friend_id,
-          user_friend_id: user_id,
+          user_id: user_id,
+          user_friend_id: user_friend_id,
         },
         UpdateExpression: "set #status = :status, updatedAt = :updatedAt",
         ExpressionAttributeNames: {
@@ -157,15 +155,19 @@ const FriendModel = {
           ":status": "rejected",
           ":updatedAt": new Date().toISOString(),
         },
+        ReturnValues: "ALL_NEW",
       };
-
-      await dynamodb.update(updateParams).promise();
+  
+      const updateResult = await dynamodb.update(updateParams).promise();
+      console.log("Updated item:", updateResult.Attributes);
+  
       return { success: true };
     } catch (error) {
       console.error("Error rejecting friend request:", error);
       throw error;
     }
-  },
+  }
+  ,
 
   // Lấy danh sách gửi lời mời kết bạn
   getFriendRequests: async (user_id) => {

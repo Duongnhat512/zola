@@ -6,7 +6,8 @@ const MessageController = {};
 
 MessageController.getMessages = async (socket, data) => {
   try {
-    const messages = await MessageModel.getMessages(data.conversation_id);
+    console.log("user id: ", socket.user.id)
+    const messages = await MessageModel.getMessages(data.conversation_id, socket.user.id);
     socket.emit("list_messages", messages);
   } catch (error) {
     console.error("Lỗi khi nhận tin nhắn:", error);
@@ -61,7 +62,7 @@ MessageController.sendFile = async (socket, data) => {
     const timestamp = new Date().toISOString();
     const fileMessage = {
       conversation_id: data.conversation_id,
-      user_id: socket.user.id,
+      sender_id: data.sender_id,
       user_target: data.receiver_id || null,
       type: "file",
       message: data.message || `Đã gửi file: ${data.file_name}`,
@@ -259,20 +260,28 @@ MessageController.getConversationMessages = async (req, res) => {
   }
 };
 
-MessageController.deleteMessage = async (socket, data) => {
-  const { message_id } = data;
+MessageController.deleteMessage = async (req, res) => {
+  const { message_id } = req.query;
   if (!message_id) {
     return res.status(400).json({ message: "Thiếu message_id" });
   }
   try {
     const result = await MessageModel.deleteMessageById(message_id);
 
-    socket.emit("message_deleted", result);
+    return res.status(200).json({
+      status: "success",
+      message: "Xóa tin nhắn thành công",
+      result,
+    });
   } catch (error) {
     console.error("Lỗi khi xóa tin nhắn:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Lỗi khi xóa tin nhắn",
+      error: error.message,
+    });
   }
 };
-
 MessageController.setHiddenMessage = async (req, res) => {
   const { user_id, message_id } = req.body;
   if (!user_id || !message_id) {
