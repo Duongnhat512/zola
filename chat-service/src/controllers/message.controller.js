@@ -51,6 +51,14 @@ MessageController.sendGroupMessage = async (socket, data) => {
       message.message_id,
     )
 
+    const sender = await UserCacheService.getUserProfile(message.sender_id);
+
+    const messagesWithSenderInfo = {
+      ...message,
+      sender_name: sender.fullname,
+      sender_avatar: sender.avt,
+    };
+
     const timestamp = Date.now();
 
     const members = await redisClient.smembers(`group:${data.conversation_id}`);
@@ -65,13 +73,13 @@ MessageController.sendGroupMessage = async (socket, data) => {
       const socketIds = await redisClient.smembers(`sockets:${memberId}`);
       socketIds.forEach((socketId) => {
         if (socketId !== socket.id) {
-          socket.to(socketId).emit("new_message", { ...message });
+          socket.to(socketId).emit("new_message", { ...messagesWithSenderInfo });
         }
       });
     });
 
     socket.emit("message_sent", {
-      ...message
+      ...messagesWithSenderInfo
     });
 
   } catch (error) {
@@ -127,6 +135,14 @@ MessageController.sendGroupFile = async (socket, data) => {
     };
 
     const savedMessage = await MessageModel.sendMessage(fileMessage);
+
+    const sender = await UserCacheService.getUserProfile(savedMessage.sender_id);
+
+    const message = {
+      ...savedMessage,
+      sender_name: sender.fullname,
+      sender_avatar: sender.avt,
+    };
 
     await ConversationModel.updateLastMessage(
       data.conversation_id,
@@ -338,6 +354,11 @@ MessageController.sendPrivateMessage = async (socket, data) => {
     data.sender_id = socket.user.id;
 
     const message = await MessageModel.sendMessage(data);
+
+    const sender = await UserCacheService.getUserProfile(message.sender_id);
+
+    message.sender_name = sender.fullname;
+    message.sender_avatar = sender.avt;
 
     await ConversationModel.updateLastMessage(
       conversation.id,
