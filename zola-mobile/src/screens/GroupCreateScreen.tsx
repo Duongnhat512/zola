@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, Modal, StyleSheet, TextInput } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { sendFriendRequest, getFriendRequests, getSentFriendRequests, getListFriends,acceptFriendRequest,rejectFriendRequest} from '../services/FriendService';
+import {GetUserById} from '../services/UserService';
+import { useSelector } from 'react-redux';
 
 const dummyFriends = [
   { id: '1', fullname: 'Hiệp Võ', avatar: { uri: 'https://randomuser.me/api/portraits/men/1.jpg' } },
@@ -9,7 +12,34 @@ const dummyFriends = [
   { id: '4', fullname: 'Bảo', avatar: { uri: 'https://randomuser.me/api/portraits/men/4.jpg' } },
   { id: '5', fullname: 'Phạm Minh Châu', avatar: { uri: 'https://randomuser.me/api/portraits/women/5.jpg' } },
 ];
-
+const [friendsList, setFriendsList] = useState([]);
+const user = useSelector((state: any) => state.user.user);
+const fetchFriendsWithDetails = async () => {
+        try {
+          const response = await getListFriends(user.id);
+          const rawRequests = response;
+          if(rawRequests==null)
+            {
+              return;
+            }
+          // Duyệt từng item để lấy thông tin user_friend_id
+          const requestsWithDetails = await Promise.all(
+            rawRequests.map(async (req) => {
+              const userDetailRes = await GetUserById(req.user_friend_id);
+              console.log(userDetailRes);
+              return {
+                ...req,
+                friendInfo: userDetailRes.user, // {fullname, avatar, phone,...}
+              };
+            })
+          );
+      
+          setFriendsList(requestsWithDetails);
+        } catch (error) {
+            
+          console.error('Lỗi khi lấy danh sách lời mời kết bạn:', error);
+        }
+      };
 export default function GroupCreateScreen() {
   const [selectedFriends, setSelectedFriends] = useState([]);
   const [groupAvatar, setGroupAvatar] = useState(null);
@@ -37,11 +67,11 @@ export default function GroupCreateScreen() {
   };
 
   const renderFriend = ({ item }) => {
-    const isSelected = selectedFriends.some(f => f.id === item.id);
+    const isSelected = selectedFriends.some(f => f.friendInfo.id === item.friendInfo.id);
     return (
       <TouchableOpacity style={styles.friendRow} onPress={() => toggleSelectFriend(item)}>
-        <Image source={item.avatar} style={styles.avatar} />
-        <Text style={styles.fullname}>{item.fullname}</Text>
+        <Image source={item.friendInfo.avt} style={styles.avatar} />
+        <Text style={styles.fullname}>{item.friendInfo.fullname}</Text>
         <View style={[styles.checkbox, isSelected && styles.checked]} />
       </TouchableOpacity>
     );
@@ -67,8 +97,8 @@ export default function GroupCreateScreen() {
       <TextInput placeholder="Tìm tên hoặc số điện thoại" style={styles.searchInput} />
 
       <FlatList
-        data={dummyFriends}
-        keyExtractor={(item) => item.id}
+        data={friendsList}
+        keyExtractor={(item) => item.friendInfo.id}
         renderItem={renderFriend}
         contentContainerStyle={{ paddingBottom: 100 }}
       />
