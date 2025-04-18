@@ -183,15 +183,46 @@ const MessageModel = {
         }
     },
 
-    deleteMessageById: async (message_id) => {
-        const queryParams = {
-            TableName: tableName,
-            Key: {
-                id: message_id,
-            },
-        };
-
-        // Xóa tin nhắn
+    deleteMessageById: async (message_id, user_id) => {
+        try {
+            // 1. Đầu tiên kiểm tra message có tồn tại và thuộc về user không
+            const getMessage = {
+                TableName: tableName,
+                Key: {
+                    id: message_id
+                }
+            };
+            
+            const messageData = await dynamodb.get(getMessage).promise();
+            
+            if (!messageData.Item) {
+                throw new Error("Tin nhắn không tồn tại");
+            }
+            
+            if (messageData.Item.sender_id !== user_id) {
+                throw new Error("Bạn không có quyền xóa tin nhắn này");
+            }
+            
+            // 2. Nếu message thuộc về user thì thực hiện xóa
+            const queryParams = {
+                TableName: tableName,
+                Key: {
+                    id: message_id
+                },
+                UpdateExpression: "set is_deleted = :is_deleted, updated_at = :updated_at",
+                ExpressionAttributeValues: {
+                    ":is_deleted": true,
+                    ":updated_at": new Date().toISOString(),
+                }
+            };
+            
+            await dynamodb.update(queryParams).promise();
+            return { message: "Xóa tin nhắn thành công" };
+        }
+        catch (error) {
+            console.error("Error deleting message:", error);
+            throw new Error(error.message || "Error deleting message");
+        }
     },
     
     setHiddenMessage: async (user_id, message_id) => {

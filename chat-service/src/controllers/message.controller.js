@@ -392,7 +392,8 @@ MessageController.getConversationMessages = async (socket, data) => {
 };
 
 MessageController.deleteMessage = async (socket, data) => {
-  const message_id = data.query;
+  const message_id = data.message_id;
+  const user_id = socket.user.id;
 
   if (!message_id) {
     socket.emit("error", { message: "Thiếu message_id" });
@@ -400,7 +401,7 @@ MessageController.deleteMessage = async (socket, data) => {
   }
 
   try {
-    const result = await MessageModel.deleteMessageById(message_id);
+    const result = await MessageModel.deleteMessageById(message_id, user_id);
 
     if (result.affectedRows === 0) {
       socket.emit("error", { message: "Không tìm thấy tin nhắn" });
