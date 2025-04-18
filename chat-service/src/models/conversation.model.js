@@ -1,23 +1,22 @@
-const { get } = require("../controllers/conversation.controller");
+const { get, joinRoom } = require("../controllers/conversation.controller");
 const { dynamodb } = require("../utils/aws.helper");
 const { v4: uuidv4 } = require("uuid");
+const { generateConversationId } = require("../utils/conversation.helper");
 
 const memberTableName = "conversation_members";
 const tableName = "conversations";
 
 const ConversationModel = {
-  getConversations: async (userId) => {
+  getConversationsById: async (conversationId) => {
     const params = {
       TableName: tableName,
-      IndexName: "created-by-index",
-      KeyConditionExpression: "created_by = :user_id",
-      ExpressionAttributeValues: {
-        ":user_id": userId,
+      Key: {
+        id: conversationId,
       },
     };
     try {
-      const result = await dynamodb.query(params).promise();
-      return result.Items;
+      const result = await dynamodb.get(params).promise();
+      return result.Item;
     } catch (error) {
       console.error("Có lỗi khi lấy danh sách hội thoại:", error);
       throw new Error("Có lỗi khi lấy danh sách hội thoại");
@@ -30,14 +29,22 @@ const ConversationModel = {
    * @returns {Object} conversation
    */
   createConversation: async (conversation) => {
-    conversation.id = uuidv4();
+    if (conversation.type === "private") {
+      conversation.id = generateConversationId(
+        conversation.members[0],
+        conversation.members[1]
+      );
+    } else {
+      conversation.id = uuidv4();
+    }
+
     const params = {
       TableName: tableName,
       Item: {
         id: conversation.id,
         created_by: conversation.created_by,
         name: conversation.name || "",
-        description: conversation.description,
+        description: conversation.description || "",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         last_activity: new Date().toISOString(),
@@ -57,11 +64,9 @@ const ConversationModel = {
             .put({
               TableName: memberTableName,
               Item: {
-                id: uuidv4(),
                 conversation_id: conversation.id,
                 user_id: userId,
-                // permission: userId === conversation.created_by ? "admin" : "member",
-                created_at: new Date().toISOString(),
+                created_at: new Date().toISOString()
               },
             })
             .promise();
@@ -126,61 +131,20 @@ const ConversationModel = {
    * @returns
    */
   findPrivateConversation: async (user1Id, user2Id) => {
+    const conversationId = generateConversationId(user1Id, user2Id);
+
+    const params = {
+      TableName: tableName,
+      Key: {
+        id: conversationId,
+      },
+    };
     try {
-      const user1ConversationsParams = {
-        TableName: memberTableName,
-        IndexName: "userId-index",
-        KeyConditionExpression: "user_id = :userId",
-        ExpressionAttributeValues: {
-          ":userId": user1Id,
-        },
-      };
-
-      const user1Conversations = await dynamodb
-        .query(user1ConversationsParams)
-        .promise();
-
-      if (!user1Conversations.Items.length) {
-        return null;
-      }
-
-      for (const memberRecord of user1Conversations.Items) {
-        const conversationId = memberRecord.conversation_id;
-
-        const checkUser2Params = {
-          TableName: memberTableName,
-          KeyConditionExpression:
-            "conversation_id = :convId AND user_id = :userId",
-          ExpressionAttributeValues: {
-            ":convId": conversationId,
-            ":userId": user2Id,
-          },
-        };
-
-        const user2InConv = await dynamodb.query(checkUser2Params).promise();
-
-        if (user2InConv.Items.length > 0) {
-          const convParams = {
-            TableName: tableName,
-            Key: { id: conversationId },
-          };
-
-          const conversation = await dynamodb.get(convParams).promise();
-
-          if (
-            conversation.Item &&
-            conversation.Item.type === "private" &&
-            conversation.Item.no_of_member === 2
-          ) {
-            return conversation.Item;
-          }
-        }
-      }
-
-      return null;
+      const result = await dynamodb.get(params).promise();
+      return result.Item;
     } catch (error) {
-      console.error("Lỗi khi tìm kiếm hội thoại:", error);
-      throw new Error("Lỗi khi tìm kiếm hội thoại");
+      console.error("Có lỗi khi tìm hội thoại:", error);
+      throw new Error("Có lỗi khi tìm hội thoại");
     }
   },
 
@@ -189,27 +153,27 @@ const ConversationModel = {
    * @param {String} conversationId
    * @returns {Array} danh sách thành viên
    */
-  getConversationMembers: async (conversationId) => {
-    const params = {
-      TableName: memberTableName,
-      IndexName: "id-index",
-      KeyConditionExpression: "id = :conversationId",
-      ExpressionAttributeValues: {
-        ":conversationId": conversationId,
-      },
-    };
+  // getConversationMembers: async (conversationId) => {
+  //   const params = {
+  //     TableName: memberTableName,
+  //     IndexName: "id-index",
+  //     KeyConditionExpression: "id = :conversationId",
+  //     ExpressionAttributeValues: {
+  //       ":conversationId": conversationId,
+  //     },
+  //   };
 
-    try {
-      const result = await dynamodb.query(params).promise();
-      return result.Items;
-    } catch (error) {
-      console.error("Lỗi khi lấy thành viên hội thoại:", error);
-      throw new Error("Lỗi khi lấy thành viên hội thoại");
-    }
-  },
+  //   try {
+  //     const result = await dynamodb.query(params).promise();
+  //     return result.Items;
+  //   } catch (error) {
+  //     console.error("Lỗi khi lấy thành viên hội thoại:", error);
+  //     throw new Error("Lỗi khi lấy thành viên hội thoại");
+  //   }
+  // },
 
   /**
-   *
+   * Lấy thông tin hội thoại theo ID
    * @param {String} conversationId
    * @returns
    */
@@ -235,9 +199,10 @@ const ConversationModel = {
       Key: {
         id: conversationId,
       },
-      UpdateExpression: "set last_message_id = :last_message_id",
+      UpdateExpression: "set last_message_id = :last_message_id, updated_at = :updated_at",
       ExpressionAttributeValues: {
         ":last_message_id": lastMessage,
+        ":updated_at": new Date().toISOString(),
       },
       ReturnValues: "UPDATED_NEW",
     };
@@ -269,6 +234,11 @@ const ConversationModel = {
     }
   },
 
+  /**
+   * Tìm danh sách thành viên có trong hội thoại
+   * @param {String} conversationId
+   * @returns {Array} danh sách thành viên
+   */
   getAllUserInConversation: async (conversationId) => {
     const params = {
       TableName: memberTableName,
@@ -302,6 +272,43 @@ const ConversationModel = {
     } catch (error) {
       console.error("Có lỗi khi lấy hội thoại:", error);
       throw new Error("Có lỗi khi lấy hội thoại");
+    }
+  },
+
+  addMember: async (userId, conversationId) => {
+    const params = {
+      TableName: memberTableName,
+      Item: {
+        conversation_id: conversationId,
+        user_id: userId,
+        created_at: new Date().toISOString(),
+      },
+    };
+
+    try {
+      const result = await dynamodb.put(params).promise();
+      return result.Item;
+    } catch (error) {
+      console.error("Có lỗi khi tham gia hội thoại:", error);
+      throw new Error("Có lỗi khi tham gia hội thoại");
+    }
+  },
+
+  removeMember: async (userId, conversationId) => {
+    const params = {
+      TableName: memberTableName,
+      Key: {
+        conversation_id: conversationId,
+        user_id: userId,
+      },
+    };
+
+    try {
+      await dynamodb.delete(params).promise();
+      return { message: "Đã rời khỏi hội thoại" };
+    } catch (error) {
+      console.error("Có lỗi khi rời khỏi hội thoại:", error);
+      throw new Error("Có lỗi khi rời khỏi hội thoại");
     }
   },
 };
