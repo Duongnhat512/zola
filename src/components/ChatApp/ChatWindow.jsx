@@ -6,7 +6,7 @@ import {
   DeleteOutlined,
   UndoOutlined,
 } from "@ant-design/icons";
-import { Input, Avatar, Button, Dropdown, Menu } from "antd";
+import { Input, Avatar, Button, Dropdown, Menu, Image } from "antd";
 import {
   UserOutlined,
   SearchOutlined,
@@ -287,48 +287,48 @@ const ChatWindow = ({ selectedChat }) => {
         message: `Đã gửi ảnh: ${image.name}`,
         type: "image",
       };
-      setMessages((prev) => [
-        ...prev,
-        // {
-        //   id: tempId,
-        //   sender: "me",
-        //   avatar: userMain.avatar || "/default-avatar.jpg",
-        //   text: "[Đang gửi ảnh...]",
-        //   time: now.toLocaleTimeString([], {
-        //     hour: "2-digit",
-        //     minute: "2-digit",
-        //   }),
-        //   status: "pending",
-        //   type: "image",
-        // },
-      ]);
+      // setMessages((prev) => [
+      //   ...prev,
+      //   // {
+      //   //   id: tempId,
+      //   //   sender: "me",
+      //   //   avatar: userMain.avatar || "/default-avatar.jpg",
+      //   //   text: "[Đang gửi ảnh...]",
+      //   //   time: now.toLocaleTimeString([], {
+      //   //     hour: "2-digit",
+      //   //     minute: "2-digit",
+      //   //   }),
+      //   //   status: "pending",
+      //   //   type: "image",
+      //   // },
+      // ]);
 
       socket.emit("send_private_file", fileMessage, (response) => {
         // if (response.success) {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === tempId
-              ? {
-                  ...m,
-                  id: response.message_id || tempId,
-                  status: "sent",
-                  text: "[Ảnh đã gửi]",
-                  time: response.time
-                    ? new Date(response.time).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })
-                    : m.time,
-                  imageUrl: response.file_url,
-                  sender: response.sender_id === userMain.id ? "me" : "other",
-                  avatar:
-                    response.sender_id === userMain.id
-                      ? userMain.avatar || "/default-avatar.jpg"
-                      : selectedChat?.user?.avt || "/default-avatar.jpg",
-                }
-              : m
-          )
-        );
+        // setMessages((prev) =>
+        //   prev.map((m) =>
+        //     m.id === tempId
+        //       ? {
+        //           ...m,
+        //           id: response.message_id || tempId,
+        //           status: "sent",
+        //           text: "[Ảnh đã gửi]",
+        //           time: response.time
+        //             ? new Date(response.time).toLocaleTimeString([], {
+        //                 hour: "2-digit",
+        //                 minute: "2-digit",
+        //               })
+        //             : m.time,
+        //           imageUrl: response.file_url,
+        //           sender: response.sender_id === userMain.id ? "me" : "other",
+        //           avatar:
+        //             response.sender_id === userMain.id
+        //               ? userMain.avatar || "/default-avatar.jpg"
+        //               : selectedChat?.user?.avt || "/default-avatar.jpg",
+        //         }
+        //       : m
+        //   )
+        // );
       });
     };
     socket.on("file_sent", (data) => {
@@ -351,10 +351,7 @@ const ChatWindow = ({ selectedChat }) => {
     });
     reader.readAsDataURL(image);
   };
-
-  const messagesEndRef = useRef(null); // Tham chiếu đến phần cuối danh sách tin nhắn
-
-  // Hàm cuộn đến tin nhắn cuối cùng
+  const messagesEndRef = useRef(null); 
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
@@ -385,12 +382,10 @@ const ChatWindow = ({ selectedChat }) => {
       </Menu.Item>
     </Menu>
   );
-
   const copyMessage = (text) => {
     navigator.clipboard.writeText(text);
     console.log("Copied:", text);
   };
-
   const deleteMessage = async (idMessage) => {
     try {
       const response = await hiddenMessage(idMessage, userMain.id);
@@ -404,7 +399,6 @@ const ChatWindow = ({ selectedChat }) => {
       console.error("Error while hiding message:", error);
     }
   };
-
   const revokeMessage = (idMessage) => {
     const payload = {
       user_id: userMain.id, // ID của người dùng hiện tại
@@ -435,6 +429,8 @@ const ChatWindow = ({ selectedChat }) => {
       </div>
     );
   }
+  console.log(messages);
+  
   return (
     <div className="flex-1 flex flex-col bg-white">
       <div className="bg-white p-4 shadow flex items-center justify-between">
@@ -510,8 +506,8 @@ const ChatWindow = ({ selectedChat }) => {
                     boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
                   }}
                 >
-                  {msg.type === "image" ? (
-                    <img
+                  {msg.type === "file" || msg.type==="image"? (
+                    <Image
                       src={msg.media || msg.fileUrl}
                       alt={msg.message || "Đã gửi ảnh"}
                       style={{
