@@ -6,70 +6,41 @@ const tableName = "messages";
 const hiddenMessageTable = "hidden_messages";
 
 const MessageModel = {
-  /**
-   * Gửi text message
-   * @param {Object} message
-   * @returns {Object} message
-   */
-  sendMessage: async (message) => {
-    const messageId = uuidv4();
-    const params = {
-      TableName: tableName,
-      Item: {
-        message_id: messageId,
-        conversation_id: message.conversation_id,
-        sender_id: message.sender_id,
-        receiver_id: message.receiver_id,
-        type: message.type || "text",
-        message: message.message,
-        media: message.media || "",
-        status: message.status,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        is_deleted: false,
-      },
-    };
-    try {
-      const data = await dynamodb.put(params).promise();
-      return {
-        message_id: messageId,
-        ...message,
-      };
-    } catch (error) {
-      console.error("Error sending message:", error);
-      throw new Error("Error sending message");
-    }
-  },
-
     /**
-     * Gửi image message
+     * Gửi text message
      * @param {Object} message 
      * @returns {Object} message
      */
-    sendImage: async (message) => {
+    sendMessage: async (message) => {
         const messageId = uuidv4();
+        const timestamp = new Date().toISOString();
         const params = {
             TableName: tableName,
             Item: {
-                message_id: messageId,
-                conversation_id: message.conversation_id,
+                id: messageId,
+                conversation_id: message.conversation_id || "",
                 sender_id: message.sender_id,
                 receiver_id: message.receiver_id,
-                type: "image",
+                type: message.type || "text",
                 message: message.message,
-                media: message.media,
+                media: message.media || "",
                 status: message.status,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
+                file_name: message.file_name || "",
+                created_at: timestamp,
+                updated_at: timestamp,
                 is_deleted: false,
             },
         };
         try {
-            await dynamodb.put(params).promise();
-            return message;
+            const data = await dynamodb.put(params).promise();
+            return {
+                message_id: messageId,
+                created_at: timestamp,
+                ...message,
+            };
         } catch (error) {
-            console.error("Error sending image:", error);
-            throw new Error("Error sending image");
+            console.error("Error sending message:", error);
+            throw new Error("Error sending message");
         }
     },
 
@@ -85,6 +56,7 @@ const MessageModel = {
 
         const params = {
             TableName: tableName,
+            IndexName: "conversation-id-index",
             KeyConditionExpression: "conversation_id = :conversation_id",
             ExpressionAttributeValues: {
                 ":conversation_id": conversation_id,
@@ -108,9 +80,20 @@ const MessageModel = {
                 const hiddenData = await dynamodb.query(hiddenParams).promise();
                 const hiddenMessageIds = hiddenData.Items.map(item => item.message_id);
 
-                // Filter out messages that are in the hidden list
-                messages = messages.filter(message => !hiddenMessageIds.includes(message.message_id));
+                messages = messages.filter(message => !hiddenMessageIds.includes(message.id));
             }
+
+            // Đánh dấu những tin nhắn đã thu 
+            messages = messages.map(message => {
+                if (message.is_deleted) {
+                    return {
+                        ...message,
+                        message: "Tin nhắn đã thu hồi",
+                        is_deleted: true,
+                    };
+                }
+                return message;
+            });
 
             return messages;
         } catch (error) {
@@ -119,57 +102,41 @@ const MessageModel = {
         }
     },
 
-  deleteMessage: async (message_id) => {
-    const params = {
-      TableName: tableName,
-      IndexName: "message-id-index",
-    };
-    try {
-      await dynamodb.delete(params).promise();
-      return { message: "Xóa tin nhắn thành công" };
-    } catch (error) {
-      console.error("Lỗi khi xóa tin nhắn:", error);
-      throw new Error("Lỗi khi xóa tin nhắn");
-    }
-  },
-
-  updateMessage: async (message_id, updatedMessage) => {
-    const params = {
-      TableName: tableName,
-      Key: {
-        message_id: message_id,
-      },
-      UpdateExpression: "set #message = :message, #updated_at = :updated_at",
-      ExpressionAttributeNames: {
-        "#message": "message",
-        "#updated_at": "updated_at",
-      },
-      ExpressionAttributeValues: {
-        ":message": updatedMessage.message,
-        ":updated_at": new Date().toISOString(),
-      },
-    };
-    try {
-      await dynamodb.update(params).promise();
-      return { message: "Cập nhật tin nhắn thành công" };
-    } catch (error) {
-      console.error("Lỗi khi cập nhật tin nhắn:", error);
-      throw new Error("Lỗi khi cập nhật tin nhắn");
-    }
-  },
+    updateMessage: async (message_id, updatedMessage) => {
+        const params = {
+            TableName: tableName,
+            Key: {
+                id: message_id,
+            },
+            UpdateExpression: "set #message = :message, #updated_at = :updated_at",
+            ExpressionAttributeNames: {
+                "#message": "message",
+                "#updated_at": "updated_at",
+            },
+            ExpressionAttributeValues: {
+                ":message": updatedMessage.message,
+                ":updated_at": new Date().toISOString(),
+            },
+        };
+        try {
+            await dynamodb.update(params).promise();
+            return { message: "Cập nhật tin nhắn thành công" };
+        } catch (error) {
+            console.error("Lỗi khi cập nhật tin nhắn:", error);
+            throw new Error("Lỗi khi cập nhật tin nhắn");
+        }
+    },
 
     getMessageById: async (message_id) => {
         const params = {
             TableName: tableName,
-            IndexName: "message-id-index",
-            KeyConditionExpression: "message_id = :message_id",
-            ExpressionAttributeValues: {
-                ":message_id": message_id,
+            Key: {
+                id: message_id,
             },
         };
         try {
-            const data = await dynamodb.query(params).promise();
-            return data.Items[0];
+            const data = await dynamodb.get(params).promise();
+            return data.Item;
         } catch (error) {
             console.error("Error getting message:", error);
             throw new Error("Error getting message");
@@ -179,7 +146,7 @@ const MessageModel = {
     getMessagesByConversationId: async (conversation_id) => {
         const params = {
             TableName: tableName,
-            IndexName: "conversation_id_index",
+            IndexName: "conversation-id-index",
             KeyConditionExpression: "conversation_id = :conversation_id",
             ExpressionAttributeValues: {
                 ":conversation_id": conversation_id,
@@ -194,28 +161,28 @@ const MessageModel = {
         }
     },
 
-  getMessagesBySenderId: async (sender_id) => {
-    const params = {
-      TableName: tableName,
-      IndexName: "sender_id_index",
-      KeyConditionExpression: "sender_id = :sender_id",
-      ExpressionAttributeValues: {
-        ":sender_id": sender_id,
-      },
-    };
-    try {
-      const data = await dynamodb.query(params).promise();
-      return data.Items;
-    } catch (error) {
-      console.error("Error getting messages by sender ID:", error);
-      throw new Error("Error getting messages by sender ID");
-    }
-  },
+    getMessagesBySenderId: async (sender_id) => {
+        const params = {
+            TableName: tableName,
+            IndexName: "sender-id-index",
+            KeyConditionExpression: "sender_id = :sender_id",
+            ExpressionAttributeValues: {
+                ":sender_id": sender_id,
+            },
+        };
+        try {
+            const data = await dynamodb.query(params).promise();
+            return data.Items;
+        } catch (error) {
+            console.error("Error getting messages by sender ID:", error);
+            throw new Error("Error getting messages by sender ID");
+        }
+    },
 
     getMessagesByReceiverId: async (receiver_id) => {
         const params = {
             TableName: tableName,
-            IndexName: "receiver_id_index",
+            IndexName: "receiver-id-index",
             KeyConditionExpression: "receiver_id = :receiver_id",
             ExpressionAttributeValues: {
                 ":receiver_id": receiver_id,
@@ -230,60 +197,48 @@ const MessageModel = {
         }
     },
 
-    deleteMessageById: async (message_id) => {
-        const queryParams = {
-            TableName: tableName,
-            IndexName: "message-id-index",
-            KeyConditionExpression: "message_id = :message_id",
-            ExpressionAttributeValues: {
-                ":message_id": message_id
-            }
-        };
-
+    deleteMessageById: async (message_id, user_id) => {
         try {
-            const queryResult = await dynamodb.query(queryParams).promise();
-
-            const message = queryResult.Items[0];
-
-            const updateParams = {
+            // 1. Đầu tiên kiểm tra message có tồn tại và thuộc về user không
+            const getMessage = {
                 TableName: tableName,
                 Key: {
-                    conversation_id: message.conversation_id,
-                    message_id: message_id
+                    id: message_id
+                }
+            };
+            
+            const messageData = await dynamodb.get(getMessage).promise();
+            
+            if (!messageData.Item) {
+                throw new Error("Tin nhắn không tồn tại");
+            }
+            
+            if (messageData.Item.sender_id !== user_id) {
+                throw new Error("Bạn không có quyền xóa tin nhắn này");
+            }
+            
+            // 2. Nếu message thuộc về user thì thực hiện xóa
+            const queryParams = {
+                TableName: tableName,
+                Key: {
+                    id: message_id
                 },
                 UpdateExpression: "set is_deleted = :is_deleted, updated_at = :updated_at",
                 ExpressionAttributeValues: {
                     ":is_deleted": true,
-                    ":updated_at": new Date().toISOString()
+                    ":updated_at": new Date().toISOString(),
                 }
             };
-
-            await dynamodb.update(updateParams).promise();
-            return { message: "Đánh dấu xóa tin nhắn thành công" };
-        } catch (error) {
-            console.error("Lỗi khi xóa tin nhắn:", error);
-            throw new Error("Lỗi khi xóa tin nhắn");
+            
+            await dynamodb.update(queryParams).promise();
+            return { message: "Xóa tin nhắn thành công" };
+        }
+        catch (error) {
+            console.error("Error deleting message:", error);
+            throw new Error(error.message || "Error deleting message");
         }
     },
-
-    getHiddenMessages: async (user_id) => {
-        const params = {
-            TableName: hiddenMessageTable,
-            KeyConditionExpression: "user_id = :user_id",
-            ExpressionAttributeValues: {
-                ":user_id": user_id,
-            },
-        };
-
-        try {
-            const data = await dynamodb.query(params).promise();
-            return data.Items;
-        } catch (error) {
-            console.error("Error getting hidden messages:", error);
-            throw new Error("Error getting hidden messages");
-        }
-    },
-
+    
     setHiddenMessage: async (user_id, message_id) => {
         const params = {
             TableName: hiddenMessageTable,
