@@ -416,7 +416,7 @@ MessageController.deleteMessage = async (socket, data) => {
 };
 
 MessageController.setHiddenMessage = async (socket, data) => {
-  const user_id = socket.user.id;
+  const user_id = data.user_id;
   const message_id = data.message_id;
 
   if (!user_id) {

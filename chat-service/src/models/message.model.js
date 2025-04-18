@@ -78,8 +78,7 @@ const MessageModel = {
                 const hiddenData = await dynamodb.query(hiddenParams).promise();
                 const hiddenMessageIds = hiddenData.Items.map(item => item.message_id);
 
-                // Filter out messages that are in the hidden list
-                messages = messages.filter(message => !hiddenMessageIds.includes(message.message_id));
+                messages = messages.filter(message => !hiddenMessageIds.includes(message.id));
             }
 
             return messages;
