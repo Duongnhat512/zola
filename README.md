@@ -16,7 +16,7 @@ Zola là một hệ thống backend được xây dựng theo kiến trúc micro
 ## 🛠️ Công nghệ sử dụng
 
 - **Ngôn ngữ lập trình**: JavaScript (Node.js)
-- **Cơ sở dữ liệu**: MongoDB
+- **Cơ sở dữ liệu**: DynamoDB
 - **Giao tiếp giữa các dịch vụ**: REST API
 - **Quản lý phiên và xác thực**: JWT
 
