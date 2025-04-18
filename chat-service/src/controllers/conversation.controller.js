@@ -21,7 +21,7 @@ ConversationController.joinRoom = async (socket, data) => {
       user_id: data.user_id,
       username: data.username,
       conversation_id: data.conversation_id,
-      timestamp: new Date().toISOString(),
+      timestamp: Date.now(),
     });
 
 
@@ -45,7 +45,7 @@ ConversationController.leaveRoom = async (socket, data) => {
       user_id: data.user_id,
       username: data.username,
       conversation_id: data.conversation_id,
-      timestamp: new Date().toISOString(),
+      timestamp: Date.now(),
     });
   } catch (error) {
     console.error("Lỗi khi rời phòng:", error);
@@ -116,6 +116,16 @@ ConversationController.getConversationsByUserId = async (req, res) => {
   }
 
   try {
+    const conversationIds = await redisClient.zrevrange(`chatlist:${user_id}`, 0, 49);
+
+    if (conversationIds.length === 0) {
+      return res.status(200).json({
+        status: "success",
+        message: "Không có hội thoại nào",
+        conversations: [],
+      });
+    }
+
     const conversations = await ConversationModel.getConversationByUserId(
       user_id
     );
@@ -291,6 +301,89 @@ ConversationController.addMember = async (socket, data) => {
   } catch (error) {
     console.error("Có lỗi khi thêm thành viên:", error);
     socket.emit("error", { message: "Có lỗi khi thêm thành viên" });
+  }
+};
+
+ConversationController.removeMember = async (socket, data) => {
+  const { user_id, conversation_id } = data;
+
+  if (!user_id) {
+    return socket.emit("error", { message: "Thiếu user_id" });
+  }
+
+  if (!conversation_id) {
+    return socket.emit("error", { message: "Thiếu conversation_id" });
+  }
+
+  try {
+    const result = await ConversationModel.removeMember(
+      user_id,
+      conversation_id
+    );
+
+    await redisClient.srem(`group:${conversation_id}`, user_id);
+
+    const socketIds = await redisClient.smembers(`sockets:${user_id}`);
+    socketIds.forEach((socketId) => {
+      socket.to(socketId).emit("removed_member", {
+        conversation_id: conversation_id,
+        message: "Bạn đã bị xóa khỏi nhóm",
+        user_id: user_id,
+      });
+    });
+
+  } catch (error) {
+    console.error("Có lỗi khi xóa thành viên:", error);
+    socket.emit("error", { message: "Có lỗi khi xóa thành viên" });
+  }
+}
+
+ConversationController.getConversations = async (socket, data) => {
+  const user_id = socket.user.id;
+
+  try {
+    const conversationIds = await redisClient.zrevrange(`chatlist:${user_id}`, 0, 49);
+
+    if (conversationIds.length === 0) {
+      return socket.emit("conversations", {
+        status: "success",
+        message: "Không có hội thoại nào",
+        conversations: [],
+      });
+    }
+
+    // lấy thông tin conversation
+    let conversations = []
+
+    for (const conversationId of conversationIds) {
+      const conversation = await ConversationModel.getConversationById(conversationId);
+      if (conversation) {
+
+        let list_user_id = await redisClient.smembers(`group:${conversationId}`);
+
+        list_user_id = list_user_id.filter((id) => id !== user_id);
+
+        const last_message_id = conversation.last_message_id
+
+        const last_message = await MessageModel.getMessageById(last_message_id);
+
+        conversations.push({
+          conversation_id: conversationId,
+          last_message: last_message,
+          list_user_id,
+        });
+      }
+    }
+
+    socket.emit("conversations", {
+      status: "success",
+      message: "Lấy danh sách hội thoại thành công",
+      conversations,
+    });
+
+  } catch (error) {
+    console.error("Có lỗi khi lấy danh sách hội thoại:", error);
+    socket.emit("error", { message: "Có lỗi khi lấy danh sách hội thoại" });
   }
 }
 

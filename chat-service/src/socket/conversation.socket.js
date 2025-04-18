@@ -46,6 +46,28 @@ const conversationSocket = (io, socket) => {
             socket.emit("error", { message: "Lỗi khi thêm thành viên vào nhóm" });
         }
     });
+
+    socket.on("remove_member", async (data) => {
+        console.log("Nhận yêu cầu xóa thành viên khỏi nhóm từ client:", data);
+        try {
+            await conversationController.removeMember(socket, data);
+        } catch (error) {
+            console.error("Lỗi khi xóa thành viên khỏi nhóm:", error);
+            socket.emit("error", { message: "Lỗi khi xóa thành viên khỏi nhóm" });
+        }
+    });
+
+    socket.on("get_conversations", async (data) => {
+        console.log("Nhận yêu cầu lấy danh sách hội thoại từ client:", data);
+        try {
+            await conversationController.getConversations(socket, data);
+        } catch (error) {
+            console.error("Lỗi khi lấy danh sách hội thoại:", error);
+            socket.emit("error", { message: "Lỗi khi lấy danh sách hội thoại" });
+        }
+    });
+
+
 };
 
 module.exports = conversationSocket;

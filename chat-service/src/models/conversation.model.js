@@ -7,18 +7,16 @@ const memberTableName = "conversation_members";
 const tableName = "conversations";
 
 const ConversationModel = {
-  getConversations: async (userId) => {
+  getConversationsById: async (conversationId) => {
     const params = {
       TableName: tableName,
-      IndexName: "created-by-index",
-      KeyConditionExpression: "created_by = :user_id",
-      ExpressionAttributeValues: {
-        ":user_id": userId,
+      Key: {
+        id: conversationId,
       },
     };
     try {
-      const result = await dynamodb.query(params).promise();
-      return result.Items;
+      const result = await dynamodb.get(params).promise();
+      return result.Item;
     } catch (error) {
       console.error("Có lỗi khi lấy danh sách hội thoại:", error);
       throw new Error("Có lỗi khi lấy danh sách hội thoại");
@@ -68,7 +66,7 @@ const ConversationModel = {
               Item: {
                 conversation_id: conversation.id,
                 user_id: userId,
-                created_at: new Date().toISOString(),
+                created_at: new Date().toISOString()
               },
             })
             .promise();
@@ -294,7 +292,25 @@ const ConversationModel = {
       console.error("Có lỗi khi tham gia hội thoại:", error);
       throw new Error("Có lỗi khi tham gia hội thoại");
     }
-  }
+  },
+
+  removeMember: async (userId, conversationId) => {
+    const params = {
+      TableName: memberTableName,
+      Key: {
+        conversation_id: conversationId,
+        user_id: userId,
+      },
+    };
+
+    try {
+      await dynamodb.delete(params).promise();
+      return { message: "Đã rời khỏi hội thoại" };
+    } catch (error) {
+      console.error("Có lỗi khi rời khỏi hội thoại:", error);
+      throw new Error("Có lỗi khi rời khỏi hội thoại");
+    }
+  },
 };
 
 module.exports = ConversationModel;

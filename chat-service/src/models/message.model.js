@@ -121,8 +121,8 @@ const MessageModel = {
             },
         };
         try {
-            const data = await dynamodb.query(params).promise();
-            return data.Items[0];
+            const data = await dynamodb.get(params).promise();
+            return data.Item;
         } catch (error) {
             console.error("Error getting message:", error);
             throw new Error("Error getting message");
