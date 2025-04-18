@@ -2,6 +2,8 @@ const redisClient = require("../configs/redis.config");
 const ConversationModel = require("../models/conversation.model");
 const MessageModel = require("../models/message.model");
 const { uploadFile } = require("../services/file.service");
+const axios = require("axios");
+const UserCacheService = require("../services/user-cache.service");
 const ConversationController = {};
 
 ConversationController.joinRoom = async (socket, data) => {
@@ -363,12 +365,25 @@ ConversationController.getConversations = async (socket, data) => {
 
         list_user_id = list_user_id.filter((id) => id !== user_id);
 
+        let name = conversation.name || "";
+        let avt = conversation.avatar || "";
+
+        if (list_user_id.length === 1) {
+          const friend = await UserCacheService.getUserProfile(list_user_id[0], socket.handshake.headers.authorization);
+
+          console.log("friend", friend);
+          name = friend.fullname || "";
+          avt = friend.avt || "";
+        }
+
         const last_message_id = conversation.last_message_id
 
         const last_message = await MessageModel.getMessageById(last_message_id);
 
         conversations.push({
           conversation_id: conversationId,
+          name: name,
+          avatar: avt,
           last_message: last_message,
           list_user_id,
         });

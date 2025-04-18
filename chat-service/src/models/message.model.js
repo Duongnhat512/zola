@@ -54,6 +54,7 @@ const MessageModel = {
 
         const params = {
             TableName: tableName,
+            IndexName: "conversation-id-index",
             KeyConditionExpression: "conversation_id = :conversation_id",
             ExpressionAttributeValues: {
                 ":conversation_id": conversation_id,
