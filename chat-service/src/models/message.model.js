@@ -81,6 +81,18 @@ const MessageModel = {
                 messages = messages.filter(message => !hiddenMessageIds.includes(message.id));
             }
 
+            // Đánh dấu những tin nhắn đã thu 
+            messages = messages.map(message => {
+                if (message.is_deleted) {
+                    return {
+                        ...message,
+                        message: "Tin nhắn đã thu hồi",
+                        is_deleted: true,
+                    };
+                }
+                return message;
+            });
+
             return messages;
         } catch (error) {
             console.error("Error getting messages:", error);
