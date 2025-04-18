@@ -4,13 +4,26 @@ const { userSocketMap, getUserSocketId } = require('../utils/online.helper.js')
 const { uploadFile } = require('../services/file.service.js')
 const redisClient = require('../configs/redis.config.js')
 const { getFileCategory, getReadableFileTypeName } = require('../utils/file.helper')
+const UserCacheService = require('../services/user-cache.service.js')
 const MessageController = {}
 
 MessageController.getMessages = async (socket, data) => {
   try {
     console.log("user id: ", socket.user.id)
     const messages = await MessageModel.getMessages(data.conversation_id, socket.user.id);
-    socket.emit("list_messages", messages);
+
+    const messagesWithSenderInfo = await Promise.all(
+      messages.map(async (message) => {
+        const sender = await UserCacheService.getUserProfile(message.sender_id);
+        return {
+          ...message,
+          sender_name: sender.fullname,
+          sender_avatar: sender.avt,
+        };
+      })
+    );
+
+    socket.emit("list_messages", messagesWithSenderInfo);
   } catch (error) {
     console.error("Lỗi khi nhận tin nhắn:", error);
     socket.emit("error", { message: "Lỗi khi nhận tin nhắn" });
@@ -320,7 +333,7 @@ MessageController.sendPrivateMessage = async (socket, data) => {
       await redisClient.sadd(`group:${conversation.id}`, socket.user.id);
       await redisClient.sadd(`group:${conversation.id}`, data.receiver_id);
     }
-    
+
     data.conversation_id = conversation.id;
     data.sender_id = socket.user.id;
 
@@ -394,6 +407,7 @@ MessageController.getConversationMessages = async (socket, data) => {
 MessageController.deleteMessage = async (socket, data) => {
   const message_id = data.message_id;
   const user_id = socket.user.id;
+  const conversation_id = data.conversation_id;
 
   if (!message_id) {
     socket.emit("error", { message: "Thiếu message_id" });
