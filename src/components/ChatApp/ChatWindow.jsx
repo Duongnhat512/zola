@@ -20,6 +20,7 @@ import socket from "../../services/Socket";
 import { useSelector } from "react-redux";
 import { useRef } from "react";
 import { hiddenMessage } from "../../services/UserService";
+import AddMember from "../../pages/Group/AddMember";
 const ChatWindow = ({ selectedChat,setSelectedChat}) => {
   const selectedChatRef = useRef();
   const [emojiList, setEmojiList] = useState({});
@@ -29,7 +30,11 @@ const ChatWindow = ({ selectedChat,setSelectedChat}) => {
   const [previewImage, setPreviewImage] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isInfoGroupVisible, setIsInfoGroupVisible] = useState(false);
 
+  const handleOpen = () => setIsModalVisible(true);
+  const handleClose = () => setIsModalVisible(false);
   useEffect(() => {
     selectedChatRef.current = selectedChat;
   }, [selectedChat]);
@@ -359,7 +364,7 @@ const ChatWindow = ({ selectedChat,setSelectedChat}) => {
         </div>
 
         <div className="flex items-center gap-4">
-          <Button className="flex gap-2 ml-2">
+          <Button className="flex gap-2 ml-2" onClick={handleOpen}>
             <UserOutlined className="text-gray-500 text-lg cursor-pointer hover:text-blue-500" />
           </Button>
           <button className="text-gray-600 hover:text-blue-500">
@@ -488,7 +493,9 @@ const ChatWindow = ({ selectedChat,setSelectedChat}) => {
         ))}
         <div ref={messagesEndRef} />
       </div>
-
+      {isModalVisible && (
+      <AddMember selectedChat={selectedChat} visible={isModalVisible} onClose={handleClose} />
+     )}
       <div className="p-4 bg-white border-t">
         {previewImage && (
           <div className="mb-4">
