@@ -129,7 +129,7 @@ MessageController.sendGroupMessage = async (socket, data) => {
       sender_id: data.sender_id,
       user_target: data.receiver_id || null,
       type: fileType,
-      message: data.message || (fileUrl ? `Đã gửi ${getReadableFileTypeName(fileType)}: ${data.file_name}` : ""),
+      message: data.message || null,
       media: fileUrl,
       file_name: data.file_name,
 
