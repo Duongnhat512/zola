@@ -586,10 +586,23 @@ ConversationController.deleteConversation = async (socket, data) => {
       result,
     });
 
+    // Thông báo cho tất cả thành viên trong nhóm
+    members.forEach(async (member) => {
+      const socketIds = await redisClient.smembers(`sockets:${member}`);
+      socketIds.forEach((socketId) => {
+        socket.to(socketId).emit("group_deleted", {
+          conversation_id: conversation_id,
+          message: "Nhóm đã bị giải tán",
+        });
+      });
+    });
+
   } catch (error) {
     console.error("Có lỗi khi giải tán nhóm:", error);
     socket.emit("error", { message: "Có lỗi khi giải tán nhóm" });
   }
 }
+
+
 
 module.exports = ConversationController;
