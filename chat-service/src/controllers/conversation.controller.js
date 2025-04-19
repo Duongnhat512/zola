@@ -78,12 +78,16 @@ ConversationController.createGroup = async (socket, data) => {
       { created_by: socket.user.id, type: "group", ...data }
     );
 
+    const timestamp = Date.now();
+
     for (const member of data.members) {
       if (member === socket.user.id) {
         await UserCacheService.setConversationPermissions(member, conversation.id, 'owner');
       } else {
         await UserCacheService.setConversationPermissions(member, conversation.id, 'member');
       }
+
+      await redisClient.zadd(`chatlist:${member}`, timestamp, conversation.id);
     }
 
     data.members.forEach(async (member) => {
@@ -317,6 +321,9 @@ ConversationController.addMember = async (socket, data) => {
       conversation_id
     );
 
+    const timestamp = Date.now();
+    await redisClient.zadd(`chatlist:${user_id}`, timestamp, conversation_id);
+
     await redisClient.sadd(`group:${conversation_id}`, user_id);
     await UserCacheService.setConversationPermissions(user_id, conversation_id, 'member');
 
@@ -429,7 +436,7 @@ ConversationController.getConversations = async (socket, data) => {
 
         const last_message_id = conversation.last_message_id
 
-        const last_message = await MessageModel.getMessageById(last_message_id);
+        const last_message = last_message_id ? await MessageModel.getMessageById(last_message_id) : "";
 
         conversations.push({
           conversation_id: conversationId,
