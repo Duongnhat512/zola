@@ -112,6 +112,7 @@ ConversationController.createGroup = async (socket, data) => {
     socket.emit("group_created", {
       conversation_id: conversation.id,
       message: "Nhóm đã được tạo thành công",
+      name: conversation.name,
     })
   } catch (error) {
     console.error("Lỗi khi tạo nhóm:", error);
