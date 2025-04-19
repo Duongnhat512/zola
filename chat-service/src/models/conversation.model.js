@@ -60,6 +60,8 @@ const ConversationModel = {
 
       if (conversation.members && conversation.members.length > 0) {
         const memberPromises = conversation.members.map((userId) => {
+          let permissions = "";
+
           if (conversation.type === "group") {
             if (userId === conversation.created_by) {
               permissions = "owner";
@@ -98,7 +100,7 @@ const ConversationModel = {
     try {
       // Xóa hội thoại
       await dynamodb.delete(params).promise();
-  
+
       const memberParams = {
         TableName: memberTableName,
         KeyConditionExpression: "conversation_id = :conversationId",
@@ -108,7 +110,7 @@ const ConversationModel = {
       };
       const memberResult = await dynamodb.query(memberParams).promise();
       const members = memberResult.Items || [];
-  
+
       await Promise.all(
         members.map((member) =>
           dynamodb.delete({
@@ -120,7 +122,7 @@ const ConversationModel = {
           }).promise()
         )
       );
-  
+
       return {
         message: "Hội thoại đã được xóa thành công",
         deleted_members: members.map((m) => m.user_id),

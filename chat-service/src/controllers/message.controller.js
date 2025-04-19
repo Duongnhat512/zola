@@ -10,7 +10,7 @@ const MessageController = {}
 MessageController.getMessages = async (socket, data) => {
   try {
     console.log("user id: ", socket.user.id)
-    
+
     const messages = await MessageModel.getMessages(data.conversation_id, socket.user.id);
 
     const messagesWithSenderInfo = await Promise.all(
@@ -34,77 +34,67 @@ MessageController.getMessages = async (socket, data) => {
   }
 };
 
+// MessageController.sendGroupMessage = async (socket, data) => {
+//   data.sender_id = socket.user.id
+//   const permissions = await UserCacheService.getConversationPermissions(socket.user.id, data.conversation_id);
+
+//   if (!data.conversation_id) {
+//     socket.emit("error", { message: "Thiếu conversation_id" });
+//     return;
+//   }
+
+//   if (!data.message) {
+//     socket.emit("error", { message: "Thiếu message" });
+//     return;
+//   }
+
+//   try {
+//     const message = await MessageModel.sendMessage(data);
+
+//     await ConversationModel.updateLastMessage(
+//       data.conversation_id,
+//       message.message_id,
+//     )
+
+//     const sender = await UserCacheService.getUserProfile(message.sender_id);
+
+//     const messagesWithSenderInfo = {
+//       ...message,
+//       sender_name: sender.fullname,
+//       sender_avatar: sender.avt,
+//     };
+
+//     const timestamp = Date.now();
+
+//     const members = await redisClient.smembers(`group:${data.conversation_id}`);
+
+//     members.forEach(async (memberId) => {
+//       await redisClient.zadd(
+//         `chatlist:${memberId}`,
+//         timestamp,
+//         data.conversation_id
+//       )
+
+//       const socketIds = await redisClient.smembers(`sockets:${memberId}`);
+//       socketIds.forEach((socketId) => {
+//         if (socketId !== socket.id) {
+//           socket.to(socketId).emit("new_message", { ...messagesWithSenderInfo });
+//         }
+//       });
+//     });
+
+//     socket.emit("message_sent", {
+//       ...messagesWithSenderInfo
+//     });
+
+//   } catch (error) {
+//     console.error("Lỗi khi gửi tin nhắn:", error);
+//     socket.emit("error", { message: "Lỗi khi gửi tin nhắn" });
+//   }
+// };
+
 MessageController.sendGroupMessage = async (socket, data) => {
   data.sender_id = socket.user.id
-  const permissions = await UserCacheService.getConversationPermissions(socket.user.id, data.conversation_id);
-
-  if (!data.conversation_id) {
-    socket.emit("error", { message: "Thiếu conversation_id" });
-    return;
-  }
-
-  if (!data.message) {
-    socket.emit("error", { message: "Thiếu message" });
-    return;
-  }
-
-  try {
-    const message = await MessageModel.sendMessage(data);
-
-    await ConversationModel.updateLastMessage(
-      data.conversation_id,
-      message.message_id,
-    )
-
-    const sender = await UserCacheService.getUserProfile(message.sender_id);
-
-    const messagesWithSenderInfo = {
-      ...message,
-      sender_name: sender.fullname,
-      sender_avatar: sender.avt,
-    };
-
-    const timestamp = Date.now();
-
-    const members = await redisClient.smembers(`group:${data.conversation_id}`);
-
-    members.forEach(async (memberId) => {
-      await redisClient.zadd(
-        `chatlist:${memberId}`,
-        timestamp,
-        data.conversation_id
-      )
-
-      const socketIds = await redisClient.smembers(`sockets:${memberId}`);
-      socketIds.forEach((socketId) => {
-        if (socketId !== socket.id) {
-          socket.to(socketId).emit("new_message", { ...messagesWithSenderInfo });
-        }
-      });
-    });
-
-    socket.emit("message_sent", {
-      ...messagesWithSenderInfo
-    });
-
-  } catch (error) {
-    console.error("Lỗi khi gửi tin nhắn:", error);
-    socket.emit("error", { message: "Lỗi khi gửi tin nhắn" });
-  }
-};
-
-MessageController.sendGroupFile = async (socket, data) => {
-  data.sender_id = socket.user.id
-
-  if (!data.file_data) {
-    socket.emit("error", { message: "Thiếu file_data" });
-    return;
-  }
-
-  if (!data.file_name) {
-    socket.emit("error", { message: "Thiếu file_name" });
-    return;
-  }
 
   if (!data.conversation_id) {
     socket.emit("error", { message: "Thiếu conversation_id" });
@@ -112,32 +102,34 @@ MessageController.sendGroupFile = async (socket, data) => {
   }
 
   try {
-    const fileBuffer = Buffer.from(
-      data.file_data.split("base64,")[1] || data.file_data,
-      "base64"
-    );
+    let fileUrl = "";
+    let fileType = "text"
 
-    console.log("====================================");
-    console.log(data.receiver_id);
-    console.log("====================================");
+    if (data.file_data) {
+      const fileBuffer = Buffer.from(
+        data.file_data.split('base64,')[1] || data.file_data,
+        'base64'
+      );
 
-    const file = {
-      originalname: data.file_name,
-      mimetype: data.file_type || getMimeTypeFromFileName(data.file_name),
-      buffer: fileBuffer,
-      size: data.file_size || fileBuffer.length,
-    };
+      const file = {
+        originalname: data.file_name,
+        mimetype: data.file_type || getMimeTypeFromFileName(data.file_name),
+        buffer: fileBuffer,
+        size: data.file_size || fileBuffer.length
+      };
 
-    const fileType = getFileCategory(file.mimetype);
+      fileType = getFileCategory(file.mimetype);
 
-    const fileUrl = await uploadFile(file);
+      fileUrl = await uploadFile(file);
+    }
+
 
     const fileMessage = {
       conversation_id: data.conversation_id,
       sender_id: data.sender_id,
       user_target: data.receiver_id || null,
       type: fileType,
-      message: data.message || `Đã gửi ${getReadableFileTypeName(file.mimetype)}: ${data.file_name}`,
+      message: data.message || (fileUrl ? `Đã gửi ${getReadableFileTypeName(fileType)}: ${data.file_name}` : ""),
       media: fileUrl,
       file_name: data.file_name,
 
@@ -195,38 +187,34 @@ MessageController.sendGroupFile = async (socket, data) => {
   }
 };
 
-MessageController.sendPrivateFile = async (socket, data) => {
-  if (!data.file_data) {
-    socket.emit("error", { message: "Thiếu file_data" });
-    return;
-  }
-
-  if (!data.file_name) {
-    socket.emit("error", { message: "Thiếu file_name" });
-    return;
-  }
-
+MessageController.sendPrivateMessage = async (socket, data) => {
   if (!data.receiver_id) {
     socket.emit("error", { message: "Thiếu receiver_id" });
     return;
   }
 
   try {
-    const fileBuffer = Buffer.from(
-      data.file_data.split('base64,')[1] || data.file_data,
-      'base64'
-    );
 
-    const file = {
-      originalname: data.file_name,
-      mimetype: data.file_type || getMimeTypeFromFileName(data.file_name),
-      buffer: fileBuffer,
-      size: data.file_size || fileBuffer.length
-    };
+    let fileUrl = "";
+    let fileType = "text"
 
-    const fileType = getFileCategory(file.mimetype);
+    if (data.file_data) {
+      const fileBuffer = Buffer.from(
+        data.file_data.split('base64,')[1] || data.file_data,
+        'base64'
+      );
 
-    const fileUrl = await uploadFile(file);
+      const file = {
+        originalname: data.file_name,
+        mimetype: data.file_type || getMimeTypeFromFileName(data.file_name),
+        buffer: fileBuffer,
+        size: data.file_size || fileBuffer.length
+      };
+
+      fileType = getFileCategory(file.mimetype);
+
+      fileUrl = await uploadFile(file);
+    }
 
     let conversation = await ConversationModel.findPrivateConversation(
       socket.user.id,
@@ -246,7 +234,7 @@ MessageController.sendPrivateFile = async (socket, data) => {
       sender_id: socket.user.id,
       receiver_id: data.receiver_id || null,
       type: fileType,
-      message: data.message || `Đã gửi ${getReadableFileTypeName(file.mimetype)}: ${data.file_name}`,
+      message: data.message || (fileUrl ? `Đã gửi ${getReadableFileTypeName(fileType)}: ${data.file_name}` : ""),
       media: fileUrl,
       file_name: data.file_name,
     };
@@ -288,10 +276,8 @@ MessageController.sendPrivateFile = async (socket, data) => {
       });
     });
 
-    socket.emit("file_sent", {
-      success: true,
-      message_id: savedMessage.message_id,
-      file_url: fileUrl
+    socket.emit("message_sent", {
+      ...savedMessage
     });
 
     senderSockets.forEach((socketId) => {
@@ -339,85 +325,85 @@ MessageController.updateMessage = async (socket, data) => {
   }
 };
 
-MessageController.sendPrivateMessage = async (socket, data) => {
-  if (!data.receiver_id) {
-    socket.emit("error", { message: "Thiếu receiver_id" });
-    return;
-  }
+// MessageController.sendPrivateMessage = async (socket, data) => {
+//   if (!data.receiver_id) {
+//     socket.emit("error", { message: "Thiếu receiver_id" });
+//     return;
+//   }
 
-  if (!data.message) {
-    socket.emit("error", { message: "Thiếu message" });
-    return;
-  }
+//   if (!data.message) {
+//     socket.emit("error", { message: "Thiếu message" });
+//     return;
+//   }
 
-  try {
-    let conversation = await ConversationModel.findPrivateConversation(
-      socket.user.id,
-      data.receiver_id
-    );
-    if (!conversation) {
-      conversation = await ConversationModel.createConversation({
-        created_by: socket.user.id,
-        type: "private",
-        members: [socket.user.id, data.receiver_id],
-      });
+//   try {
+//     let conversation = await ConversationModel.findPrivateConversation(
+//       socket.user.id,
+//       data.receiver_id
+//     );
+//     if (!conversation) {
+//       conversation = await ConversationModel.createConversation({
+//         created_by: socket.user.id,
+//         type: "private",
+//         members: [socket.user.id, data.receiver_id],
+//       });
 
-      await redisClient.sadd(`group:${conversation.id}`, socket.user.id);
-      await redisClient.sadd(`group:${conversation.id}`, data.receiver_id);
-    }
+//       await redisClient.sadd(`group:${conversation.id}`, socket.user.id);
+//       await redisClient.sadd(`group:${conversation.id}`, data.receiver_id);
+//     }
 
-    data.conversation_id = conversation.id;
-    data.sender_id = socket.user.id;
+//     data.conversation_id = conversation.id;
+//     data.sender_id = socket.user.id;
 
-    const message = await MessageModel.sendMessage(data);
+//     const message = await MessageModel.sendMessage(data);
 
-    const sender = await UserCacheService.getUserProfile(message.sender_id);
+//     const sender = await UserCacheService.getUserProfile(message.sender_id);
 
-    message.sender_name = sender.fullname;
-    message.sender_avatar = sender.avt;
+//     message.sender_name = sender.fullname;
+//     message.sender_avatar = sender.avt;
 
-    await ConversationModel.updateLastMessage(
-      conversation.id,
-      message.message_id,
-    )
+//     await ConversationModel.updateLastMessage(
+//       conversation.id,
+//       message.message_id,
+//     )
 
-    const timestamp = Date.now();
+//     const timestamp = Date.now();
 
-    await redisClient.zadd(
-      `chatlist:${socket.user.id}`,
-      timestamp,
-      conversation.id
-    )
+//     await redisClient.zadd(
+//       `chatlist:${socket.user.id}`,
+//       timestamp,
+//       conversation.id
+//     )
 
-    await redisClient.zadd(
-      `chatlist:${data.receiver_id}`,
-      timestamp,
-      conversation.id
-    )
+//     await redisClient.zadd(
+//       `chatlist:${data.receiver_id}`,
+//       timestamp,
+//       conversation.id
+//     )
 
-    const receiverSockets = await redisClient.smembers(`sockets:${data.receiver_id}`);
-    const senderSockets = await redisClient.smembers(`sockets:${socket.user.id}`);
+//     const receiverSockets = await redisClient.smembers(`sockets:${data.receiver_id}`);
+//     const senderSockets = await redisClient.smembers(`sockets:${socket.user.id}`);
 
-    receiverSockets.forEach((socketId) => {
-      if (socketId !== socket.id) {
-        socket.to(socketId).emit("new_message", { ...message });
-      }
-    });
+//     receiverSockets.forEach((socketId) => {
+//       if (socketId !== socket.id) {
+//         socket.to(socketId).emit("new_message", { ...message });
+//       }
+//     });
 
-    socket.emit("message_sent", {
-      ...message
-    });
+//     socket.emit("message_sent", {
+//       ...message
+//     });
 
-    senderSockets.forEach((socketId) => {
-      if (socketId !== socket.id) {
-        socket.to(socketId).emit("new_message", { ...message });
-      }
-    });
-  } catch (error) {
-    console.error("Lỗi khi gửi tin nhắn:", error);
-    socket.emit("error", { message: "Lỗi khi gửi tin nhắn" });
-  }
-};
+//     senderSockets.forEach((socketId) => {
+//       if (socketId !== socket.id) {
+//         socket.to(socketId).emit("new_message", { ...message });
+//       }
+//     });
+//   } catch (error) {
+//     console.error("Lỗi khi gửi tin nhắn:", error);
+//     socket.emit("error", { message: "Lỗi khi gửi tin nhắn" });
+//   }
+// };
 
 MessageController.getConversationMessages = async (socket, data) => {
   const conversation_id = data.conversation_id;

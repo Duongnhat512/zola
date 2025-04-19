@@ -13,31 +13,31 @@ const messageSocket = (io, socket) => {
     });
 
     // Gửi file
-    socket.on("send_group_file", async (data) => {
-        console.log(`Received file upload request from ${socket.user.username}`);
-        try {
-            // Xử lý giới hạn kích thước file nếu cần
-            if (data.file_size && data.file_size > 50 * 1024 * 1024) { 
-                return socket.emit('error', { message: "File quá lớn, vui lòng upload file nhỏ hơn 50MB" });
-            }
+    // socket.on("send_group_file", async (data) => {
+    //     console.log(`Received file upload request from ${socket.user.username}`);
+    //     try {
+    //         // Xử lý giới hạn kích thước file nếu cần
+    //         if (data.file_size && data.file_size > 50 * 1024 * 1024) { 
+    //             return socket.emit('error', { message: "File quá lớn, vui lòng upload file nhỏ hơn 50MB" });
+    //         }
 
-            await messageController.sendGroupFile(socket, data);
-        } catch (error) {
-            console.error("Error handling send_file:", error);
-            socket.emit('error', { message: "Lỗi khi gửi file" });
-        }
-    });
+    //         await messageController.sendGroupFile(socket, data);
+    //     } catch (error) {
+    //         console.error("Error handling send_file:", error);
+    //         socket.emit('error', { message: "Lỗi khi gửi file" });
+    //     }
+    // });
 
     // Gửi file private khi chưa tạo conversation
-    socket.on("send_private_file", async (data) => {
-        console.log(`Received private file from ${socket.user.username} to ${data.receiver_id}`);
-        try {
-            await messageController.sendPrivateFile(socket, data);
-        } catch (error) {
-            console.error("Error handling private file:", error);
-            socket.emit('error', { message: "Lỗi khi gửi file" });
-        }
-    });
+    // socket.on("send_private_file", async (data) => {
+    //     console.log(`Received private file from ${socket.user.username} to ${data.receiver_id}`);
+    //     try {
+    //         await messageController.sendPrivateFile(socket, data);
+    //     } catch (error) {
+    //         console.error("Error handling private file:", error);
+    //         socket.emit('error', { message: "Lỗi khi gửi file" });
+    //     }
+    // });
 
     // Nhận tin nhắn
     socket.on("get_messages", async (data) => {
