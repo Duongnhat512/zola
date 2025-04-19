@@ -10,11 +10,15 @@ const MessageController = {}
 MessageController.getMessages = async (socket, data) => {
   try {
     console.log("user id: ", socket.user.id)
+    
     const messages = await MessageModel.getMessages(data.conversation_id, socket.user.id);
 
     const messagesWithSenderInfo = await Promise.all(
       messages.map(async (message) => {
         const sender = await UserCacheService.getUserProfile(message.sender_id);
+        console.log('====================================');
+        console.log(sender);
+        console.log('====================================');
         return {
           ...message,
           sender_name: sender?.fullname || null,

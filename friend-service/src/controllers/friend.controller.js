@@ -247,6 +247,107 @@ const FriendController = {
       });
     }
   },
+  deleteRequest: async (req, res) => {
+    const { user_id, user_friend_id } = req.query;
+
+    if (!user_id || !user_friend_id) {
+      return res
+        .status(400)
+        .json({ code: 400, message: "Thiếu ID người dùng" });
+    }
+
+    try {
+      await FriendModel.deleteRequest(user_id, user_friend_id);
+      return res.status(200).json({
+        code: 200,
+        message: "Đã xóa lời mời kết bạn thành công",
+      });
+    } catch (error) {
+      console.error("Có lỗi khi xóa lời mời kết bạn:", error);
+      return res.status(500).json({
+        code: 500,
+        message: "Có lỗi khi xóa lời mời kết bạn",
+      });
+    }
+  },
+  deleteFriend: async (req, res) => {
+    const { user_id, user_friend_id } = req.query;
+
+    if (!user_id || !user_friend_id) {
+      return res
+        .status(400)
+        .json({ code: 400, message: "Thiếu ID người dùng" });
+    }
+
+    try {
+      await FriendModel.deleteFriend(user_id, user_friend_id);
+      await FriendModel.deleteRequest(user_id, user_friend_id);
+      return res.status(200).json({
+        code: 200,
+        message: "Đã xóa bạn bè thành công",
+      });
+    } catch (error) {
+      console.error("Có lỗi khi xóa bạn bè:", error);
+      return res.status(500).json({
+        code: 500,
+        message: "Có lỗi khi xóa bạn bè",
+      });
+    }
+  },
+  getRequestByUserIdAndUserFriendId: async (req, res) => {
+    const { user_id, user_friend_id } = req.query;
+
+    if (!user_id || !user_friend_id) {
+      return res
+        .status(400)
+        .json({ code: 400, message: "Thiếu ID người dùng" });
+    }
+
+
+    try {
+      const request = await FriendModel.getRequestByUserIdAndUserFriendId(
+        user_id,
+        user_friend_id
+      );
+      return res.status(200).json({
+        code: 200,
+        data: request,
+      });
+    } catch (error) {
+      console.error("Có lỗi khi lấy lời mời kết bạn:", error);
+      return res.status(500).json({
+        code: 500,
+        message: "Có lỗi khi lấy lời mời kết bạn",
+      });
+    }
+  },
+  getFriendByPhoneNumberOrfullName: async (req, res) => {
+    const { user_id } = req.query;
+    const { search } = req.query;
+
+    if (!user_id) {
+      return res
+        .status(400)
+        .json({ code: 400, message: "Thiếu ID người dùng" });
+    }
+
+    try {
+      const friends = await FriendModel.getFriendByPhoneNumberOrName(
+        user_id,
+        search
+      );
+      return res.status(200).json({
+        code: 200,
+        data: friends,
+      });
+    } catch (error) {
+      console.error("Có lỗi khi tìm kiếm bạn bè:", error);
+      return res.status(500).json({
+        code: 500,
+        message: "Có lỗi khi tìm kiếm bạn bè",
+      });
+    }
+  }
 };
 
 module.exports = FriendController;
