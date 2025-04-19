@@ -1,9 +1,9 @@
 const { dynamodb } = require("../utils/aws.helper");
 const { v4: uuidv4 } = require("uuid");
 
-const tableName = "messages"
+const tableName = "messages";
 
-const hiddenMessageTable = "hidden_messages"
+const hiddenMessageTable = "hidden_messages";
 
 const MessageModel = {
     /**

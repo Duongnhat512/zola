@@ -109,15 +109,19 @@ MessageController.sendGroupFile = async (socket, data) => {
 
   try {
     const fileBuffer = Buffer.from(
-      data.file_data.split('base64,')[1] || data.file_data,
-      'base64'
+      data.file_data.split("base64,")[1] || data.file_data,
+      "base64"
     );
+
+    console.log("====================================");
+    console.log(data.receiver_id);
+    console.log("====================================");
 
     const file = {
       originalname: data.file_name,
       mimetype: data.file_type || getMimeTypeFromFileName(data.file_name),
       buffer: fileBuffer,
-      size: data.file_size || fileBuffer.length
+      size: data.file_size || fileBuffer.length,
     };
 
     const fileType = getFileCategory(file.mimetype);
@@ -175,17 +179,17 @@ MessageController.sendGroupFile = async (socket, data) => {
 
     return {
       ...fileMessage,
-      file_url: fileUrl
+      file_url: fileUrl,
     };
   } catch (error) {
     console.error("Error sending file:", error);
-    socket.emit('error', {
+    socket.emit("error", {
       message: "Không thể gửi file",
-      details: error.message
+      details: error.message,
     });
     throw error;
   }
-}
+};
 
 MessageController.sendPrivateFile = async (socket, data) => {
   if (!data.file_data) {
@@ -485,6 +489,6 @@ MessageController.setHiddenMessage = async (socket, data) => {
     console.error("Lỗi khi đánh dấu ẩn:", error);
     socket.emit("error", { message: "Lỗi khi đánh dấu ẩn" });
   }
-}
+};
 
 module.exports = MessageController;
