@@ -110,10 +110,16 @@ ConversationController.createGroup = async (socket, data) => {
     }
 
     socket.emit("group_created", {
-      conversation_id: conversation.id,
-      message: "Nhóm đã được tạo thành công",
-      name: conversation.name,
-    })
+      status: "success",
+      message: "Tạo nhóm thành công",
+      conversation: {
+        conversation_id: conversation.id,
+        name: conversation.name,
+        avatar: conversation.avatar,
+        members: members,
+      },
+    });
+
   } catch (error) {
     console.error("Lỗi khi tạo nhóm:", error);
     socket.emit("error", { message: "Lỗi khi tạo nhóm" });
@@ -452,7 +458,7 @@ ConversationController.setPermisstions = async (socket, data) => {
 
   const per = await UserCacheService.getConversationPermissions(socket.user.id, conversation_id);
 
-  if (per !== 'owner' || per !== 'moderator') {
+  if (per === 'member') {
     return socket.emit("error", { message: "Bạn không có quyền cập nhật quyền" });
   }
 
@@ -484,6 +490,8 @@ ConversationController.setPermisstions = async (socket, data) => {
       socket.to(socketId).emit("update_permissions", {
         conversation_id: conversation_id,
         user_id: user_id,
+        permissions: permissions,
+        message: "Quyền của bạn đã được cập nhật",
       });
     });
   } catch (error) {

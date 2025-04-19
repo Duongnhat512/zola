@@ -63,7 +63,7 @@ const ConversationModel = {
           if (conversation.type === "group") {
             if (userId === conversation.created_by) {
               permissions = "owner";
-            }else {
+            } else {
               permissions = "member";
             }
           }
@@ -327,7 +327,10 @@ const ConversationModel = {
         conversation_id: conversationId,
         user_id: userId,
       },
-      UpdateExpression: "set permissions = :permissions",
+      UpdateExpression: "set #permissions = :permissions",
+      ExpressionAttributeNames: {
+        "#permissions": "permissions",
+      },
       ExpressionAttributeValues: {
         ":permissions": permissions,
       },
@@ -403,7 +406,7 @@ const ConversationModel = {
       throw new Error("Có lỗi khi bật thông báo hội thoại");
     }
   },
-  
+
 };
 
 module.exports = ConversationModel;
