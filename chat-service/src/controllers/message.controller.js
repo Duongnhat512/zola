@@ -16,9 +16,6 @@ MessageController.getMessages = async (socket, data) => {
     const messagesWithSenderInfo = await Promise.all(
       messages.map(async (message) => {
         const sender = await UserCacheService.getUserProfile(message.sender_id);
-        console.log('====================================');
-        console.log(sender);
-        console.log('====================================');
         return {
           ...message,
           sender_name: sender?.fullname || null,
@@ -129,7 +126,7 @@ MessageController.sendGroupMessage = async (socket, data) => {
       sender_id: data.sender_id,
       user_target: data.receiver_id || null,
       type: fileType,
-      message: data.message || (fileUrl ? `Đã gửi ${getReadableFileTypeName(fileType)}: ${data.file_name}` : ""),
+      message: data.message || (fileUrl ? `Đã gửi ${data.file_name}` : ""),
       media: fileUrl,
       file_name: data.file_name,
 
@@ -446,7 +443,8 @@ MessageController.deleteMessage = async (socket, data) => {
     }
     socket.emit("message_deleted", { message_id });
 
-    socket.to(data.conversation_id).emit("message_deleted", { message_id });
+    
+
   } catch (error) {
     console.error("Lỗi khi xóa tin nhắn:", error);
     socket.emit("error", { message: "Lỗi khi xóa tin nhắn" });

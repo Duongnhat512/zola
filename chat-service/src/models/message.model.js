@@ -90,6 +90,7 @@ const MessageModel = {
                         ...message,
                         message: "Tin nhắn đã thu hồi",
                         is_deleted: true,
+                        media: null,
                     };
                 }
                 return message;
