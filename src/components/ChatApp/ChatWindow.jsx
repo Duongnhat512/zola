@@ -6,7 +6,7 @@ import {
   DeleteOutlined,
   UndoOutlined,
 } from "@ant-design/icons";
-import { Input, Avatar, Button, Dropdown, Menu, Image } from "antd";
+import { Input, Avatar, Button, Dropdown, Menu, Image, message } from "antd";
 import {
   UserOutlined,
   SearchOutlined,
@@ -20,14 +20,15 @@ import socket from "../../services/Socket";
 import { useSelector } from "react-redux";
 import { useRef } from "react";
 import { hiddenMessage } from "../../services/UserService";
-const ChatWindow = ({ selectedChat }) => {
+const ChatWindow = ({ selectedChat,setSelectedChat}) => {
   const selectedChatRef = useRef();
   const [emojiList, setEmojiList] = useState({});
   const [isEmojiPickerVisible, setIsEmojiPickerVisible] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
   const [previewImage, setPreviewImage] = useState(null);
-  console.log("Selected chat:", selectedChat);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   useEffect(() => {
     selectedChatRef.current = selectedChat;
@@ -35,10 +36,7 @@ const ChatWindow = ({ selectedChat }) => {
   const userMain = useSelector((state) => state.user.user);
 
   useEffect(() => {
-    console.log(1);
-
     if (!selectedChat?.conversation_id) return;
-
     socket.emit("get_messages", {
       conversation_id: selectedChat.conversation_id,
     });
@@ -51,7 +49,7 @@ const ChatWindow = ({ selectedChat }) => {
       );
 
       const formattedMessages = dataSort.map((msg) => ({
-        id: msg.message_id,
+        id: msg.id,
         sender: msg.sender_id === userMain.id ? "me" : "other",
         avatar:
           msg.sender_id === userMain.id
@@ -64,6 +62,7 @@ const ChatWindow = ({ selectedChat }) => {
           hour: "2-digit",
           minute: "2-digit",
         }),
+        file_name: msg.file_name || null,
       }));
 
       setMessages(formattedMessages);
@@ -77,11 +76,7 @@ const ChatWindow = ({ selectedChat }) => {
   useEffect(() => {
     socket.on("new_message", (msg) => {
       const currentChat = selectedChatRef.current;
-      console.log("New message received:", msg);
-      
-      if (
-        currentChat?.conversation_id === msg.conversation_id
-      ) {
+      if (currentChat?.conversation_id === msg.conversation_id) {
         setMessages((prev) => [
           ...prev,
           {
@@ -98,6 +93,7 @@ const ChatWindow = ({ selectedChat }) => {
               hour: "2-digit",
               minute: "2-digit",
             }),
+            file_name: msg.file_name || null,
           },
         ]);
       }
@@ -123,6 +119,26 @@ const ChatWindow = ({ selectedChat }) => {
 
     fetchEmojis();
   }, []);
+  useEffect(() => {
+    socket.on("message_deleted", (msg) => {
+      const currentChat = selectedChatRef.current;
+      console.log("Message deleted event received:", msg);
+
+      if (currentChat?.conversation_id === msg.conversation_id) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === msg.message_id
+              ? { ...m, text: msg.message, media: null, file_name: null }
+              : m
+          )
+        );
+      }
+    });
+
+    return () => {
+      socket.off("message_deleted");
+    };
+  }, [userMain.id]);
   const addEmojiToInput = (emojiUrl) => {
     const emojiUnicode = String.fromCodePoint(
       ...emojiUrl
@@ -149,19 +165,18 @@ const ChatWindow = ({ selectedChat }) => {
     </div>
   );
   const sendMessage = () => {
-    if (!input.trim() && !previewImage) return;
-
+    if (!input.trim() && !previewImage && !selectedFile) return; // Không gửi nếu không có nội dung
     const tempId = `msg-${Date.now()}`;
     const isGroup = selectedChat?.list_user_id?.length > 1;
-
     setMessages((prev) => [
       ...prev,
       {
         id: tempId,
         sender: "me",
         avatar: userMain.avatar || "/default-avatar.jpg",
-        text: input,
-        image: previewImage,
+        text: input || null,
+        media: previewImage || null,
+        file_name: msg.file_name || null,
         time: new Date().toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
@@ -169,203 +184,78 @@ const ChatWindow = ({ selectedChat }) => {
         status: "pending",
       },
     ]);
-    if (isGroup) {
-      let msg = {
-        conversation_id: selectedChat?.conversation_id,
-        message: input,
-        type: "text",
-        status: "sent",
-      };
-      socket.emit("send_group_message", msg, (response) => {
-        if (response.status === "success") {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === tempId
-                ? {
-                    ...m,
-                    id: response.message_id,
-                    status: "sent",
-                    time: new Date(response.created_at).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    }),
-                  }
-                : m
-            )
-          );
-        } else {
-          setMessages((prev) =>
-            prev.map((m) => (m.id === tempId ? { ...m, status: "failed" } : m))
-          );
-        }
-      });
-    } else {
-      let msg = {
-        receiver_id: selectedChat?.list_user_id[0],
-        message: input,
-        type: "text",
-        status: "sent",
-      };
-      // Gửi tin nhắn cá nhân
-      socket.emit("send_private_message", msg, (response) => {
-        if (response.status === "success") {
-          // Cập nhật trạng thái tin nhắn thành "sent"
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === tempId
-                ? {
-                    ...m,
-                    id: response.message_id,
-                    status: "sent",
-                    time: new Date(response.created_at).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    }),
-                  }
-                : m
-            )
-          );
-        } else {
-          // Nếu gửi thất bại, cập nhật trạng thái thành "failed"
-          setMessages((prev) =>
-            prev.map((m) => (m.id === tempId ? { ...m, status: "failed" } : m))
-          );
-        }
-      });
-    }
-
-    setInput(""); // Xóa nội dung trong ô nhập
-    setPreviewImage(null); // Clear the preview image after sending
-  };
-  const sendFile = (file) => {
-    if (!file) return;
-
     const msg = {
-      receiver_id: selectedChat?.list_user_id[0],
-      file, // File to be sent
-      type: "file",
-      status: "sent",
+      conversation_id: selectedChat?.conversation_id || null,
+      receiver_id: selectedChat?.user_id || null,
+      message: input || null,
+      file_name: selectedImage?.file_name || selectedFile?.file_name || null,
+      file_type: selectedImage?.file_type || selectedFile?.file_type || null,
+      file_size: selectedImage?.file_size || selectedFile?.file_size || null,
+      file_data: selectedImage?.file_data || selectedFile?.file_data || null,
     };
+    console.log("msg", msg);
 
-    socket.emit("send_private_file", msg, (response) => {
-      // if (response.status === "success") {
-      console.log("File sent successfully:", response);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: response.message_id,
-          sender: "me",
-          avatar: userMain.avatar || "/default-avatar.jpg",
-          text: file.name, // Display file name
-          time: new Date().toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          type: "file",
-          fileUrl: response.file_url, // URL of the uploaded file
-        },
-      ]);
-      // } else {
-      // console.error("Failed to send file:", response.error);
-      // }
+    const event = isGroup ? "send_group_message" : "send_private_message";
+    socket.emit(event, msg, (response) => {});
+    socket.on("message_sent", (msg) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === tempId
+            ? {
+                ...m,
+                id: msg.message_id,
+                text: msg.message || null,
+                media: msg.media || null,
+                file_name: msg.file_name || null,
+                type: msg.type || "text",
+                time: new Date(msg.created_at).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
+                status: "sent",
+              }
+            : m
+        )
+      );
     });
-    console.log("Emitting file_sent event with data:");
-  };
-
-  const sendImage = async (image) => {
-    if (!image) return;
-
-    const tempId = `msg-${Date.now()}`;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64Data = reader.result.split(",")[1];
-
-      const fileMessage = {
-        conversation_id: selectedChat?.conversation_id,
-        sender_id: userMain.id,
-        receiver_id: selectedChat?.list_user_id[0],
-        file_name: image.name,
-        file_type: image.type,
-        file_size: image.size,
-        file_data: `data:${image.type};base64,${base64Data}`,
-        message: `Đã gửi ảnh: ${image.name}`,
-        type: "image",
-      };
-      // setMessages((prev) => [
-      //   ...prev,
-      //   // {
-      //   //   id: tempId,
-      //   //   sender: "me",
-      //   //   avatar: userMain.avatar || "/default-avatar.jpg",
-      //   //   text: "[Đang gửi ảnh...]",
-      //   //   time: now.toLocaleTimeString([], {
-      //   //     hour: "2-digit",
-      //   //     minute: "2-digit",
-      //   //   }),
-      //   //   status: "pending",
-      //   //   type: "image",
-      //   // },
-      // ]);
-
-      socket.emit("send_private_file", fileMessage, (response) => {
-        // if (response.success) {
-        // setMessages((prev) =>
-        //   prev.map((m) =>
-        //     m.id === tempId
-        //       ? {
-        //           ...m,
-        //           id: response.message_id || tempId,
-        //           status: "sent",
-        //           text: "[Ảnh đã gửi]",
-        //           time: response.time
-        //             ? new Date(response.time).toLocaleTimeString([], {
-        //                 hour: "2-digit",
-        //                 minute: "2-digit",
-        //               })
-        //             : m.time,
-        //           imageUrl: response.file_url,
-        //           sender: response.sender_id === userMain.id ? "me" : "other",
-        //           avatar:
-        //             response.sender_id === userMain.id
-        //               ? userMain.avatar || "/default-avatar.jpg"
-        //               : selectedChat?.user?.avt || "/default-avatar.jpg",
-        //         }
-        //       : m
-        //   )
-        // );
-      });
-    };
-    socket.on("file_sent", (data) => {
-      console.log("File sent:", data);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: data.message_id,
-          sender: "me",
-          avatar: userMain.avatar || "/default-avatar.jpg",
-          text: "Ảnh", // Display file name
-          time: new Date().toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          type: "file",
-          fileUrl: data.file_url, // URL of the uploaded file
-        },
-      ]);
-    });
-    reader.readAsDataURL(image);
+    setInput("");
+    setPreviewImage(null);
+    setSelectedFile(null);
+    setSelectedImage(null);
   };
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = () => {
-        setPreviewImage(reader.result); // Set the preview image
+        setPreviewImage(reader.result); // Lưu ảnh xem trước vào state
+        setSelectedImage({
+          file_name: file.name,
+          file_type: file.type,
+          file_size: file.size,
+          file_data: reader.result, // Base64 của ảnh
+        }); // Lưu thông tin file vào state
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(file); // Đọc file dưới dạng Base64
     }
   };
-  const messagesEndRef = useRef(null); 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setSelectedFile({
+          file_name: file.name,
+          file_type: file.type,
+          file_size: file.size,
+          file_data: reader.result, // Base64 của file
+        }); // Lưu thông tin file vào state
+      };
+      reader.readAsDataURL(file); // Đọc file dưới dạng Base64
+    }
+    console.log("Selected file:", file);
+  };
+  const messagesEndRef = useRef(null);
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
@@ -400,35 +290,37 @@ const ChatWindow = ({ selectedChat }) => {
     navigator.clipboard.writeText(text);
     console.log("Copied:", text);
   };
-  const deleteMessage = async (idMessage) => {
-    try {
-      const response = await hiddenMessage(idMessage, userMain.id);
-      if (response.status === "success") {
-        setMessages((prev) => prev.filter((msg) => msg.id !== idMessage));
-        console.log("Message hidden successfully:", idMessage);
-      } else {
-        console.error("Failed to hide message:", response.data);
-      }
-    } catch (error) {
-      console.error("Error while hiding message:", error);
-    }
+  const deleteMessage = (idMessage) => {
+    const payload = {
+      user_id: userMain.id,
+      message_id: idMessage,
+    };
+    console.log("hidden message payload:", payload);
+
+    socket.emit("set_hidden_message", payload, (response) => {});
+    setMessages((prev) => prev.filter((msg) => msg.id !== idMessage));
   };
   const revokeMessage = (idMessage) => {
-    const payload = {
-      user_id: userMain.id, // ID của người dùng hiện tại
-      message_id: idMessage, // ID của tin nhắn cần xóa
-    };
+    console.log("Revoke message:", idMessage);
 
-    // Gửi sự kiện delete_message qua socket
-    socket.emit("delete_message", payload, (response) => {
-      if (response.status === "success") {
-        // Xóa tin nhắn khỏi danh sách nếu thành công
-        setMessages((prev) => prev.filter((msg) => msg.id !== idMessage));
-        console.log("Message deleted successfully:", idMessage);
-      } else {
-        console.error("Failed to delete message:", response.error);
-      }
-    });
+    const payload = {
+      user_id: userMain.id,
+      message_id: idMessage,
+    };
+    console.log("Revoke message payload:", payload);
+    socket.emit("delete_message", payload, (response) => {});
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.id === idMessage
+          ? {
+              ...msg,
+              text: "Tin nhắn đã thu hồi",
+              media: null,
+              file_name: null,
+            }
+          : msg
+      )
+    );
   };
   if (!selectedChat) {
     return (
@@ -444,7 +336,7 @@ const ChatWindow = ({ selectedChat }) => {
     );
   }
   console.log(messages);
-  
+
   return (
     <div className="flex-1 flex flex-col bg-white">
       <div className="bg-white p-4 shadow flex items-center justify-between">
@@ -457,7 +349,9 @@ const ChatWindow = ({ selectedChat }) => {
           <div>
             <h2 className="font-semibold">{selectedChat?.name}</h2>
             {selectedChat?.list_user_id?.length > 1 ? (
-              <p className="text-sm text-gray-500">{selectedChat?.list_user_id?.length +1} thành viên</p>
+              <p className="text-sm text-gray-500">
+                {selectedChat?.list_user_id?.length + 1} thành viên
+              </p>
             ) : (
               <p className="text-sm text-gray-500">Vừa truy cập</p>
             )}
@@ -520,18 +414,35 @@ const ChatWindow = ({ selectedChat }) => {
                     boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
                   }}
                 >
-                  {msg.type === "file" || msg.type==="image"? (
+                  {/* Hiển thị ảnh nếu có */}
+                  {msg.type === "image" && msg.media && (
                     <Image
-                      src={msg.media || msg.fileUrl || msg.image}
-                      alt={msg.message || "Đã gửi ảnh"}
+                      src={msg.media}
+                      alt="Đã gửi ảnh"
                       style={{
                         maxWidth: "100%",
                         height: "auto",
                         borderRadius: "8px",
+                        marginTop: msg.text ? "8px" : "0", // Thêm khoảng cách nếu có text
                       }}
                     />
-                  ) : (
-                    <span>{msg.message || msg.text}</span>
+                  )}
+                  {msg?.text && <p>{msg.text}</p>}
+
+                  {msg.type === "document" && msg.file_name && (
+                    <a
+                      href={msg.media || "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: "block",
+                        marginTop: msg.text || msg.image ? "8px" : "0", // Thêm khoảng cách nếu có text hoặc ảnh
+                        color: "#007bff",
+                        textDecoration: "underline",
+                      }}
+                    >
+                      {msg.file_name}
+                    </a>
                   )}
                 </div>
 
@@ -546,23 +457,29 @@ const ChatWindow = ({ selectedChat }) => {
                     wordWrap: "break-word",
                   }}
                 >
-                  <span
-                    style={{
-                      fontSize: "16px",
-                      marginLeft: msg.sender === "me" ? "-15px" : "0",
-                      right: msg.sender !== "me" && "-15px",
-                      cursor: "pointer",
-                      color: "#888",
-                      position: "absolute",
-                    }}
-                  >
-                    ⋮
-                  </span>
+                  {msg.text !== "Tin nhắn đã thu hồi" && (
+                    <span
+                      style={{
+                        fontSize: "16px",
+                        marginLeft: msg.sender === "me" ? "-15px" : "0",
+                        right: msg.sender !== "me" && "-15px",
+                        cursor: "pointer",
+                        color: "#888",
+                        position: "absolute",
+                      }}
+                    >
+                      ⋮
+                    </span>
+                  )}
                 </Dropdown>
               </div>
 
               <span
-                style={{ fontSize: "12px", color: "#888", marginTop: "4px" }}
+                style={{
+                  fontSize: "12px",
+                  color: "#888",
+                  marginTop: "4px",
+                }}
               >
                 {msg.time}
               </span>
@@ -575,7 +492,16 @@ const ChatWindow = ({ selectedChat }) => {
       <div className="p-4 bg-white border-t">
         {previewImage && (
           <div className="mb-4">
-            <img src={previewImage} alt="Preview" className="max-w-xs rounded-lg" />
+            <img
+              src={previewImage}
+              alt="Preview"
+              className="max-w-xs rounded-lg"
+            />
+          </div>
+        )}
+        {selectedFile && (
+          <div className="mb-4">
+            <p className="text-gray-600">File: {selectedFile.file_name}</p>
           </div>
         )}
         <div className="flex items-center gap-4 mb-2 text-gray-600">
@@ -589,6 +515,18 @@ const ChatWindow = ({ selectedChat }) => {
           <label htmlFor="image-upload" className="cursor-pointer">
             <PictureOutlined style={{ fontSize: "20px" }} />
           </label>
+
+          <input
+            type="file"
+            accept=".pdf,.docx,.doc"
+            onChange={handleFileChange}
+            style={{ display: "none" }}
+            id="file-upload"
+          />
+          <label htmlFor="file-upload" className="cursor-pointer">
+            <PaperClipOutlined style={{ fontSize: "20px" }} />
+          </label>
+
           <Dropdown
             overlay={emojiDropdown}
             trigger={["click"]}
@@ -599,21 +537,6 @@ const ChatWindow = ({ selectedChat }) => {
               <SmileOutlined style={{ fontSize: "20px" }} />
             </button>
           </Dropdown>
-          <button
-            className="hover:text-blue-500"
-            title="Gửi file"
-            onClick={() => {
-              const file = document.createElement("input");
-              file.type = "file";
-              file.onchange = (e) => sendFile(e.target.files[0]);
-              file.click();
-            }}
-          >
-            <PaperClipOutlined style={{ fontSize: "20px" }} />
-          </button>
-          <button className="hover:text-blue-500" title="Gửi tài liệu">
-            <FileTextOutlined style={{ fontSize: "20px" }} />
-          </button>
         </div>
 
         <div className="flex">
