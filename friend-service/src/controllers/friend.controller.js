@@ -104,11 +104,6 @@ const FriendController = {
    */
   acceptFriendRequest: async (req, res) => {
     const { user_id, user_friend_id } = req.body;
-
-    console.log("====================================");
-    console.log("user_id", user_id);
-    console.log("user_friend_id", user_friend_id);
-    console.log("====================================");
     if (!user_id || !user_friend_id) {
       return res
         .status(400)
@@ -258,6 +253,7 @@ const FriendController = {
 
     try {
       await FriendModel.deleteRequest(user_id, user_friend_id);
+      
       return res.status(200).json({
         code: 200,
         message: "Đã xóa lời mời kết bạn thành công",
