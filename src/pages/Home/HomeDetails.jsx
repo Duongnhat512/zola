@@ -4,7 +4,8 @@ import ChatWindow from "../../components/ChatApp/ChatWindow";
 import socket from "../../services/Socket";
 import { useSelector } from "react-redux";
 import { Spin } from "antd";
-
+import "react-toastify/dist/ReactToastify.css"; // Import CSS cho Toastify
+import { toast } from "react-toastify"; // Import react-toastify
 const HomeDetails = () => {
   const [selectedChat, setSelectedChat] = useState(null);
   const [chats, setChats] = useState([]);
@@ -32,6 +33,21 @@ const HomeDetails = () => {
   useEffect(() => {
     fetchConversations();
   }, []);
+  useEffect(() => {
+    socket.on("new_group", (data) => {
+      console.log("New group notification received:", data);
+      // Thông báo có nhóm mới
+      toast.info("Bạn có nhóm mới!", {
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+      });
+      fetchConversations();
+    });
+   
+    
+  },[socket]);
 
   return (
     <div className="flex h-screen w-full bg-gray-100">

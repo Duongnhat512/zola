@@ -26,6 +26,7 @@ const ChatWindow = ({ selectedChat }) => {
   const [isEmojiPickerVisible, setIsEmojiPickerVisible] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
+  const [previewImage, setPreviewImage] = useState(null);
   console.log("Selected chat:", selectedChat);
 
   useEffect(() => {
@@ -148,7 +149,8 @@ const ChatWindow = ({ selectedChat }) => {
     </div>
   );
   const sendMessage = () => {
-    if (!input.trim()) return;
+    if (!input.trim() && !previewImage) return;
+
     const tempId = `msg-${Date.now()}`;
     const isGroup = selectedChat?.list_user_id?.length > 1;
 
@@ -159,6 +161,7 @@ const ChatWindow = ({ selectedChat }) => {
         sender: "me",
         avatar: userMain.avatar || "/default-avatar.jpg",
         text: input,
+        image: previewImage,
         time: new Date().toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
@@ -232,6 +235,7 @@ const ChatWindow = ({ selectedChat }) => {
     }
 
     setInput(""); // Xóa nội dung trong ô nhập
+    setPreviewImage(null); // Clear the preview image after sending
   };
   const sendFile = (file) => {
     if (!file) return;
@@ -350,6 +354,16 @@ const ChatWindow = ({ selectedChat }) => {
       ]);
     });
     reader.readAsDataURL(image);
+  };
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPreviewImage(reader.result); // Set the preview image
+      };
+      reader.readAsDataURL(file);
+    }
   };
   const messagesEndRef = useRef(null); 
   const scrollToBottom = () => {
@@ -508,7 +522,7 @@ const ChatWindow = ({ selectedChat }) => {
                 >
                   {msg.type === "file" || msg.type==="image"? (
                     <Image
-                      src={msg.media || msg.fileUrl}
+                      src={msg.media || msg.fileUrl || msg.image}
                       alt={msg.message || "Đã gửi ảnh"}
                       style={{
                         maxWidth: "100%",
@@ -559,20 +573,22 @@ const ChatWindow = ({ selectedChat }) => {
       </div>
 
       <div className="p-4 bg-white border-t">
+        {previewImage && (
+          <div className="mb-4">
+            <img src={previewImage} alt="Preview" className="max-w-xs rounded-lg" />
+          </div>
+        )}
         <div className="flex items-center gap-4 mb-2 text-gray-600">
-          <button
-            className="hover:text-blue-500"
-            title="Gửi ảnh"
-            onClick={() => {
-              const image = document.createElement("input");
-              image.type = "file";
-              image.accept = "image/*";
-              image.onchange = (e) => sendImage(e.target.files[0]);
-              image.click();
-            }}
-          >
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
+            style={{ display: "none" }}
+            id="image-upload"
+          />
+          <label htmlFor="image-upload" className="cursor-pointer">
             <PictureOutlined style={{ fontSize: "20px" }} />
-          </button>
+          </label>
           <Dropdown
             overlay={emojiDropdown}
             trigger={["click"]}

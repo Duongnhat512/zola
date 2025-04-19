@@ -95,3 +95,49 @@ export const rejectFriendRequest = async (userId, friendId) => {
     throw error;
   }
 };
+
+export const getRequestByUserIdAndUserFriendId = async (userId, friendId) => {
+  try {
+    const response = await axios.get(
+      `/friend-service/friends/getRequestByUserIdAndUserFriendId?user_id=${userId}&user_friend_id=${friendId}`
+    );
+    return response;
+  } catch (error) {
+    console.error("Failed to get friend request", error);
+    throw error;
+  }
+}
+
+export const cancelFriendRequest = async (userId, friendId) => {
+  try {
+    const response = await axios.delete(
+      `/friend-service/friends/deleteRequest?user_id=${userId}&user_friend_id=${friendId}`
+    );
+    return response;
+  } catch (error) {
+    console.error("Failed to cancel friend request", error);
+    throw error;
+  }
+}
+export const deleteFriend = async (userId, friendId) => {
+  try {
+    const response = await axios.delete(
+      `/friend-service/friends/deleteFriend?user_id=${userId}&user_friend_id=${friendId}`
+    );
+    return response;
+  } catch (error) {
+    console.error("Failed to cancel friend request", error);
+    throw error;
+  }
+}
+export const getFriendByPhoneAndName = async (userId, search) => {
+  try {
+    const response = await axios.get(
+      `/friend-service/friends/getFriendByPhoneAndName?user_id=${userId}&search=${search}`
+    );
+    return response;
+  } catch (error) {
+    console.error("Failed to get friend by phone and name", error);
+    throw error;
+  }
+}

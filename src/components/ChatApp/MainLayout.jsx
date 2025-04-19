@@ -9,8 +9,8 @@ import {
 import AddFriendModal from "./AddFriendModal";
 import AddGroupModal from "./AddGroupModal";
 import ChatWindow from "./ChatWindow";
-import FriendInvitations from "../../pages/Group/FriendInvitations";
-import FriendList from "../../pages/Group/FriendList";
+import FriendInvitations from "../../pages/Friend/FriendInvitations";
+import FriendList from "../../pages/Friend/FriendList";
 
 const MainLayout = () => {
   const [layout, setLayout] = useState("default"); // State to manage layout type

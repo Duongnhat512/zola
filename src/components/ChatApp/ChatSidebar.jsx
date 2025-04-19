@@ -27,6 +27,8 @@ const ChatSidebar = ({ chats, openChat }) => {
   const closeModalGroup = () => {
     setIsModalGroupVisible(false);
   };
+  
+
   return (
     <div
       className="w-1/4 border-r border-gray-300 flex flex-col bg-white shadow-lg "
@@ -90,14 +92,16 @@ const ChatSidebar = ({ chats, openChat }) => {
                   </div>
                 </div>
               </div>
-              <div className="text-xs text-gray-400 whitespace-nowrap">
-                {new Date(chat?.last_message?.created_at).toLocaleTimeString(
-                  [],
-                  {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  }
-                )}
+              <div style={{fontSize:"11px"}} className="text-gray-400 whitespace-nowrap">
+                {chat?.last_message?.created_at
+                  ? new Date(chat?.last_message?.created_at).toLocaleString(
+                      "vi-VN",
+                      {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      }
+                    )
+                  : "Chưa có tin nhắn"}
               </div>
             </div>
           </div>
