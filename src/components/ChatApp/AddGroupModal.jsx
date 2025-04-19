@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Modal, Input, Avatar, Button, Radio, Upload, Divider, notification } from "antd";
+import { Modal, Input, Avatar, Button, Radio, Upload, Divider, notification, Checkbox } from "antd";
 import {
   UserOutlined,
   CloseOutlined,
@@ -163,13 +163,14 @@ const AddGroupModal = ({ onClose, visible = true }) => {
   };
   
 
-  const handleContactSelect = (e) => {
-    const value = e.target.value;
-    if (selectedContacts.includes(value)) {
-      setSelectedContacts(selectedContacts.filter((item) => item !== value));
-    } else {
-      setSelectedContacts([...selectedContacts, value]);
-    }
+  const handleContactSelect = (contactId) => {
+    
+    
+    if (selectedContacts.includes(contactId)) {
+        setSelectedContacts(selectedContacts.filter((id) => id !== contactId));
+      } else {
+        setSelectedContacts([...selectedContacts, contactId]);
+      }
   };
 
   return (
@@ -252,12 +253,12 @@ const AddGroupModal = ({ onClose, visible = true }) => {
                   {contact.fullname}
                 </p>
               </div>
-              <Radio
-                value={contact.id}
-                checked={selectedContacts.includes(contact.id)}
-                onChange={handleContactSelect}
-                className="scale-125"
-              />
+              <Checkbox
+                 value={contact.id}
+                 checked={selectedContacts.includes(contact.id)}
+                 onChange={() => handleContactSelect(contact.id)}
+                 className="scale-125"
+/>
             </div>
           ))}
         </div>

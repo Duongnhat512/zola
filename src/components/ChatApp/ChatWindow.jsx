@@ -20,6 +20,8 @@ import socket from "../../services/Socket";
 import { useSelector } from "react-redux";
 import { useRef } from "react";
 import { hiddenMessage } from "../../services/UserService";
+import AddMember from "../../pages/Group/AddMember";
+import InfoGroup from "../../pages/Group/InfoGroup";
 const ChatWindow = ({ selectedChat }) => {
   const selectedChatRef = useRef();
   const [emojiList, setEmojiList] = useState({});
@@ -27,6 +29,11 @@ const ChatWindow = ({ selectedChat }) => {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
   const [previewImage, setPreviewImage] = useState(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isInfoGroupVisible, setIsInfoGroupVisible] = useState(false);
+
+  const handleOpen = () => setIsModalVisible(true);
+  const handleClose = () => setIsModalVisible(false);
   console.log("Selected chat:", selectedChat);
 
   useEffect(() => {
@@ -465,7 +472,9 @@ const ChatWindow = ({ selectedChat }) => {
         </div>
 
         <div className="flex items-center gap-4">
-          <Button className="flex gap-2 ml-2">
+          <Button className="flex gap-2 ml-2" onClick={() => {
+             handleOpen();
+          }}>
             <UserOutlined className="text-gray-500 text-lg cursor-pointer hover:text-blue-500" />
           </Button>
           <button className="text-gray-600 hover:text-blue-500">
@@ -474,7 +483,11 @@ const ChatWindow = ({ selectedChat }) => {
           <button className="text-gray-600 hover:text-blue-500">
             <SearchOutlined className="text-xl" title="Tìm kiếm" />
           </button>
-          <button className="text-gray-600 hover:text-blue-500">
+          <button className="text-gray-600 hover:text-blue-500" 
+          onClick={() => {
+            setIsInfoGroupVisible(!isInfoGroupVisible);
+          }}
+          >
             <InfoCircleOutlined
               className="text-xl"
               title="Thông tin hộp thoại"
@@ -482,6 +495,9 @@ const ChatWindow = ({ selectedChat }) => {
           </button>
         </div>
       </div>
+      {isInfoGroupVisible && (
+      <InfoGroup selectedChat={selectedChat} visible={isInfoGroupVisible} onClose={handleClose} />
+     )}
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg) => (
@@ -571,6 +587,10 @@ const ChatWindow = ({ selectedChat }) => {
         ))}
         <div ref={messagesEndRef} />
       </div>
+      {isModalVisible && (
+      <AddMember selectedChat={selectedChat} visible={isModalVisible} onClose={handleClose} />
+     )}
+     
 
       <div className="p-4 bg-white border-t">
         {previewImage && (
@@ -615,6 +635,7 @@ const ChatWindow = ({ selectedChat }) => {
             <FileTextOutlined style={{ fontSize: "20px" }} />
           </button>
         </div>
+        
 
         <div className="flex">
           <Input

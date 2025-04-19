@@ -45,6 +45,19 @@ const HomeDetails = () => {
       });
       fetchConversations();
     });
+
+    socket.on("new_member", (data) => {
+      console.log("New group notification received:", data);
+      // Thông báo có tin nhắn mới
+      toast.info("Bạn được thêm vào group mới!", {
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+      });
+      fetchConversations();
+    })
+    
    
     
   },[socket]);
