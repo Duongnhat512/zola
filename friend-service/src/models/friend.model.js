@@ -25,24 +25,21 @@ const FriendModel = {
   },
 
   createFriendRequest: async (user_id, user_friend_id) => {
-    // Kiểm tra xem yêu cầu đã tồn tại chưa
+    
     const checkParams = {
       TableName: friendRequestTableName,
-      KeyConditionExpression:
-        "user_id = :user_id AND user_friend_id = :user_friend_id",
-      ExpressionAttributeValues: {
-        ":user_id": user_id,
-        ":user_friend_id": user_friend_id,
+      Key: {
+        user_id: user_id,
+        user_friend_id: user_friend_id,
       },
     };
-
+  
     try {
-      // const existing = await dynamodb.query(checkParams).promise();
-
-      // if (existing.Items && existing.Items.length > 0) {
-      //   throw new Error("Friend request already exists");
-      // }
-
+      const existing = await dynamodb.get(checkParams).promise();
+      if (existing.Item) {
+        return { success: false, message: "Friend request already exists" };
+      }
+  
       // Tạo yêu cầu mới
       const params = {
         TableName: friendRequestTableName,
@@ -53,7 +50,7 @@ const FriendModel = {
           createdAt: new Date().toISOString(),
         },
       };
-
+  
       await dynamodb.put(params).promise();
       return { success: true };
     } catch (error) {
@@ -61,6 +58,7 @@ const FriendModel = {
       throw error;
     }
   },
+  
 
   acceptFriendRequest: async (user_id, user_friend_id) => {
     try {
@@ -232,6 +230,135 @@ const FriendModel = {
       throw error;
     }
   },
+  deleteRequest: async (user_id, user_friend_id) => {
+    const params1 = {
+      TableName: friendRequestTableName,
+      Key: {
+        user_id: user_id,
+        user_friend_id: user_friend_id,
+      },
+    };
+    const params2 = {
+      TableName: friendRequestTableName,
+      Key: {
+        user_id: user_friend_id,
+        user_friend_id: user_id,
+      },
+    };
+
+    try {
+      await dynamodb.delete(params1).promise();
+      await dynamodb.delete(params2).promise();
+      return { success: true };
+    } catch (error) {
+      console.error("Error deleting friend request:", error);
+      throw error;
+    }
+  },
+  deleteFriend: async (user_id, user_friend_id) => {
+    const params1 = {
+      TableName: friendTableName,
+      Key: {
+        user_id: user_id,
+        user_friend_id: user_friend_id,
+      },
+    };
+    const params2 = {
+      TableName: friendTableName,
+      Key: {
+        user_id: user_friend_id,
+        user_friend_id: user_id,
+      },
+    };
+
+    try {
+      await dynamodb.delete(params1).promise();
+      await dynamodb.delete(params2).promise();
+      return { success: true };
+    } catch (error) {
+      console.error("Error deleting friend:", error);
+      throw error;
+    }
+  },
+  getRequestByUserIdAndUserFriendId: async (user_id, user_friend_id) => {
+      const params1 = {
+        TableName: friendRequestTableName,
+        Key: {
+          user_id: user_id,
+          user_friend_id: user_friend_id,
+        },
+      };
+    
+      const params2 = {
+        TableName: friendRequestTableName,
+        Key: {
+          user_id: user_friend_id,
+          user_friend_id: user_id,
+        },
+      };
+    
+      try {
+        const result1 = await dynamodb.get(params1).promise();
+        
+        if (result1.Item) return result1.Item;
+    
+        const result2 = await dynamodb.get(params2).promise();
+        if (result2.Item) return result2.Item;
+    
+        return null; // Không tìm thấy ở cả hai chiều
+      } catch (error) {
+        console.error("Error getting friend request:", error);
+        throw error;
+      }
+    },
+    getFriendByPhoneNumberOrName: async (user_id, search) => {
+      const getListFriends = await FriendModel.getListFriends(user_id);
+    
+      const friendIds = getListFriends.map((friend) => friend.user_friend_id);
+    
+      // Dynamodb không hỗ trợ trực tiếp `IN (:arr)` nên cần generate OR
+      const friendConditions = friendIds.map((id, index) => `user_id = :fid${index}`).join(" OR ");
+    
+      const expressionParts = [
+        "phone = :search",
+        "contains(#fullname, :search)" // Sử dụng contains để tìm kiếm tương đối
+      ];
+    
+      if (friendConditions) {
+        expressionParts.push(`(${friendConditions})`);
+      }
+    
+      const FilterExpression = expressionParts.join(" OR ");
+    
+      const ExpressionAttributeValues = {
+        ":search": search
+      };
+    
+      // Gán từng giá trị friendId vào ExpressionAttributeValues
+      friendIds.forEach((id, index) => {
+        ExpressionAttributeValues[`:fid${index}`] = id;
+      });
+    
+      const params = {
+        TableName: tableName,
+        FilterExpression,
+        ExpressionAttributeNames: {
+          "#fullname": "fullname", // tránh từ khóa dự trữ
+        },
+        ExpressionAttributeValues,
+      };
+    
+      try {
+        const data = await dynamodb.scan(params).promise();
+        return data.Items.filter((item) => item.user_id !== user_id); // loại chính mình ra
+      } catch (error) {
+        console.error("Error finding friends by phone number or name:", error);
+        throw error;
+      }
+    }
+    
+  
+  
 };
 
 module.exports = FriendModel;
