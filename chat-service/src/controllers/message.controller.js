@@ -17,8 +17,8 @@ MessageController.getMessages = async (socket, data) => {
         const sender = await UserCacheService.getUserProfile(message.sender_id);
         return {
           ...message,
-          sender_name: sender.fullname,
-          sender_avatar: sender.avt,
+          sender_name: sender?.fullname || null,
+          sender_avatar: sender?.avt || null,
         };
       })
     );
@@ -32,6 +32,7 @@ MessageController.getMessages = async (socket, data) => {
 
 MessageController.sendGroupMessage = async (socket, data) => {
   data.sender_id = socket.user.id
+  const permissions = await UserCacheService.getConversationPermissions(socket.user.id, data.conversation_id);
 
   if (!data.conversation_id) {
     socket.emit("error", { message: "Thiếu conversation_id" });

@@ -70,19 +70,27 @@ ConversationController.createGroup = async (socket, data) => {
       data.avatar = await uploadFile(file);
     }
 
+    if (!data.members.includes(socket.user.id)) {
+      data.members.push(socket.user.id);
+    }
+
     const conversation = await ConversationModel.createConversation(
       { created_by: socket.user.id, type: "group", ...data }
     );
 
-    if (!data.members.includes(socket.user.id)) {
-      data.members.push(socket.user.id);
+    for (const member of data.members) {
+      if (member === socket.user.id) {
+        await UserCacheService.setConversationPermissions(member, conversation.id, 'owner');
+      } else {
+        await UserCacheService.setConversationPermissions(member, conversation.id, 'member');
+      }
     }
 
     data.members.forEach(async (member) => {
       await redisClient.sadd(
         `group:${conversation.id}`, member)
     });
-    
+
     const members = await redisClient.smembers(
       `group:${conversation.id}`
     );
@@ -98,7 +106,7 @@ ConversationController.createGroup = async (socket, data) => {
           created_by: socket.user.id,
           members: members,
         });
-      }); 
+      });
     }
 
 
@@ -275,6 +283,16 @@ ConversationController.findPrivateConversation = async (req, res) => {
 ConversationController.addMember = async (socket, data) => {
   const { user_id, conversation_id } = data;
 
+  const permissions = await UserCacheService.getConversationPermissions(socket.user.id, conversation_id);
+
+  if (permissions === 'member') {
+    return socket.emit("error", { message: "Bạn không có quyền thêm thành viên" });
+  }
+
+  if (!permissions) {
+    return socket.emit("error", { message: "Thiếu quyền truy cập" });
+  }
+
   if (!user_id) {
     return socket.emit("error", { message: "Thiếu user_id" });
   }
@@ -290,6 +308,7 @@ ConversationController.addMember = async (socket, data) => {
     );
 
     await redisClient.sadd(`group:${conversation_id}`, user_id);
+    await UserCacheService.setConversationPermissions(user_id, conversation_id, 'member');
 
     const socketIds = await redisClient.smembers(`sockets:${user_id}`);
     socketIds.forEach((socketId) => {
@@ -300,6 +319,11 @@ ConversationController.addMember = async (socket, data) => {
       });
     });
 
+    socket.emit("add_member", {
+      message: "Thêm thành viên thành công",
+      result,
+    });
+
   } catch (error) {
     console.error("Có lỗi khi thêm thành viên:", error);
     socket.emit("error", { message: "Có lỗi khi thêm thành viên" });
@@ -308,6 +332,16 @@ ConversationController.addMember = async (socket, data) => {
 
 ConversationController.removeMember = async (socket, data) => {
   const { user_id, conversation_id } = data;
+
+  const permissions = await UserCacheService.getConversationPermissions(socket.user.id, conversation_id);
+
+  if (permissions === 'member') {
+    return socket.emit("error", { message: "Bạn không có quyền thêm thành viên" });
+  }
+
+  if (!permissions) {
+    return socket.emit("error", { message: "Thiếu quyền truy cập" });
+  }
 
   if (!user_id) {
     return socket.emit("error", { message: "Thiếu user_id" });
@@ -324,6 +358,8 @@ ConversationController.removeMember = async (socket, data) => {
     );
 
     await redisClient.srem(`group:${conversation_id}`, user_id);
+    await redisClient.srem(`chatlist:${user_id}`, conversation_id); 
+    await UserCacheService.removePermissions(user_id, conversation_id);
 
     const socketIds = await redisClient.smembers(`sockets:${user_id}`);
     socketIds.forEach((socketId) => {
@@ -332,6 +368,11 @@ ConversationController.removeMember = async (socket, data) => {
         message: "Bạn đã bị xóa khỏi nhóm",
         user_id: user_id,
       });
+    });
+
+    socket.emit("remove_member", {
+      message: "Xóa thành viên thành công",
+      result,
     });
 
   } catch (error) {
@@ -399,6 +440,88 @@ ConversationController.getConversations = async (socket, data) => {
   } catch (error) {
     console.error("Có lỗi khi lấy danh sách hội thoại:", error);
     socket.emit("error", { message: "Có lỗi khi lấy danh sách hội thoại" });
+  }
+}
+
+ConversationController.setPermisstions = async (socket, data) => {
+  const { conversation_id, permissions, user_id } = data;
+
+  const per = await UserCacheService.getConversationPermissions(socket.user.id, conversation_id);
+
+  if (per !== 'owner' || per !== 'moderator') {
+    return socket.emit("error", { message: "Bạn không có quyền cập nhật quyền" });
+  }
+
+  if (!conversation_id) {
+    return socket.emit("error", { message: "Thiếu conversation_id" });
+  }
+
+  if (!permissions) {
+    return socket.emit("error", { message: "Thiếu permissions" });
+  }
+
+  try {
+    const result = await ConversationModel.setPermissions(
+      user_id,
+      conversation_id,
+      permissions
+    );
+
+    await UserCacheService.setConversationPermissions(user_id, conversation_id, permissions);
+
+    socket.emit("set_permissions", {
+      status: "success",
+      message: "Cập nhật quyền thành công",
+      result,
+    });
+
+    const socketIds = await redisClient.smembers(`sockets:${user_id}`);
+    socketIds.forEach((socketId) => {
+      socket.to(socketId).emit("update_permissions", {
+        conversation_id: conversation_id,
+        user_id: user_id,
+      });
+    });
+  } catch (error) {
+    console.error("Có lỗi khi cập nhật quyền:", error);
+    socket.emit("error", { message: "Có lỗi khi cập nhật quyền" });
+  }
+}
+
+ConversationController.muteMember = async (socket, data) => {
+  const { conversation_id, user_id } = data;
+  const permissions = await UserCacheService.getConversationPermissions(socket.user.id, conversation_id);
+
+  if (permissions !== 'admin' || permissions !== 'moderator') {
+    return socket.emit("error", { message: "Bạn không có quyền tắt tiếng thành viên" });
+  }
+  
+  if (!permissions) {
+    return socket.emit("error", { message: "Thiếu quyền truy cập" });
+  }
+
+  if (!conversation_id) {
+    return socket.emit("error", { message: "Thiếu conversation_id" });
+  }
+
+  if (!user_id) {
+    return socket.emit("error", { message: "Thiếu user_id" });
+  }
+
+  try {
+    const result = await ConversationModel.muteMember(
+      user_id,
+      conversation_id
+    );
+
+    socket.emit("mute_member", {
+      status: "success",
+      message: "Đã tắt tiếng thành viên",
+      result,
+    });
+  } catch (error) {
+    console.error("Có lỗi khi tắt tiếng thành viên:", error);
+    socket.emit("error", { message: "Có lỗi khi tắt tiếng thành viên" });
   }
 }
 

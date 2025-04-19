@@ -1,4 +1,4 @@
-const { get, joinRoom } = require("../controllers/conversation.controller");
+const { get, joinRoom, muteMember } = require("../controllers/conversation.controller");
 const { dynamodb } = require("../utils/aws.helper");
 const { v4: uuidv4 } = require("uuid");
 const { generateConversationId } = require("../utils/conversation.helper");
@@ -60,13 +60,21 @@ const ConversationModel = {
 
       if (conversation.members && conversation.members.length > 0) {
         const memberPromises = conversation.members.map((userId) => {
+          if (conversation.type === "group") {
+            if (userId === conversation.created_by) {
+              permissions = "owner";
+            }else {
+              permissions = "member";
+            }
+          }
           return dynamodb
             .put({
               TableName: memberTableName,
               Item: {
                 conversation_id: conversation.id,
                 user_id: userId,
-                created_at: new Date().toISOString()
+                created_at: new Date().toISOString(),
+                permissions: permissions || "",
               },
             })
             .promise();
@@ -311,6 +319,91 @@ const ConversationModel = {
       throw new Error("Có lỗi khi rời khỏi hội thoại");
     }
   },
+
+  setPermissions: async (userId, conversationId, permissions) => {
+    const params = {
+      TableName: memberTableName,
+      Key: {
+        conversation_id: conversationId,
+        user_id: userId,
+      },
+      UpdateExpression: "set permissions = :permissions",
+      ExpressionAttributeValues: {
+        ":permissions": permissions,
+      },
+    };
+
+    try {
+      await dynamodb.update(params).promise();
+      return { message: "Cập nhật quyền thành công" };
+    } catch (error) {
+      console.error("Có lỗi khi cập nhật quyền:", error);
+      throw new Error("Có lỗi khi cập nhật quyền");
+    }
+  },
+
+  getPermissions: async (userId, conversationId) => {
+    const params = {
+      TableName: memberTableName,
+      Key: {
+        conversation_id: conversationId,
+        user_id: userId,
+      },
+    };
+
+    try {
+      const result = await dynamodb.get(params).promise();
+      return result.Item ? result.Item.permissions : null;
+    } catch (error) {
+      console.error("Có lỗi khi lấy quyền:", error);
+      throw new Error("Có lỗi khi lấy quyền");
+    }
+  },
+
+  muteMember: async (userId, conversationId) => {
+    const params = {
+      TableName: memberTableName,
+      Key: {
+        conversation_id: conversationId,
+        user_id: userId,
+      },
+      UpdateExpression: "set is_mute = :is_mute",
+      ExpressionAttributeValues: {
+        ":is_mute": true,
+      },
+    };
+
+    try {
+      await dynamodb.update(params).promise();
+      return { message: "Đã tắt thông báo hội thoại" };
+    } catch (error) {
+      console.error("Có lỗi khi tắt thông báo hội thoại:", error);
+      throw new Error("Có lỗi khi tắt thông báo hội thoại");
+    }
+  },
+
+  unmuteMember: async (userId, conversationId) => {
+    const params = {
+      TableName: memberTableName,
+      Key: {
+        conversation_id: conversationId,
+        user_id: userId,
+      },
+      UpdateExpression: "set is_mute = :is_mute",
+      ExpressionAttributeValues: {
+        ":is_mute": false,
+      },
+    };
+
+    try {
+      await dynamodb.update(params).promise();
+      return { message: "Đã bật thông báo hội thoại" };
+    } catch (error) {
+      console.error("Có lỗi khi bật thông báo hội thoại:", error);
+      throw new Error("Có lỗi khi bật thông báo hội thoại");
+    }
+  },
+  
 };
 
 module.exports = ConversationModel;
