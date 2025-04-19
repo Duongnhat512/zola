@@ -15,23 +15,23 @@ const HomeDetails = () => {
     setSelectedChat(chat);
   };
   const fetchConversations = () => {
-    setIsLoading(true); 
     socket.emit("get_conversations", { user_id: user.id });
     socket.on("conversations", (response) => {
       if (response.status === "success") {
         console.log("Conversations:", response.conversations);
-        setChats(response.conversations); 
+        setChats(response.conversations);
       } else {
         console.error("Lỗi khi lấy danh sách hội thoại:", response.message);
       }
-      setIsLoading(false);
     });
     return () => {
       socket.off("conversations");
     };
   };
   useEffect(() => {
+    setIsLoading(true);
     fetchConversations();
+    setIsLoading(false);
   }, []);
   useEffect(() => {
     socket.on("new_group", (data) => {
@@ -45,17 +45,25 @@ const HomeDetails = () => {
       });
       fetchConversations();
     });
-   
-    
-  },[socket]);
+  }, [socket]);
   useEffect(() => {
     socket.on("new_message", (msg) => {
       fetchConversations();
       console.log("New message notification received:", msg);
-    })
-  
+    });
+
     return () => {
       socket.off("new_message");
+    };
+  }, [selectedChat]);
+  useEffect(() => {
+    socket.on("message_sent", (msg) => {
+      fetchConversations();
+      console.log("New message notification received:", msg);
+    });
+
+    return () => {
+      socket.off("message_sent");
     };
   }, [selectedChat]);
   return (
