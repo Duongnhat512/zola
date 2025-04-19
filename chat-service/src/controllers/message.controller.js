@@ -10,15 +10,19 @@ const MessageController = {}
 MessageController.getMessages = async (socket, data) => {
   try {
     console.log("user id: ", socket.user.id)
+    
     const messages = await MessageModel.getMessages(data.conversation_id, socket.user.id);
 
     const messagesWithSenderInfo = await Promise.all(
       messages.map(async (message) => {
         const sender = await UserCacheService.getUserProfile(message.sender_id);
+        console.log('====================================');
+        console.log(sender);
+        console.log('====================================');
         return {
           ...message,
-          sender_name: sender.fullname,
-          sender_avatar: sender.avt,
+          sender_name: sender?.fullname || null,
+          sender_avatar: sender?.avt || null,
         };
       })
     );
@@ -32,6 +36,7 @@ MessageController.getMessages = async (socket, data) => {
 
 MessageController.sendGroupMessage = async (socket, data) => {
   data.sender_id = socket.user.id
+  const permissions = await UserCacheService.getConversationPermissions(socket.user.id, data.conversation_id);
 
   if (!data.conversation_id) {
     socket.emit("error", { message: "Thiếu conversation_id" });
@@ -108,15 +113,19 @@ MessageController.sendGroupFile = async (socket, data) => {
 
   try {
     const fileBuffer = Buffer.from(
-      data.file_data.split('base64,')[1] || data.file_data,
-      'base64'
+      data.file_data.split("base64,")[1] || data.file_data,
+      "base64"
     );
+
+    console.log("====================================");
+    console.log(data.receiver_id);
+    console.log("====================================");
 
     const file = {
       originalname: data.file_name,
       mimetype: data.file_type || getMimeTypeFromFileName(data.file_name),
       buffer: fileBuffer,
-      size: data.file_size || fileBuffer.length
+      size: data.file_size || fileBuffer.length,
     };
 
     const fileType = getFileCategory(file.mimetype);
@@ -174,17 +183,17 @@ MessageController.sendGroupFile = async (socket, data) => {
 
     return {
       ...fileMessage,
-      file_url: fileUrl
+      file_url: fileUrl,
     };
   } catch (error) {
     console.error("Error sending file:", error);
-    socket.emit('error', {
+    socket.emit("error", {
       message: "Không thể gửi file",
-      details: error.message
+      details: error.message,
     });
     throw error;
   }
-}
+};
 
 MessageController.sendPrivateFile = async (socket, data) => {
   if (!data.file_data) {
@@ -484,6 +493,6 @@ MessageController.setHiddenMessage = async (socket, data) => {
     console.error("Lỗi khi đánh dấu ẩn:", error);
     socket.emit("error", { message: "Lỗi khi đánh dấu ẩn" });
   }
-}
+};
 
 module.exports = MessageController;

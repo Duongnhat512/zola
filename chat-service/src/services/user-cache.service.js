@@ -1,5 +1,6 @@
 const redis = require("../configs/redis.config");
 const axios = require("axios");
+const ConversationModel = require("../models/conversation.model");
 
 const UserCacheService = {
     cacheUserProfile: async (user) => {
@@ -39,6 +40,43 @@ const UserCacheService = {
     deleteUserProfile: async (userId) => {
         const key = `user:${userId}`;
         await redis.del(key);
+    },
+
+    setConversationPermissions: async (userId, conversationId, permissions) => {
+        const key = `conversation_permisstion:${conversationId}:${userId}`;
+        await redis.set(key, permissions);
+    },
+
+    getConversationPermissions: async (userId, conversationId) => {
+        const key = `conversation_permisstion:${conversationId}:${userId}`;
+        let permissions = await redis.get(key);
+
+        if (!permissions) {
+            permissions = await ConversationModel.getPermissions(userId, conversationId);
+        }
+
+        return permissions;
+    },
+
+    removePermissions: async (userId, conversationId) => {
+        const key = `conversation_permisstion:${conversationId}:${userId}`;
+        await redis.del(key);
+    },
+
+    muteMember: async (userId, conversationId) => {
+        const key = `conversation_mute:${conversationId}:${userId}`;
+        await redis.set(key, true);
+    },
+
+    getMuteMember: async (userId, conversationId) => {
+        const key = `conversation_mute:${conversationId}:${userId}`;
+        let mute = await redis.get(key);
+
+        if (!mute) {
+            mute = await ConversationModel.getMuteMember(userId, conversationId);
+        }
+
+        return mute;
     },
 }
 

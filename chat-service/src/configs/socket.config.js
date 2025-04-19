@@ -11,13 +11,13 @@ function setupSocket(server) {
       origin: "*",
       methods: ["GET", "POST", "OPTIONS"],
       credentials: true,
-      allowedHeaders: ["Authorization", "Content-Type"]
+      allowedHeaders: ["Authorization", "Content-Type"],
     },
     path: "/socket.io/",
-    transports: ['websocket', 'polling'],
+    transports: ["websocket", "polling"],
     pingTimeout: 30000,
     pingInterval: 10000,
-    maxHttpBufferSize: 1e8 // 100MB max file size
+    maxHttpBufferSize: 1e8, // 100MB max file size
   });
 
   io.use(isAuth);
@@ -32,7 +32,7 @@ function setupSocket(server) {
 
     io.emit('user_online', {
       userId: socket.user.id,
-      username: socket.user.username
+      username: socket.user.username,
     });
 
     messageSocket(io, socket);

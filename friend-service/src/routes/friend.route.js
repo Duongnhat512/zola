@@ -32,4 +32,9 @@ router.get(
   isAuthExpress,
   FriendController.getListFriends
 );
+
+router.get("/getRequestByUserIdAndUserFriendId", isAuthExpress, FriendController.getRequestByUserIdAndUserFriendId);
+router.delete("/deleteFriend",isAuthExpress,FriendController.deleteFriend)
+router.delete("/deleteRequest", isAuthExpress,FriendController.deleteRequest)
+router.get("/getFriendByPhoneAndName", isAuthExpress, FriendController.getFriendByPhoneNumberOrfullName)
 module.exports = router;

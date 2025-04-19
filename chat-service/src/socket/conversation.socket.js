@@ -67,6 +67,35 @@ const conversationSocket = (io, socket) => {
         }
     });
 
+    socket.on("set_conversation_permissions", async (data) => {
+        console.log("Nhận yêu cầu thiết lập quyền hội thoại từ client:", data);
+        try {
+            await conversationController.setPermisstions(socket, data);
+        } catch (error) {
+            console.error("Lỗi khi thiết lập quyền hội thoại:", error);
+            socket.emit("error", { message: "Lỗi khi thiết lập quyền hội thoại" });
+        }
+    });
+
+    socket.on("set_permissions", async (data) => {
+        console.log("Nhận yêu cầu thiết lập quyền từ client:", data);
+        try {
+            await conversationController.setPermisstions(socket, data);
+        } catch (error) {
+            console.error("Lỗi khi thiết lập quyền:", error);
+            socket.emit("error", { message: "Lỗi khi thiết lập quyền" });
+        }
+    });
+
+    socket.on("delete_conversation", async (data) => {
+        console.log("Nhận yêu cầu xóa hội thoại từ client:", data);
+        try {
+            await conversationController.deleteConversation(socket, data);
+        } catch (error) {
+            console.error("Lỗi khi xóa hội thoại:", error);
+            socket.emit("error", { message: "Lỗi khi xóa hội thoại" });
+        }
+    });
 
 };
 
