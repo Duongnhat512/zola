@@ -550,4 +550,46 @@ ConversationController.muteMember = async (socket, data) => {
   }
 }
 
+// Giải tán nhóm
+ConversationController.deleteConversation = async (socket, data) => {
+  const { conversation_id } = data;
+
+  const permissions = await UserCacheService.getConversationPermissions(socket.user.id, conversation_id);
+
+  if (permissions !== 'owner') {
+    return socket.emit("error", { message: "Bạn không có quyền giải tán nhóm" });
+  }
+
+  if (!permissions) {
+    return socket.emit("error", { message: "Thiếu quyền truy cập" });
+  }
+
+  if (!conversation_id) {
+    return socket.emit("error", { message: "Thiếu conversation_id" });
+  }
+
+  try {
+    const members = await redisClient.smembers(`group:${conversation_id}`);
+
+    const result = await ConversationModel.deleteConversation(conversation_id);
+
+    for (const member of members) {
+      await redisClient.zrem(`chatlist:${member}`, conversation_id);
+      await UserCacheService.removePermissions(member, conversation_id);
+    }
+
+    await redisClient.del(`group:${conversation_id}`);
+
+    socket.emit("delete_group", {
+      status: "success",
+      message: "Đã giải tán nhóm",
+      result,
+    });
+
+  } catch (error) {
+    console.error("Có lỗi khi giải tán nhóm:", error);
+    socket.emit("error", { message: "Có lỗi khi giải tán nhóm" });
+  }
+}
+
 module.exports = ConversationController;

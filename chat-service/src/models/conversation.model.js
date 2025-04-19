@@ -92,13 +92,38 @@ const ConversationModel = {
   deleteConversation: async (conversationId) => {
     const params = {
       TableName: tableName,
-      Key: {
-        id: conversationId,
-      },
+      Key: { id: conversationId },
     };
     try {
+      // Xóa hội thoại
       await dynamodb.delete(params).promise();
-      return { message: "Hội thoại đã được xóa thành công" };
+  
+      const memberParams = {
+        TableName: memberTableName,
+        KeyConditionExpression: "conversation_id = :conversationId",
+        ExpressionAttributeValues: {
+          ":conversationId": conversationId,
+        },
+      };
+      const memberResult = await dynamodb.query(memberParams).promise();
+      const members = memberResult.Items || [];
+  
+      await Promise.all(
+        members.map((member) =>
+          dynamodb.delete({
+            TableName: memberTableName,
+            Key: {
+              conversation_id: member.conversation_id,
+              user_id: member.user_id,
+            },
+          }).promise()
+        )
+      );
+  
+      return {
+        message: "Hội thoại đã được xóa thành công",
+        deleted_members: members.map((m) => m.user_id),
+      };
     } catch (error) {
       console.error("Có lỗi khi xóa hội thoại:", error);
       throw new Error("Có lỗi khi xóa hội thoại");
