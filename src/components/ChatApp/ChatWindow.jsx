@@ -21,6 +21,7 @@ import { useSelector } from "react-redux";
 import { useRef } from "react";
 import { hiddenMessage } from "../../services/UserService";
 import AddMember from "../../pages/Group/AddMember";
+import InfoGroup from "../../pages/Group/InfoGroup";
 const ChatWindow = ({ selectedChat,setSelectedChat}) => {
   const selectedChatRef = useRef();
   const [emojiList, setEmojiList] = useState({});
@@ -373,7 +374,7 @@ const ChatWindow = ({ selectedChat,setSelectedChat}) => {
           <button className="text-gray-600 hover:text-blue-500">
             <SearchOutlined className="text-xl" title="Tìm kiếm" />
           </button>
-          <button className="text-gray-600 hover:text-blue-500">
+          <button className="text-gray-600 hover:text-blue-500" onClick={() => setIsInfoGroupVisible(!isInfoGroupVisible)}>
             <InfoCircleOutlined
               className="text-xl"
               title="Thông tin hộp thoại"
@@ -495,6 +496,9 @@ const ChatWindow = ({ selectedChat,setSelectedChat}) => {
       </div>
       {isModalVisible && (
       <AddMember selectedChat={selectedChat} visible={isModalVisible} onClose={handleClose} />
+     )}
+     {isInfoGroupVisible && (
+      <InfoGroup selectedChat={selectedChat} visible={isInfoGroupVisible} onClose={handleClose} />
      )}
       <div className="p-4 bg-white border-t">
         {previewImage && (
