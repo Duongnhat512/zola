@@ -103,7 +103,7 @@ const FILE_TYPES = {
   function getFileExtensionFromMimeType(mimeType) {
     const extensionMap = {
       'image/png': 'png',
-      'image/jpeg': 'jpg',
+      'image/jpeg': 'jpeg',
       'image/jpg': 'jpg',
       'image/gif': 'gif',
       'video/mp3': 'mp3',
