@@ -61,7 +61,16 @@ const HomeDetails = () => {
    
     
   },[socket]);
-
+  useEffect(() => {
+    socket.on("new_message", (msg) => {
+      fetchConversations();
+      console.log("New message notification received:", msg);
+    })
+  
+    return () => {
+      socket.off("new_message");
+    };
+  }, [selectedChat]);
   return (
     <div className="flex h-screen w-full bg-gray-100">
       {isLoading && (
@@ -73,6 +82,7 @@ const HomeDetails = () => {
       <ChatSidebar chats={chats} openChat={openChat} />
       <ChatWindow
         selectedChat={selectedChat}
+        setSelectedChat={setSelectedChat}
       />
     </div>
   );
