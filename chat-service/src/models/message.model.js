@@ -232,7 +232,7 @@ const MessageModel = {
             };
             
             await dynamodb.update(queryParams).promise();
-            return { message: "Xóa tin nhắn thành công" };
+            return { conversation_id: messageData.Item.conversation_id};
         }
         catch (error) {
             console.error("Error deleting message:", error);

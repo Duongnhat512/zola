@@ -427,7 +427,6 @@ MessageController.getConversationMessages = async (socket, data) => {
 MessageController.deleteMessage = async (socket, data) => {
   const message_id = data.message_id;
   const user_id = socket.user.id;
-  const conversation_id = data.conversation_id;
 
   if (!message_id) {
     socket.emit("error", { message: "Thiếu message_id" });
@@ -443,7 +442,16 @@ MessageController.deleteMessage = async (socket, data) => {
     }
     socket.emit("message_deleted", { message_id });
 
-    
+    const members = await redisClient.smembers(`group:${result.conversation_id}`);
+    console.log("members: ", members)
+    members.forEach(async (memberId) => {
+      const socketIds = await redisClient.smembers(`sockets:${memberId}`);
+      socketIds.forEach((socketId) => {
+        if (socketId !== socket.id) {
+          socket.to(socketId).emit("message_deleted", { message_id });
+        }
+      });
+    });
 
   } catch (error) {
     console.error("Lỗi khi xóa tin nhắn:", error);
