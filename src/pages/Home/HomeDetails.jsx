@@ -34,6 +34,19 @@ const HomeDetails = () => {
     setIsLoading(false);
   }, []);
   useEffect(() => {
+    socket.on("group_created", (data) => {
+      console.log("Group created successfully:", data);
+      // Thông báo cho người dùng về việc tạo nhóm thành công
+      toast.success(`Nhóm ${data.conversation.name} đã được tạo thành công!`, {
+        autoClose: 5000, // Thời gian tự động đóng sau 5 giây
+        hideProgressBar: true, // Ẩn thanh tiến độ
+        closeOnClick: true, // Đóng khi người dùng nhấn vào thông báo
+        pauseOnHover: true, // Dừng khi hover
+      });
+      fetchConversations();
+      // Đóng modal sau khi nhóm được tạo
+     
+    });
     socket.on("new_group", (data) => {
       console.log("New group notification received:", data);
       // Thông báo có nhóm mới
@@ -44,6 +57,38 @@ const HomeDetails = () => {
         pauseOnHover: true,
       });
       fetchConversations();
+    });
+    socket.on("new_member", (data) => {
+      console.log("New group notification received:", data);
+      // Thông báo có nhóm mới
+      toast.info("Bạn có nhóm mới!", {
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+      });
+      fetchConversations();
+    });
+    socket.on("remove_member", (data) => {
+      console.log("Remove notification received:", data);
+      // Thông báo có nhóm mới
+      toast.info("Bạn vừa bị xóa khỏi nhóm!", {
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+      });
+      fetchConversations();
+    });
+    socket.on("error", (data) => {
+      // Thông báo có nhóm mới
+      toast.info(data.message, {
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+      });
+     
     });
   }, [socket]);
   useEffect(() => {

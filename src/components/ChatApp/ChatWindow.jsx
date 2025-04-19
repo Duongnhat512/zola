@@ -498,7 +498,7 @@ const ChatWindow = ({ selectedChat,setSelectedChat}) => {
       <AddMember selectedChat={selectedChat} visible={isModalVisible} onClose={handleClose} />
      )}
      {isInfoGroupVisible && (
-      <InfoGroup selectedChat={selectedChat} visible={isInfoGroupVisible} onClose={handleClose} />
+      <InfoGroup selectedChat={selectedChat}/>
      )}
       <div className="p-4 bg-white border-t">
         {previewImage && (

@@ -136,11 +136,12 @@ const AddGroupModal = ({ onClose, visible = true }) => {
           if (response.status === "success") {
             console.log("Group created successfully:", response);
             onClose();
-            socket.emit("get_conversations", { user_id: user.id });
+            
           } else {
             console.error("Failed to create group:", response.message);
           }
         });
+        socket.emit("get_conversations", { user_id: user.id });
       };
       reader.readAsDataURL(imageFile);
     } else {
