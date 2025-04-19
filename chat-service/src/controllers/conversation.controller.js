@@ -66,9 +66,11 @@ ConversationController.createGroup = async (socket, data) => {
         buffer: fileBuffer,
         size: data.file_size || fileBuffer.length,
       }
-
+      
       data.avatar = await uploadFile(file);
     }
+
+    
 
     if (!data.members.includes(socket.user.id)) {
       data.members.push(socket.user.id);
@@ -101,6 +103,7 @@ ConversationController.createGroup = async (socket, data) => {
 
     for (const member of members) {
       const socketIds = await redisClient.smembers(`sockets:${member}`);
+      console.log(socketIds, "socketIds");
       socketIds.forEach((socketId) => {
         socket.to(socketId).emit("new_group", {
           conversation_id: conversation.id,
@@ -112,6 +115,9 @@ ConversationController.createGroup = async (socket, data) => {
         });
       });
     }
+
+    console.log(conversation);
+    
 
     socket.emit("group_created", {
       status: "success",

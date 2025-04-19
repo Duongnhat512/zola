@@ -230,56 +230,43 @@ const FriendModel = {
       throw error;
     }
   },
-  deleteRequest: async (user_id, user_friend_id) => {
+  deleteBothSides: async (tableName, user_id, user_friend_id) => {
     const params1 = {
-      TableName: friendRequestTableName,
+      TableName: tableName,
       Key: {
-        user_id: user_id,
-        user_friend_id: user_friend_id,
+        user_id,
+        user_friend_id,
       },
     };
+  
     const params2 = {
-      TableName: friendRequestTableName,
+      TableName: tableName,
       Key: {
         user_id: user_friend_id,
         user_friend_id: user_id,
       },
     };
-
+  
     try {
-      await dynamodb.delete(params1).promise();
-      await dynamodb.delete(params2).promise();
+      await Promise.all([
+        dynamodb.delete(params1).promise(),
+        dynamodb.delete(params2).promise(),
+      ]);
       return { success: true };
     } catch (error) {
-      console.error("Error deleting friend request:", error);
-      throw error;
+      console.error(`Error deleting data in table ${tableName}:`, error);
+      throw new Error(`Failed to delete records in ${tableName}`);
     }
   },
-  deleteFriend: async (user_id, user_friend_id) => {
-    const params1 = {
-      TableName: friendTableName,
-      Key: {
-        user_id: user_id,
-        user_friend_id: user_friend_id,
-      },
-    };
-    const params2 = {
-      TableName: friendTableName,
-      Key: {
-        user_id: user_friend_id,
-        user_friend_id: user_id,
-      },
-    };
-
-    try {
-      await dynamodb.delete(params1).promise();
-      await dynamodb.delete(params2).promise();
-      return { success: true };
-    } catch (error) {
-      console.error("Error deleting friend:", error);
-      throw error;
-    }
+  
+  deleteRequest : async (user_id, user_friend_id) => {
+    return deleteBothSides(friendRequestTableName, user_id, user_friend_id);
   },
+  
+  deleteFriend : async (user_id, user_friend_id) => {
+    return deleteBothSides(friendTableName, user_id, user_friend_id);
+  },
+  
   getRequestByUserIdAndUserFriendId: async (user_id, user_friend_id) => {
       const params1 = {
         TableName: friendRequestTableName,

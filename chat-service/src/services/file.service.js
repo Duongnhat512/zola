@@ -28,7 +28,8 @@ const FILE_TYPE_MATCH = [
     "application/zip",
 ]
 
-const uploadFile = async file => {
+const uploadFile = async (file) => {
+  
     const filePath = `file/${randomString(4)}-${new Date().getTime()}-${file?.originalname}`;
 
     if (FILE_TYPE_MATCH.indexOf(file.mimetype) === -1) {

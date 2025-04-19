@@ -37,7 +37,6 @@ const ConversationModel = {
     } else {
       conversation.id = uuidv4();
     }
-
     const params = {
       TableName: tableName,
       Item: {
