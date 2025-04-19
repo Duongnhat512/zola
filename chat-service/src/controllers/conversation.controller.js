@@ -458,7 +458,7 @@ ConversationController.setPermisstions = async (socket, data) => {
 
   const per = await UserCacheService.getConversationPermissions(socket.user.id, conversation_id);
 
-  if (per !== 'owner' || per !== 'moderator') {
+  if (per === 'member') {
     return socket.emit("error", { message: "Bạn không có quyền cập nhật quyền" });
   }
 
@@ -490,6 +490,8 @@ ConversationController.setPermisstions = async (socket, data) => {
       socket.to(socketId).emit("update_permissions", {
         conversation_id: conversation_id,
         user_id: user_id,
+        permissions: permissions,
+        message: "Quyền của bạn đã được cập nhật",
       });
     });
   } catch (error) {
