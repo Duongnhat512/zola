@@ -156,7 +156,7 @@ const ConversationModel = {
     }
   },
 
-  updateConversationAvatar: async (conversationId, conversation) => {
+  updateAvtGroup: async (conversationId, conversation) => {
     const params = {
       TableName: tableName,
       Key: {
@@ -167,7 +167,7 @@ const ConversationModel = {
         "#avatar": "avatar",
       },
       ExpressionAttributeValues: {
-        ":avatar": conversation.avatar,
+        ":avatar": conversation,
       },
       ReturnValues: "UPDATED_NEW",
     };
@@ -175,7 +175,7 @@ const ConversationModel = {
       const result = await dynamodb.update(params).promise();
       return result.Attributes;
     } catch (error) {
-      console.error("Có lỗi khi cập nhật hội thoại:", error);
+      console.error("Có lỗi khi cập nhật hội thoại:"+error, error);
       throw new Error("Có lỗi khi cập nhật hội thoại");
     }
   },

@@ -147,18 +147,22 @@ ConversationController.updateGroupAvt = async (socket, data) => {
         buffer: fileBuffer,
         size: data.file_size || fileBuffer.length,
       }
-
-      data.avatar = await uploadFile(file);
+      try {
+        data.avatar = await uploadFile(file);
+      } catch (error) {
+        return socket.emit("error", { message: "lỗi uploadfile"+error });
+      }
+    
     }
 
     if (!data.conversation_id) {
       return socket.emit("error", { message: "Thiếu conversation_id" });
     }
-
     const result = await ConversationModel.updateAvtGroup(
-      data.conversation_id,
-      data.avatar
-    );
+        data.conversation_id,
+        data.avatar
+      );
+  
 
     socket.emit("update_avt_group", {
       status: "success",
@@ -183,7 +187,7 @@ ConversationController.updateGroupName = async (socket, data) => {
       return socket.emit("error", { message: "Thiếu name" });
     }
 
-    const result = await ConversationModel.updateNameGroup(
+    const result = await ConversationModel.updateConversationName(
       data.conversation_id,
       data.name
     );
