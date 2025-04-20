@@ -627,13 +627,17 @@ ConversationController.setPermisstions = async (socket, data) => {
       user_id: user_id,
     });
 
-    const socketIds = await redisClient.smembers(`sockets:${user_id}`);
-    socketIds.forEach((socketId) => {
-      socket.to(socketId).emit("update_permissions", {
-        conversation_id: conversation_id,
-        user_id: user_id,
-        permissions: permissions,
-        message: "Quyền của bạn đã được cập nhật",
+    const members = await redisClient.smembers(`group:${conversation_id}`);
+    members.forEach(async (member) => {
+      const socketIds = await redisClient.smembers(`sockets:${member}`);
+      console.log(socketIds, "socketIds");
+      socketIds.forEach((socketId) => {
+        socket.to(socketId).emit("update_permissions", {
+          conversation_id: conversation_id,
+          user_id: user_id,
+          permissions: permissions,
+          message: `Quyền của thành viên ${user_id} đã được cập nhật`,
+        });
       });
     });
   } catch (error) {
