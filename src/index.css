@@ -3,14 +3,23 @@
 @tailwind utilities;
 
 .custom-menu .ant-menu-item {
-    font-size: 20px;        /* Cỡ chữ */
-    height: 60px;           /* Chiều cao */
-    line-height: 60px;      /* Căn giữa nội dung theo chiều cao */
-            /* Chiều rộng */
-    padding: 0 25px;       /* Khoảng cách bên trái và bên phải */
-  }
-  
-.custom-menu .ant-menu-item .anticon {
-    font-size: 25px;        /* Kích thước icon nếu có */
+  font-size: 20px;
+  /* Cỡ chữ */
+  height: 60px;
+  /* Chiều cao */
+  line-height: 60px;
+  /* Căn giữa nội dung theo chiều cao */
+  /* Chiều rộng */
+  padding: 0 25px;
+  /* Khoảng cách bên trái và bên phải */
 }
-  
+
+.custom-menu .ant-menu-item .anticon {
+  font-size: 25px;
+  /* Kích thước icon nếu có */
+}
+
+.my-swal-container {
+  z-index: 2000 !important;
+  /* cao hơn AntD Modal (1000~1100) */
+}

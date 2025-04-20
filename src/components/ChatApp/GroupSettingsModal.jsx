@@ -9,8 +9,30 @@ import {
 } from "@ant-design/icons";
 import socket from "../../services/Socket";
 import Swal from 'sweetalert2';
+import { useEffect } from "react";
+import SelectNewLeaderModal from "./SelectNewLeaderModal";
 
 const LeaderDeputyModal = ({ visible, onClose, leaders, onRemoveDeputy, onTransferLeader }) => {
+    
+    const tranferPermission = () => {
+        Swal.fire({
+          title: "Chuyển quyền trưởng nhóm",
+          text: "Người được chọn sẽ trở thành trưởng nhóm và có mọi quyền quản lý nhóm. Bạn sẽ mất quyền quản lý nhưng vẫn là một thành viên của nhóm. Hành động này không thể phục hồi.",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: "#3085d6",
+          cancelButtonColor: "#d33",
+          confirmButtonText: "Chuyển quyền",
+          cancelButtonText: "Hủy",
+          customClass: {
+            container: 'my-swal-container'
+          }
+        }).then((result) => {
+          if (result.isConfirmed) {
+            onTransferLeader();
+          }
+        });
+      }
 
     return (
     <Modal
@@ -25,21 +47,29 @@ const LeaderDeputyModal = ({ visible, onClose, leaders, onRemoveDeputy, onTransf
         dataSource={leaders}
         renderItem={(item) => (
           <List.Item
-            
+            actions={[
+              item.permission === "moderator" && (
+                <Button
+                  type="text"
+                  danger
+                  icon={<UserDeleteOutlined />}
+                  onClick={() => onRemoveDeputy(item,"member")}
+                >
+                  Xóa
+                </Button>
+              ),
+            ]}
           >
             <List.Item.Meta
               avatar={<Avatar src={item.avt} />}
               title={item.fullname}
-              description={item.permission}
+              description={item.permission === "owner" ? "Trưởng nhóm" : "Phó nhóm"}
             />
-             <Button danger onClick={() => onRemoveDeputy(item.id)}>
-                      Xóa 
-             </Button>
           </List.Item>
         )}
       />
       <div className="mt-4">
-        <Button type="primary" block onClick={onTransferLeader}>
+        <Button type="primary" block onClick={tranferPermission}>
           Chuyển quyền trưởng nhóm
         </Button>
       </div>
@@ -47,9 +77,10 @@ const LeaderDeputyModal = ({ visible, onClose, leaders, onRemoveDeputy, onTransf
   );
 };
 
-const GroupSettingsModal = ({ visible, onClose, groupSettings, onUpdateSettings,userMain,userOwner, seletedChat }) => {
+const GroupSettingsModal = ({ visible, onClose, groupSettings, grantPermission ,onUpdateSettings,userMain,userOwner, seletedChat,disable }) => {
   const [settings, setSettings] = useState(groupSettings);
   const [leaderDeputyModalVisible, setLeaderDeputyModalVisible] = useState(false);
+  const [selectNewLeaderModalVisible, setSelectNewLeaderModalVisible] = useState(false);
 
   const handleToggle = (key) => {
     setSettings((prev) => ({
@@ -62,6 +93,10 @@ const GroupSettingsModal = ({ visible, onClose, groupSettings, onUpdateSettings,
     onUpdateSettings(settings);
     onClose();
   };
+
+  const lowerPermission = () => {
+
+  }
 
   const handleDeleteGroup = async () => {
     if (seletedChat && seletedChat.conversation_id) {
@@ -88,6 +123,12 @@ const GroupSettingsModal = ({ visible, onClose, groupSettings, onUpdateSettings,
     onClose();
   };
 
+  const handleTransferLeader = (selectedMember) => {
+    grantPermission(selectedMember, "owner");
+    setSelectNewLeaderModalVisible(false);
+    setLeaderDeputyModalVisible(false);
+  };
+
   return (
     <Modal
       title="Quản lý nhóm"
@@ -95,6 +136,8 @@ const GroupSettingsModal = ({ visible, onClose, groupSettings, onUpdateSettings,
       onCancel={onClose}
       footer={null}
       width={400}
+     
+      
     >
       <div className="space-y-4">
         <div>
@@ -179,7 +222,7 @@ const GroupSettingsModal = ({ visible, onClose, groupSettings, onUpdateSettings,
           >
             Chặn khỏi nhóm
           </Button>
-          {userMain?.id === userOwner?.id && (
+          {userMain?.permission === "owner" && (
             <div>
                 <Button
             type="primary"
@@ -207,8 +250,14 @@ const GroupSettingsModal = ({ visible, onClose, groupSettings, onUpdateSettings,
         visible={leaderDeputyModalVisible}
         onClose={() => setLeaderDeputyModalVisible(false)}
         leaders={groupSettings.leaders || []}
-        onRemoveDeputy={(id) => console.log("Remove deputy", id)}
-        onTransferLeader={() => console.log("Transfer leader")}
+        onRemoveDeputy={grantPermission}
+        onTransferLeader={() => setSelectNewLeaderModalVisible(true)}
+      />
+      <SelectNewLeaderModal
+        visible={selectNewLeaderModalVisible}
+        onClose={() => setSelectNewLeaderModalVisible(false)}
+        members={groupSettings.members || []}
+        onConfirm={handleTransferLeader}
       />
     </Modal>
   );
