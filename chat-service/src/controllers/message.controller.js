@@ -126,11 +126,7 @@ MessageController.sendGroupMessage = async (socket, data) => {
       sender_id: data.sender_id,
       user_target: data.receiver_id || null,
       type: fileType,
-<<<<<<< HEAD
-      message: data.message || (fileUrl ? `Đã gửi ${data.file_name}` : ""),
-=======
       message: data.message || null,
->>>>>>> 0e071e2a32a20856d4fb5d5fa73379686082065b
       media: fileUrl,
       file_name: data.file_name,
 
@@ -452,7 +448,7 @@ MessageController.deleteMessage = async (socket, data) => {
       const socketIds = await redisClient.smembers(`sockets:${memberId}`);
       socketIds.forEach((socketId) => {
         if (socketId !== socket.id) {
-          socket.to(socketId).emit("message_deleted", { message_id });
+          socket.to(socketId).emit("message_deleted", { message_id,message:"Tin nhắn đã thu hồi", conversation_id: result.conversation_id });
         }
       });
     });

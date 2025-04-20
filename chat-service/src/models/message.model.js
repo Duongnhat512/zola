@@ -89,6 +89,7 @@ const MessageModel = {
                     return {
                         ...message,
                         message: "Tin nhắn đã thu hồi",
+                        file_name: null,
                         is_deleted: true,
 <<<<<<< HEAD
                         media: null,
