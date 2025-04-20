@@ -238,6 +238,8 @@ MessageController.sendPrivateMessage = async (socket, data) => {
 
     const savedMessage = await MessageModel.sendMessage(fileMessage);
 
+    await ConversationController.markAsUnread(conversation.id, socket.user.id)
+
     await ConversationModel.updateLastMessage(
       conversation.id,
       savedMessage.message_id,
