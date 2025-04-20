@@ -72,7 +72,7 @@ const ChatWindow = ({
         }),
         file_name: msg.file_name || null,
       }));
-      
+
       setMessages(formattedMessages);
     });
 
@@ -83,7 +83,7 @@ const ChatWindow = ({
 
   useEffect(() => {
     if (!socket.connected) {
-      socket.connect(); // Đảm bảo socket được kết nối
+      socket.connect();
     }
   
     socket.on("connect", () => {
@@ -96,9 +96,14 @@ const ChatWindow = ({
   
     socket.on("new_message", (msg) => {
       console.log("New message event received:", msg);
-
+  
       const currentChat = selectedChatRef.current;
+  
       if (currentChat?.conversation_id === msg.conversation_id) {
+        // Nếu cuộc trò chuyện hiện tại đang mở, đánh dấu là đã đọc
+        markAsRead(msg.conversation_id);
+  
+        // Thêm tin nhắn mới vào danh sách tin nhắn
         setMessages((prev) => [
           ...prev,
           {
@@ -118,48 +123,41 @@ const ChatWindow = ({
             file_name: msg.file_name || null,
           },
         ]);
-      }
-      // Cập nhật danh sách hội thoại với số lượng tin nhắn chưa đọc
-      setChats((prevChats) => {
-        // Cập nhật danh sách hội thoại
-        const updatedChats = prevChats.map((chat) => {
-          console.log("chat", chat);
-          
-          if (chat.conversation_id === msg.conversation_id) {
-            const isCurrentChat =
-              selectedChat?.conversation_id === msg.conversation_id;
-
-            return {
-              ...chat,
-              last_message: {
-                ...chat.last_message,
-                message: msg.message,
-                created_at: msg.created_at,
-                type: msg.type,
-              },
-              unread_count: isCurrentChat ? 0 : (chat.unread_count || 0) + 1, // Tăng badge nếu không phải `selectedChat`
-            };
-          }
-          return chat;
-        });
-
-        // Sắp xếp danh sách hội thoại theo thời gian tin nhắn mới nhất
-        return updatedChats.sort(
-          (a, b) =>
-            new Date(b.last_message?.created_at || 0) -
-            new Date(a.last_message?.created_at || 0)
+      } else {
+        // Nếu không phải cuộc trò chuyện hiện tại, tăng unread_count
+        setChats((prevChats) =>
+          prevChats.map((chat) =>
+            chat.conversation_id === msg.conversation_id
+              ? {
+                  ...chat,
+                  unread_count: (chat.unread_count || 0) + 1,
+                  last_message: {
+                    ...chat.last_message,
+                    message: msg.message,
+                    created_at: msg.created_at,
+                    type: msg.type,
+                  },
+                }
+              : chat
+          )
         );
-      });
+      }
     });
+  
     return () => {
       socket.off("new_message");
       socket.off("connect");
       socket.off("disconnect");
     };
-  }, [userMain.id]);
+  }, [userMain.id, setChats]);
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+  useEffect(() => {
+    if (selectedChat?.conversation_id) {
+      markAsRead(selectedChat.conversation_id);
+    }
+  }, [selectedChat]);
   useEffect(() => {
     // Gọi API để lấy danh sách emoji
     const fetchEmojis = async () => {
@@ -194,6 +192,20 @@ const ChatWindow = ({
       socket.off("message_deleted");
     };
   }, [userMain.id]);
+  const markAsRead = (conversationId) => {
+    socket.emit("mark_as_read", {
+      conversation_id: conversationId,
+      user_id: userMain.id,
+    });
+  
+    setChats((prevChats) =>
+      prevChats.map((chat) =>
+        chat.conversation_id === conversationId
+          ? { ...chat, is_unread: false, unread_count: 0 }
+          : chat
+      )
+    );
+  };
   const addEmojiToInput = (emojiUrl) => {
     const emojiUnicode = String.fromCodePoint(
       ...emojiUrl
@@ -241,7 +253,7 @@ const ChatWindow = ({
     ]);
     const msg = {
       conversation_id: selectedChat?.conversation_id || null,
-      receiver_id: selectedChat?.list_user_id[0] || null,
+      receiver_id: selectedChat?.list_user_id?.find((id) => id !== userMain.id) || null,
       message: input || null,
       file_name: selectedImage?.file_name || selectedFile?.file_name || null,
       file_type: selectedImage?.file_type || selectedFile?.file_type || null,
@@ -249,11 +261,11 @@ const ChatWindow = ({
       file_data: selectedImage?.file_data || selectedFile?.file_data || null,
     };
     console.log("isGroup", isGroup);
-    
+
     console.log("msg", msg);
 
     const event = isGroup ? "send_group_message" : "send_private_message";
-    socket.emit(event, msg, (response) => {});
+    socket.emit(event, msg, () => {});
     socket.on("message_sent", (msg) => {
       setMessages((prev) =>
         prev.map((m) =>
@@ -357,7 +369,7 @@ const ChatWindow = ({
     };
     console.log("hidden message payload:", payload);
 
-    socket.emit("set_hidden_message", payload, (response) => {});
+    socket.emit("set_hidden_message", payload, () => {});
     setMessages((prev) => prev.filter((msg) => msg.id !== idMessage));
   };
   const revokeMessage = (idMessage) => {
@@ -368,7 +380,7 @@ const ChatWindow = ({
       message_id: idMessage,
     };
     console.log("Revoke message payload:", payload);
-    socket.emit("delete_message", payload, (response) => {});
+    socket.emit("delete_message", payload, () => {});
     setMessages((prev) =>
       prev.map((msg) =>
         msg.id === idMessage
