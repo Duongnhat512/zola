@@ -28,6 +28,7 @@
     "expo-image-picker": "^16.0.6",
     "expo-status-bar": "~2.0.1",
     "install": "^0.13.0",
+    "mime-types": "^3.0.1",
     "npm": "^11.2.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",

@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, Modal, StyleSheet, TextInput } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { sendFriendRequest, getFriendRequests, getSentFriendRequests, getListFriends,acceptFriendRequest,rejectFriendRequest} from '../services/FriendService';
 import {GetUserById} from '../services/UserService';
 import { useSelector } from 'react-redux';
-
+import { useRoute } from '@react-navigation/native';
+import * as FileSystem from 'expo-file-system'; // để đọc ảnh base64
+import setupSocket  from '../services/Socket';
 const dummyFriends = [
   { id: '1', fullname: 'Hiệp Võ', avatar: { uri: 'https://randomuser.me/api/portraits/men/1.jpg' } },
   { id: '2', fullname: 'Ngô Quốc Đạt', avatar: { uri: 'https://randomuser.me/api/portraits/men/2.jpg' } },
@@ -13,41 +15,48 @@ const dummyFriends = [
   { id: '5', fullname: 'Phạm Minh Châu', avatar: { uri: 'https://randomuser.me/api/portraits/women/5.jpg' } },
 ];
 
-const fetchFriendsWithDetails = async () => {
-        try {
-          const response = await getListFriends(user.id);
-          const rawRequests = response;
-          if(rawRequests==null)
-            {
-              return;
-            }
-          // Duyệt từng item để lấy thông tin user_friend_id
-          const requestsWithDetails = await Promise.all(
-            rawRequests.map(async (req) => {
-              const userDetailRes = await GetUserById(req.user_friend_id);
-              console.log(userDetailRes);
-              return {
-                ...req,
-                friendInfo: userDetailRes.user, // {fullname, avatar, phone,...}
-              };
-            })
-          );
-      
-          setFriendsList(requestsWithDetails);
-        } catch (error) {
-            
-          console.error('Lỗi khi lấy danh sách lời mời kết bạn:', error);
-        }
-      };
+
 export default function GroupCreateScreen() {
-  const [friendsList, setFriendsList] = useState([]);
+  const route = useRoute();
+  const { friendsList } = route.params;
+  const [friendssList, setFriendsList] = useState(friendsList);
   const user = useSelector((state: any) => state.user.user);
   const [selectedFriends, setSelectedFriends] = useState([]);
   const [groupAvatar, setGroupAvatar] = useState(null);
   const [groupName, setGroupName] = useState('');
+// socket
+const [socket, setSocket] = useState(null);
+
+useEffect(() => {
+  let socketInstance;
+
+  const initSocket = async () => {
+    socketInstance = await setupSocket();
+    setSocket(socketInstance);
+
+    socketInstance.on("group_created", (data) => {
+      console.log("🎉 Nhóm tạo thành công:", data);
+    });
+  };
+
+  initSocket();
+
+  return () => {
+    socketInstance?.disconnect();
+  };
+}, []);
+
+
+
+
+
+
+
+
+
 
   const toggleSelectFriend = (friend) => {
-    const exists = selectedFriends.some(f => f.id === friend.id);
+    const exists = selectedFriends.some(f => f.friendInfo.id === friend.friendInfo.id);
     if (exists) {
       setSelectedFriends(selectedFriends.filter(f => f.id !== friend.id));
     } else {
@@ -77,7 +86,28 @@ export default function GroupCreateScreen() {
       </TouchableOpacity>
     );
   };
-
+  const handleCreateGroup = async () => {
+    let file_data = null;
+    let file_type = null;
+    let file_name = null;
+  
+    if (groupAvatar?.uri) {
+      const base64 = await FileSystem.readAsStringAsync(groupAvatar.uri, { encoding: 'base64' });
+      file_data = base64;
+      file_type = 'image/jpeg'; // hoặc dùng hàm tự động detect cũng được
+      file_name = groupAvatar.uri.split('/').pop();
+    }
+  
+    const members = selectedFriends.map(f => f.friendInfo.id);
+  
+    socket.emit("create_group", {
+      name: groupName,
+      members,
+      file_data,
+      file_type,
+      file_name,
+    });
+  };
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.groupImagePicker} onPress={pickGroupImage}>
@@ -98,7 +128,7 @@ export default function GroupCreateScreen() {
       <TextInput placeholder="Tìm tên hoặc số điện thoại" style={styles.searchInput} />
 
       <FlatList
-        data={friendsList}
+        data={friendssList}
         keyExtractor={(item) => item.friendInfo.id}
         renderItem={renderFriend}
         contentContainerStyle={{ paddingBottom: 100 }}
@@ -108,12 +138,12 @@ export default function GroupCreateScreen() {
         <View style={styles.modalBottom}>
           <View style={styles.selectedAvatars}>
             {selectedFriends.map((f) => (
-              <Image key={f.id} source={f.avatar} style={styles.selectedAvatar} />
+              <Image key={f.friendInfo.id} source={f.friendInfo.avt} style={styles.selectedAvatar} />
             ))}
           </View>
           <TouchableOpacity
             style={styles.createButton}
-            onPress={() => console.log('Tạo nhóm:', groupName, 'với:', selectedFriends)}>
+            onPress={() =>handleCreateGroup()}>
             <Text style={styles.createButtonText}>Tạo nhóm</Text>
           </TouchableOpacity>
         </View>

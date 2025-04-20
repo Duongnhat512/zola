@@ -1,5 +1,5 @@
 import React, { useState,useEffect  } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity,TextInput,Alert } from 'react-native';
+import { View, Text, FlatList, Image, TouchableOpacity,TextInput,Alert,ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native';
 import {GetUserByUserName} from '../services/UserService'
@@ -9,6 +9,7 @@ import {GetUserById} from '../services/UserService';
 import UserModal from '../screens/UserModal';
 import { useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
+import { ListItem } from 'react-native-elements';
 
 const Tabs = ['Bạn bè', 'Lời mời kết bạn','Lời mời kết bạn đã gửi'];
 const ContactScreen = () => {
@@ -27,7 +28,7 @@ const ContactScreen = () => {
     ];
     const handleCreateGroup = () => {
       Alert.alert('Tạo nhóm', 'Chức năng tạo nhóm sẽ được triển khai sau.');
-      navigation.navigate("GroupCreate");
+      navigation.navigate("GroupCreate",{friendsList});
     };
   
     const handleAcceptRequest = async (user_friend_id: string) => {
@@ -282,7 +283,7 @@ const ContactScreen = () => {
           </TouchableOpacity>
         ))}
       </View>
-      <View style={styles.topHalf}>
+      <ScrollView style={styles.topHalf}>
  {/* Friends List */}
  {activeTab === 'Bạn bè' && (
     <View style={{gap:40}}>    
@@ -336,8 +337,8 @@ const ContactScreen = () => {
         />
         </View>    
       )}    
-      </View>
-      <View style={styles.bottomHalf}>
+      </ScrollView>
+      <ScrollView style={styles.bottomHalf}>
       <View style={styles.groupHeader}>
           <TouchableOpacity onPress={handleCreateGroup}>
             <Text>Tạo nhóm</Text>
@@ -349,7 +350,7 @@ const ContactScreen = () => {
           renderItem={renderGroupItem}
           contentContainerStyle={styles.groupList}
         />
-      </View>   
+      </ScrollView>   
 
      
       
