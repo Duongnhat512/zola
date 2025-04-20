@@ -122,8 +122,8 @@ const ChatRoomScreen = ({ route, navigation }) => {
     if (socket && chats.conversation_id) {
       const timeout = setTimeout(() => {
         socket.emit("get_messages", { conversation_id: chats.conversation_id });
-      }, 500); 
-    
+      }, 500);
+
       return () => clearTimeout(timeout);
     }
   }, [socket, chats.conversation_id]);
@@ -133,18 +133,18 @@ const ChatRoomScreen = ({ route, navigation }) => {
       setFile(result.assets[0]);
     }
   };
-  
+
 
   const sendMessage = async () => {
     if (!inputText.trim() && !file) {
       Alert.alert('Thông báo', 'Vui lòng nhập tin nhắn hoặc chọn tệp đính kèm.');
       return;
     }
-  
+
     const tempId = `msg-${Date.now()}`;
     const now = new Date();
     const isGroup = chats.list_user_id?.length > 1;
-  
+
     // Thêm tin nhắn tạm thời vào danh sách
     setMessages((prev) => [
       ...prev,
@@ -161,16 +161,16 @@ const ChatRoomScreen = ({ route, navigation }) => {
         file: file ? { uri: file.uri, name: file.name } : null,
       },
     ]);
-  
+
     if (file) {
       try {
         const response = await fetch(file.uri);
         const blob = await response.blob();
-  
+
         const reader = new FileReader();
         reader.onloadend = () => {
           const base64Data = reader.result.split(',')[1];
-  
+
           const msg = {
             conversation_id: chats.conversation_id,
             sender_id: currentUser.id,
@@ -183,7 +183,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
             status: 'pending',
             created_at: now.toISOString(),
           };
-  
+
           const event = isGroup ? 'send_group_message' : 'send_private_message';
           socket.emit(event, msg, (response) => {
             if (response.status === 'success') {
@@ -208,7 +208,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
         socket.emit("get_messages", { conversation_id: chats.conversation_id });
         setInputText('');
         setFile(null);
-        
+
       } catch (error) {
         console.error('Lỗi tải tệp:', error);
       }
@@ -221,7 +221,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
         status: 'pending',
         created_at: now.toISOString(),
       };
-  
+
       const event = isGroup ? 'send_group_message' : 'send_private_message';
       socket.emit(event, msg, (response) => {
         if (response.status === 'success') {
@@ -240,10 +240,10 @@ const ChatRoomScreen = ({ route, navigation }) => {
       });
       socket.emit("get_messages", { conversation_id: chats.conversation_id });
       setInputText('');
-      
+
     }
   };
-  
+
 
   const deleteMessage = (id) => {
     socket.emit('set_hidden_message', { user_id: currentUser.id, message_id: id });
@@ -275,21 +275,21 @@ const ChatRoomScreen = ({ route, navigation }) => {
         </View>
 
         <View style={[item.type === 'deleted' ? styles.deletedMessage : styles.messageBubble,
-          item.sender === 'me' ? styles.myMessage : styles.theirMessage]}>
+        item.sender === 'me' ? styles.myMessage : styles.theirMessage]}>
           {item.file && item.type !== 'deleted' && (
-  <TouchableOpacity onPress={() => {
-    if (item.type === 'image') {
-      setSelectedImage(item.file.uri);
-      setImagePreviewVisible(true);
-    }
-  }}>
-    {item.type === 'image' ? (
-      <Image source={{ uri: item.file.uri }} style={styles.mediaPreview} />
-    ) : (
-      <Text>{item.file.name}</Text>
-    )}
-  </TouchableOpacity>
-)}
+            <TouchableOpacity onPress={() => {
+              if (item.type === 'image') {
+                setSelectedImage(item.file.uri);
+                setImagePreviewVisible(true);
+              }
+            }}>
+              {item.type === 'image' ? (
+                <Image source={{ uri: item.file.uri }} style={styles.mediaPreview} />
+              ) : (
+                <Text>{item.file.name}</Text>
+              )}
+            </TouchableOpacity>
+          )}
           <Text style={styles.messageText}>{item.text}</Text>
           <Text style={styles.messageTime}>
             {item.time} {item.status === 'pending' ? '🕓' : item.status === 'sent' ? '✅' : '❌'}
@@ -308,6 +308,18 @@ const ChatRoomScreen = ({ route, navigation }) => {
             <Text style={styles.backButtonText}>←</Text>
           </TouchableOpacity>
           <Text style={styles.header}>{chats.name || 'Người khác'}</Text>
+          <TouchableOpacity
+            onPress={() => {
+              navigation.navigate('EditGroup', {
+                conversation: chats,
+                socket: socket,
+                currentUserId: currentUser.id,
+              });
+            }}
+            style={styles.backButton}
+              >
+            <Text style={styles.backButtonText}>⚙️</Text>
+          </TouchableOpacity>
         </View>
 
         <FlatList
@@ -319,17 +331,17 @@ const ChatRoomScreen = ({ route, navigation }) => {
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
         />
 
-{file?.mimeType?.startsWith('image') && file.uri && (
-  <View style={styles.previewContainer}>
-    <Image
-      source={{ uri: file.uri }}
-      style={styles.previewImage}
-    />
-    <TouchableOpacity onPress={() => setFile(null)} style={styles.cancelPreviewButton}>
-      <Text style={styles.cancelPreviewText}>Hủy chọn ảnh</Text>
-    </TouchableOpacity>
-  </View>
-)}
+        {file?.mimeType?.startsWith('image') && file.uri && (
+          <View style={styles.previewContainer}>
+            <Image
+              source={{ uri: file.uri }}
+              style={styles.previewImage}
+            />
+            <TouchableOpacity onPress={() => setFile(null)} style={styles.cancelPreviewButton}>
+              <Text style={styles.cancelPreviewText}>Hủy chọn ảnh</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View style={styles.footerWrapper}>
           <TouchableOpacity onPress={pickFile} style={styles.fileButton}>
