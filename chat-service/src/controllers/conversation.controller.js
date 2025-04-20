@@ -152,19 +152,19 @@ ConversationController.updateGroupAvt = async (socket, data) => {
       try {
         data.avatar = await uploadFile(file);
       } catch (error) {
-        return socket.emit("error", { message: "lỗi uploadfile"+error });
+        return socket.emit("error", { message: "lỗi uploadfile" + error });
       }
-    
+
     }
 
     if (!data.conversation_id) {
       return socket.emit("error", { message: "Thiếu conversation_id" });
     }
     const result = await ConversationModel.updateAvtGroup(
-        data.conversation_id,
-        data.avatar
-      );
-  
+      data.conversation_id,
+      data.avatar
+    );
+
 
     socket.emit("update_avt_group", {
       status: "success",
@@ -489,18 +489,22 @@ ConversationController.removeMember = async (socket, data) => {
     await redisClient.zrem(`chatlist:${user_id}`, conversation_id);
     await UserCacheService.removePermissions(user_id, conversation_id);
 
-    const socketIds = await redisClient.smembers(`sockets:${user_id}`);
-    socketIds.forEach((socketId) => {
-      socket.to(socketId).emit("removed_member", {
-        conversation_id: conversation_id,
-        message: "Bạn đã bị xóa khỏi nhóm",
-        user_id: user_id,
-      });
-    });
-
     socket.emit("remove_member", {
       message: "Xóa thành viên thành công",
       user_id: user_id,
+    });
+
+    // Thông báo cho tất cả thành viên trong nhóm
+    const members = await redisClient.smembers(`group:${conversation_id}`);
+    members.forEach(async (member) => {
+      const socketIds = await redisClient.smembers(`sockets:${member}`);
+      socketIds.forEach((socketId) => {
+        socket.to(socketId).emit("user_left_group", {
+          conversation_id: conversation_id,
+          user_id: user_id,
+          message: "Người dùng đã bị xóa khỏi nhóm",
+        });
+      });
     });
 
   } catch (error) {
@@ -545,19 +549,22 @@ ConversationController.getConversations = async (socket, data) => {
         let avt = conversation.avatar || "";
 
         if (conversation.type === "private") {
-          const friendId = list_user_id.find((id) => id.user_id !== user_id);
-          const friend = await UserCacheService.getUserProfile(friendId, socket.handshake.headers.authorization);
+          const receiver = list_user_id.find((id) => id.user_id !== user_id);
 
-          console.log("friend", friend);
-          name = friend?.fullname || "";
-          avt = friend?.avt || "";
+          if (receiver) {
+            const friend = await UserCacheService.getUserProfile(receiver.user_id, socket.handshake.headers.authorization);
+
+            console.log("friend", friend);
+            name = friend?.fullname || "";
+            avt = friend?.avt || "";
+          }
         }
 
         const last_message_id = conversation.last_message_id
         const last_message = last_message_id ? await MessageModel.getMessageById(last_message_id) : "";
 
         const isUnread = unreadConversations.includes(conversationId);
-        const unreadCount = await ConversationController.getUnreadCount(user_id, conversationId); 
+        const unreadCount = await ConversationController.getUnreadCount(user_id, conversationId);
 
         conversations.push({
           conversation_id: conversationId,
@@ -596,8 +603,8 @@ ConversationController.setPermisstions = async (socket, data) => {
     return socket.emit("error", { message: "Thiếu conversation_id" });
   }
 
-  if (!permissions) {
-    return socket.emit("error", { message: "Thiếu permissions" });
+  if (permissions !== 'admin' && permissions !== 'moderator' && permissions !== 'member') {
+    return socket.emit("error", { message: "permissions không hợp lệ" });
   }
 
   try {
@@ -608,6 +615,10 @@ ConversationController.setPermisstions = async (socket, data) => {
     );
 
     await UserCacheService.setConversationPermissions(user_id, conversation_id, permissions);
+
+    if (permissions === 'owner' && per === 'owner') {
+      await UserCacheService.setConversationPermissions(socket.user.id, conversation_id, 'member');
+    }
 
     socket.emit("set_permissions", {
       status: "success",
@@ -775,7 +786,7 @@ ConversationController.outGroup = async (socket, data) => {
 
 ConversationController.markAsRead = async (socket, data) => {
   const { conversation_id } = data;
-  const user_id = socket.user.id; 
+  const user_id = socket.user.id;
 
   if (!conversation_id) {
     return socket.emit("error", { message: "Thiếu conversation_id" });
@@ -814,7 +825,7 @@ ConversationController.increaseUnreadCount = async (conversation_id, exceptUserI
       if (member === exceptUserId) {
         continue;
       }
-      
+
       const key = `unread_count:${member}:${conversation_id}`;
       await redisClient.incr(key);
       const newCount = await redisClient.get(key);
