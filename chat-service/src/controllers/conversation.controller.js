@@ -514,7 +514,8 @@ ConversationController.getConversations = async (socket, data) => {
         let avt = conversation.avatar || "";
 
         if (conversation.type === "private") {
-          const friend = await UserCacheService.getUserProfile(list_user_id[0], socket.handshake.headers.authorization);
+          const friendId = list_user_id.find((id) => id !== user_id);
+          const friend = await UserCacheService.getUserProfile(friendId, socket.handshake.headers.authorization);
 
           console.log("friend", friend);
           name = friend?.fullname || "";
