@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Modal, Switch, Button, Input, Tooltip } from "antd";
+import { Modal, Switch, Button, Input, Tooltip, List, Avatar } from "antd";
 import {
   CopyOutlined,
   ReloadOutlined,
@@ -10,8 +10,46 @@ import {
 import socket from "../../services/Socket";
 import Swal from 'sweetalert2';
 
-const GroupSettingsModal = ({ visible, onClose, groupSettings, onUpdateSettings,seletedChat }) => {
+const LeaderDeputyModal = ({ visible, onClose, leaders, onRemoveDeputy, onTransferLeader }) => {
+
+    return (
+    <Modal
+      title="Trưởng & phó nhóm"
+      visible={visible}
+      onCancel={onClose}
+      footer={null}
+      width={400}
+    >
+      <List
+        itemLayout="horizontal"
+        dataSource={leaders}
+        renderItem={(item) => (
+          <List.Item
+            
+          >
+            <List.Item.Meta
+              avatar={<Avatar src={item.avt} />}
+              title={item.fullname}
+              description={item.permission}
+            />
+             <Button danger onClick={() => onRemoveDeputy(item.id)}>
+                      Xóa 
+             </Button>
+          </List.Item>
+        )}
+      />
+      <div className="mt-4">
+        <Button type="primary" block onClick={onTransferLeader}>
+          Chuyển quyền trưởng nhóm
+        </Button>
+      </div>
+    </Modal>
+  );
+};
+
+const GroupSettingsModal = ({ visible, onClose, groupSettings, onUpdateSettings,userMain,userOwner, seletedChat }) => {
   const [settings, setSettings] = useState(groupSettings);
+  const [leaderDeputyModalVisible, setLeaderDeputyModalVisible] = useState(false);
 
   const handleToggle = (key) => {
     setSettings((prev) => ({
@@ -24,7 +62,6 @@ const GroupSettingsModal = ({ visible, onClose, groupSettings, onUpdateSettings,
     onUpdateSettings(settings);
     onClose();
   };
-
 
   const handleDeleteGroup = async () => {
     if (seletedChat && seletedChat.conversation_id) {
@@ -50,7 +87,6 @@ const GroupSettingsModal = ({ visible, onClose, groupSettings, onUpdateSettings,
     }
     onClose();
   };
-  
 
   return (
     <Modal
@@ -143,16 +179,19 @@ const GroupSettingsModal = ({ visible, onClose, groupSettings, onUpdateSettings,
           >
             Chặn khỏi nhóm
           </Button>
-          <Button
+          {userMain?.id === userOwner?.id && (
+            <div>
+                <Button
             type="primary"
             icon={<TeamOutlined />}
             block
             className="mb-2"
+            onClick={() => setLeaderDeputyModalVisible(true)}
           >
             Trưởng & phó nhóm
           </Button>
           <Button
-          onClick={handleDeleteGroup}
+            onClick={handleDeleteGroup}
             type="primary"
             danger
             icon={<DeleteOutlined />}
@@ -160,9 +199,17 @@ const GroupSettingsModal = ({ visible, onClose, groupSettings, onUpdateSettings,
           >
             Giải tán nhóm
           </Button>
+            </div>
+          )}
         </div>
-        
       </div>
+      <LeaderDeputyModal
+        visible={leaderDeputyModalVisible}
+        onClose={() => setLeaderDeputyModalVisible(false)}
+        leaders={groupSettings.leaders || []}
+        onRemoveDeputy={(id) => console.log("Remove deputy", id)}
+        onTransferLeader={() => console.log("Transfer leader")}
+      />
     </Modal>
   );
 };

@@ -25,12 +25,17 @@ import {
 import { getUserById } from "../../services/UserService";
 import socket from "../../services/Socket";
 import GroupSettingsModal from "../../components/ChatApp/GroupSettingsModal";
+import { useSelector } from "react-redux";
 
 const InfoGroup = ({ selectedChat, onClose }) => {
   const [isMemberModalVisible, setIsMemberModalVisible] = useState(false);
   const [members, setMembers] = useState([]);
   const [isGroupSettingsVisible, setIsGroupSettingsVisible] = useState(false);
+  const [userOwner, setUserOwner] = useState(null);
+  const userMain = useSelector((state) => state.user.user);
+
   const [groupSettings, setGroupSettings] = useState({
+    leaders: [],
     changeGroupInfo: true,
     pinMessages: false,
     createReminders: true,
@@ -42,10 +47,10 @@ const InfoGroup = ({ selectedChat, onClose }) => {
     allowJoinLink: true,
   });
 
+
+
   const fetchMembers = async () => {
-    console.log('====================================');
-    console.log(selectedChat);
-    console.log('====================================');
+
     try {
       if (!Array.isArray(selectedChat?.list_user_id)) {
         console.error("list_user_id không phải mảng:", selectedChat?.list_user_id);
@@ -57,6 +62,13 @@ const InfoGroup = ({ selectedChat, onClose }) => {
           try {
             const response = await getUserById(user_id);
             if (response.status === "success") {
+              if(permission === "owner" || permission === "moderator"){
+                setUserOwner(response.user);
+                setGroupSettings((prevSettings) => ({
+                  ...prevSettings,
+                  leaders: [...prevSettings.leaders, response.user],
+                }));
+              }
               return {
                 ...response.user,
                 permission, // gán quyền
@@ -115,7 +127,13 @@ const InfoGroup = ({ selectedChat, onClose }) => {
   }
   useEffect(()=> {
     const eventPermission = (data) => {
-      alert(data.message);
+      setMembers((prevMembers) =>
+        prevMembers.map((member) =>
+          member.id === data.user_id
+        ? { ...member, permission: data.permissions }
+        : member
+        )
+      );
     }
 
     socket.on("set_permissions",eventPermission)
@@ -220,6 +238,8 @@ const InfoGroup = ({ selectedChat, onClose }) => {
           groupSettings={groupSettings}
           onUpdateSettings={handleUpdateSettings}
           seletedChat={selectedChat}
+          userMain={userMain}
+          userOwner={userOwner}
         />
 
         {/* Group Info */}
@@ -304,11 +324,20 @@ const InfoGroup = ({ selectedChat, onClose }) => {
               <List.Item.Meta
                 avatar={<Avatar src={user.avt} />}
                 title={user.fullname}
-                description={user.permission}
+                description={
+                  user.permission === "owner"
+                    ? "Trưởng nhóm"
+                    : user.permission === "moderator"
+                    ? "Phó nhóm"
+                    : "Thành viên"
+                }
               />
-              <Dropdown overlay={menu(user)} trigger={["click"]}>
+              {userOwner?.id === userMain.id && (
+                <Dropdown  overlay={menu(user)} trigger={["click"]}>
                 <MoreOutlined style={{ transform: 'rotate(90deg)' }} className="text-xl cursor-pointer hover:text-gray-600" />
               </Dropdown>
+              )}
+
             </List.Item>
           )}
         />
