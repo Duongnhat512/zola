@@ -127,6 +127,8 @@ ConversationController.createGroup = async (socket, data) => {
         name: conversation.name,
         avatar: conversation.avatar,
         members: members,
+        created_by: socket.user.id,
+
       },
     });
 
@@ -508,14 +510,19 @@ ConversationController.getConversations = async (socket, data) => {
       if (conversation) {
 
         let list_user_id = await redisClient.smembers(`group:${conversationId}`);
-
+        list_user_id = await Promise.all(
+          list_user_id.map(async (id) => {
+            const permission = await UserCacheService.getConversationPermissions(id, conversationId);
+            return { user_id: id, permission: permission };
+          })
+        );
         // list_user_id = list_user_id.filter((id) => id !== user_id);
 
         let name = conversation.name || "";
         let avt = conversation.avatar || "";
 
         if (conversation.type === "private") {
-          const friendId = list_user_id.find((id) => id !== user_id);
+          const friendId = list_user_id.find((id) => id.user_id !== user_id);
           const friend = await UserCacheService.getUserProfile(friendId, socket.handshake.headers.authorization);
 
           console.log("friend", friend);
@@ -576,13 +583,17 @@ ConversationController.setPermisstions = async (socket, data) => {
       conversation_id,
       permissions
     );
+    console.log('====================================');
+    console.log(result);
+    console.log('====================================');
 
     await UserCacheService.setConversationPermissions(user_id, conversation_id, permissions);
 
     socket.emit("set_permissions", {
       status: "success",
       message: "Cập nhật quyền thành công",
-      result,
+      permissions: permissions,
+      user_id: user_id,
     });
 
     const socketIds = await redisClient.smembers(`sockets:${user_id}`);
@@ -672,6 +683,7 @@ ConversationController.deleteConversation = async (socket, data) => {
       status: "success",
       message: "Đã giải tán nhóm",
       result,
+      conversation_id
     });
 
     // Thông báo cho tất cả thành viên trong nhóm
@@ -680,7 +692,7 @@ ConversationController.deleteConversation = async (socket, data) => {
       socketIds.forEach((socketId) => {
         socket.to(socketId).emit("group_deleted", {
           conversation_id: conversation_id,
-          message: "Nhóm đã bị giải tán",
+          message: `Nhóm đã bị giải tán`,
         });
       });
     });
