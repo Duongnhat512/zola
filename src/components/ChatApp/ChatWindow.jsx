@@ -27,6 +27,7 @@ import {
   handleFileChange,
   handleImageChange,
   handleNewMessage,
+  handleVideoChange,
   markAsRead,
   revokeMessage,
   scrollToBottom,
@@ -52,7 +53,7 @@ const ChatWindow = ({
   const [selectedImage, setSelectedImage] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
-
+  const [selectedVideo, setSelectedVideo] = useState(null);
   const handleOpen = () => setIsModalVisible(true);
   const handleClose = () => setIsModalVisible(false);
   useEffect(() => {
@@ -131,8 +132,7 @@ const ChatWindow = ({
   useEffect(() => {
     setTimeout(() => {
       scrollToBottom(messagesEndRef);
-    }
-    , 100);
+    }, 100);
   }, [messages]);
   useEffect(() => {
     if (selectedChat?.conversation_id) {
@@ -190,6 +190,7 @@ const ChatWindow = ({
     revokeMessage(socket, userMain.id, id, setMessages);
   };
   const handleSendMessage = (fileData = null) => {
+    if (!input.trim() && !fileData) return; 
     sendMessage({
       input,
       previewImage,
@@ -203,10 +204,11 @@ const ChatWindow = ({
       setSelectedFile,
       setSelectedImage,
       socket,
-      selectedImage
+      selectedImage,
+      selectedVideo,
+      setSelectedVideo,
     });
   };
-  
   if (!selectedChat) {
     return (
       <div className="flex items-center justify-center flex-col text-center flex-1">
@@ -260,7 +262,9 @@ const ChatWindow = ({
           <input
             type="file"
             accept="image/*"
-            onChange={(e)=>handleImageChange(e, setPreviewImage, setSelectedImage)}
+            onChange={(e) =>
+              handleImageChange(e, setPreviewImage, setSelectedImage)
+            }
             style={{ display: "none" }}
             id="image-upload"
           />
@@ -271,7 +275,9 @@ const ChatWindow = ({
           <input
             type="file"
             accept=".pdf,.docx,.doc"
-            onChange={(e) => handleFileChange(e, setSelectedFile, handleSendMessage)}
+            onChange={(e) =>
+              handleFileChange(e, setSelectedFile, handleSendMessage)
+            }
             style={{ display: "none" }}
             id="file-upload"
           />
@@ -294,6 +300,18 @@ const ChatWindow = ({
               <SmileOutlined style={{ fontSize: "20px" }} />
             </button>
           </Dropdown>
+          <input
+            type="file"
+            accept="video/*"
+            onChange={(e) =>
+              handleVideoChange(e, setSelectedVideo, handleSendMessage)
+            }
+            style={{ display: "none" }}
+            id="video-upload"
+          />
+          <label htmlFor="video-upload" className="cursor-pointer">
+            <VideoCameraOutlined style={{ fontSize: "20px" }} />
+          </label>
         </div>
 
         <div className="flex">
