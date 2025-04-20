@@ -8,16 +8,35 @@ const MessageList = ({
   handleDeleteMessage,
   handleRevokeMessage,
   messagesEndRef,
+  onScroll,
+  isLoading,
+  hasMoreMessages,
 }) => {
   console.log("messages", messages);
-  
+
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div
+      className="flex-1 overflow-y-auto p-4 space-y-4 message-list-container" 
+      onScroll={onScroll} 
+    >
+      {!hasMoreMessages && messages.length>10&&( 
+        <div className="text-center text-gray-500 mb-4">
+          Đã ở tin nhắn đầu tiên
+        </div>
+      )}
+      {isLoading && ( 
+        <div className="flex justify-center items-center mb-4">
+          <Spin size="small" tip="Đang tải..." />
+        </div>
+      )}
       {messages
-        .filter((msg) => (msg.type==="text" && msg.text) || msg.media || msg.file_name)
+        .filter(
+          (msg) =>
+            (msg.type === "text" && msg.text) || msg.media || msg.file_name
+        )
         .map((msg) => (
           <div
-            key={msg.id}
+            // key={msg.id}
             className={`flex ${
               msg.sender === "me" ? "justify-end" : "items-start"
             } gap-2`}

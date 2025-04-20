@@ -37,6 +37,7 @@ import EmojiDropdown from "../untilChatWindow/EmojiDropdown";
 import MessageOptions from "../untilChatWindow/MessageOptions";
 import ChatHeader from "../untilChatWindow/ChatHeader";
 import MessageList from "../untilChatWindow/MessageList";
+import { toast } from "react-toastify";
 const ChatWindow = ({
   selectedChat,
   setChats,
@@ -56,6 +57,11 @@ const ChatWindow = ({
   const [selectedVideo, setSelectedVideo] = useState(null);
   const handleOpen = () => setIsModalVisible(true);
   const handleClose = () => setIsModalVisible(false);
+  const [visibleMessages, setVisibleMessages] = useState([]); // Tin nhắn hiển thị
+  const [page, setPage] = useState(1); // Trang hiện tại
+  const pageSize = 10; // Số lượng tin nhắn mỗi trang
+  const [isLoading, setIsLoading] = useState(false); // Trạng thái đang tải tin nhắn
+  const [hasMoreMessages, setHasMoreMessages] = useState(true); // Kiểm tra còn tin nhắn để tải không
   useEffect(() => {
     selectedChatRef.current = selectedChat;
   }, [selectedChat]);
@@ -88,8 +94,10 @@ const ChatWindow = ({
         }),
         file_name: msg.file_name || null,
       }));
+      console.log("formattedMessages", formattedMessages);
 
       setMessages(formattedMessages);
+      setVisibleMessages(formattedMessages.slice(-pageSize));
     });
 
     return () => {
@@ -132,7 +140,7 @@ const ChatWindow = ({
   useEffect(() => {
     setTimeout(() => {
       scrollToBottom(messagesEndRef);
-    }, 100);
+    }, 300);
   }, [messages]);
   useEffect(() => {
     if (selectedChat?.conversation_id) {
@@ -185,19 +193,50 @@ const ChatWindow = ({
         pauseOnHover: true,
       });
       fetchConversations();
-      
     };
     socket.on("new_member", handleNewMember);
     return () => {
       socket.off("new_member", handleNewMember);
     };
-  },[socket, selectedChat?.conversation_id, fetchConversations]);
-  
+  }, [socket, selectedChat?.conversation_id, fetchConversations]);
+
   const messagesEndRef = useRef(null);
   const handleCopyMessage = (text) => {
     copyMessage(text);
   };
+  const loadMoreMessages = () => {
+    if (isLoading || !hasMoreMessages) return; 
+    setIsLoading(true); 
 
+    const container = document.querySelector(".message-list-container");
+    const currentScrollTop = container.scrollTop;
+    const currentScrollHeight = container.scrollHeight;
+
+    const nextPage = page + 1;
+    const startIndex = Math.max(messages.length - nextPage * pageSize, 0);
+    const endIndex = messages.length;
+    const moreMessages = messages.slice(startIndex, endIndex);
+    setTimeout(() => {
+      if (moreMessages.length === visibleMessages.length) {
+        setHasMoreMessages(false);
+      } else {
+        setVisibleMessages(moreMessages); 
+        setPage(nextPage); 
+      }
+      setIsLoading(false); 
+      setTimeout(() => {
+        const newScrollHeight = container.scrollHeight; 
+        container.scrollTop = newScrollHeight - currentScrollHeight + currentScrollTop;
+      }, 100);
+    }, 1000);
+  };
+  const handleScroll = (e) => {
+    if (!hasMoreMessages) return;
+
+    if (e.target.scrollTop === 0) {
+      loadMoreMessages();
+    }
+  };
   const handleDeleteMessage = (id) => {
     deleteMessage(socket, userMain.id, id, setMessages);
   };
@@ -206,7 +245,7 @@ const ChatWindow = ({
     revokeMessage(socket, userMain.id, id, setMessages);
   };
   const handleSendMessage = (fileData = null) => {
-    if (!input.trim() && !fileData) return; 
+    if (!input.trim() && !fileData) return;
     sendMessage({
       input,
       previewImage,
@@ -246,11 +285,14 @@ const ChatWindow = ({
         setIsInfoGroupVisible={setIsInfoGroupVisible}
       />
       <MessageList
-        messages={messages}
+        messages={visibleMessages}
         handleCopyMessage={handleCopyMessage}
         handleDeleteMessage={handleDeleteMessage}
         handleRevokeMessage={handleRevokeMessage}
         messagesEndRef={messagesEndRef}
+        onScroll={handleScroll}
+        isLoading={isLoading}
+        hasMoreMessages={hasMoreMessages}
       />
       {isModalVisible && (
         <AddMember
