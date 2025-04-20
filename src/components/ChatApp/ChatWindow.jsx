@@ -44,6 +44,7 @@ const ChatWindow = ({
   fetchConversations,
   isInfoGroupVisible,
   setIsInfoGroupVisible,
+  infoPermissions
 }) => {
   const selectedChatRef = useRef();
   const [emojiList, setEmojiList] = useState({});
@@ -342,7 +343,11 @@ const ChatWindow = ({
           <label htmlFor="file-upload" className="cursor-pointer">
             <PaperClipOutlined style={{ fontSize: "20px" }} />
           </label>
-
+          <div style={{position: "relative", top:-60, right: "-40%" }} className="flex items-center gap-2  p-2 rounded-md">
+            {/* <InfoCircleOutlined style={{ fontSize: "16px" }} /> */}
+            <span>{infoPermissions?.message}</span>
+          </div>
+          
           <Dropdown
             overlay={
               <EmojiDropdown

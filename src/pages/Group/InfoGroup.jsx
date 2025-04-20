@@ -83,6 +83,9 @@ const InfoGroup = ({ selectedChat, onClose, isGroupSettingsVisible,setIsGroupSet
         leaders: [],  // Reset danh sách leaders
         members: [],
       }));
+
+      console.log(selectedChat.list_user_id);
+      
   
       const memberData = await Promise.all(
         selectedChat.list_user_id.map(async ({ user_id, permission }) => {
@@ -110,16 +113,26 @@ const InfoGroup = ({ selectedChat, onClose, isGroupSettingsVisible,setIsGroupSet
                 })); 
               }
               if(permission !== "owner"){
-                setGroupSettings((prevSettings) => ({
-                  ...prevSettings,
-                  members: [
-                    ...prevSettings.members,
-                    {
-                      ...response.user,
-                      permission,  // thêm field permission vào đây
-                    },
-                  ],
-                })); 
+                setGroupSettings((prevSettings) => {
+                  const exists = prevSettings.members.some(
+                    (member) => member.id === response.user.id
+                  );
+                
+                  if (exists) {
+                    return prevSettings; // Không thêm nếu đã tồn tại
+                  }
+                
+                  return {
+                    ...prevSettings,
+                    members: [
+                      ...prevSettings.members,
+                      {
+                        ...response.user,
+                        permission, // thêm field permission vào
+                      },
+                    ],
+                  };
+                });
               }
               return {
                 ...response.user,
@@ -144,6 +157,8 @@ const InfoGroup = ({ selectedChat, onClose, isGroupSettingsVisible,setIsGroupSet
   };
   
   useEffect(() => {
+    
+    
     fetchMembers();
   }, [selectedChat?.list_user_id, selectedChat]);
 
@@ -181,6 +196,8 @@ const InfoGroup = ({ selectedChat, onClose, isGroupSettingsVisible,setIsGroupSet
   };
 
   const grantPermission = (friend,permission) => {
+    console.log(permission);
+    
     socket.emit("set_permissions", {
       conversation_id: selectedChat.conversation_id,
       user_id: friend.id,
@@ -198,43 +215,51 @@ const InfoGroup = ({ selectedChat, onClose, isGroupSettingsVisible,setIsGroupSet
   }
   useEffect(() => {
     const eventPermission = (data) => {
-
-      console.log(data.permissions);
-      
       const { permissions, user_id } = data;
-
-      if(data.user_id === userMain.id){
-        setUserMain((prev) => ({ ...prev, permission: permissions }));
-      }
-
+  
       console.log("Phân quyền:", permissions);
+  
+      // Nếu user hiện tại bị phân quyền
+      if (user_id === userMain.id) {
+        console.log("Cập nhật quyền cho chính user hiện tại");
+  
+        // Cập nhật danh sách members
+        setMembers((prev) =>
+          prev.map((member) =>
+            member.id === userMain.id ? { ...member, permission: permissions } : member
+          )
+        );
+  
+        // Cập nhật quyền trong userMain
+        setUserMain((prev) => ({ ...prev, permission: permissions }));
+        return;
+      }
+  
+      // Cập nhật quyền cho user trong groupSettings.members
       setGroupSettings((prev) => {
         const updatedMembers = prev.members.map((member) =>
           member.id === user_id ? { ...member, permission: permissions } : member
         );
-        return {
-          ...prev,
-          members: updatedMembers,
-        };
-        });
-      switch (permissions) {
-        case "owner": 
-        setMembers((prev) =>
-          prev.map((member) =>
-            member.id === user_id ? { ...member, permission: permissions } : member
-          )
-        );
-       
-        // Xoá khỏi danh sách leader nếu tồn tại
+        return { ...prev, members: updatedMembers };
+      });
+  
+      // Cập nhật quyền trong danh sách members chung
+      setMembers((prev) =>
+        prev.map((member) =>
+          member.id === user_id ? { ...member, permission: permissions } : member
+        )
+      );
+  
+      if (permissions === "owner") {
+        console.log("-> Owner");
+  
+        // Thêm vào leaders nếu chưa có
         setGroupSettings((prev) => {
-          const isAlreadyLeader = prev.leaders.some((l) => l.id === user_id);
+          const isAlreadyLeader = prev.leaders.some((leader) => leader.id === user_id);
           if (!isAlreadyLeader) {
-            const memberData = members.find((m) => m.id === user_id);
+            const memberData = prev.members.find((m) => m.id === user_id);
             if (memberData) {
-              const newLeader = {
-                ...memberData,
-                permission: "owner", // Thêm permission tại đây
-              };
+              const newLeader = { ...memberData, permission: "owner" };
               return {
                 ...prev,
                 leaders: [...prev.leaders, newLeader],
@@ -242,58 +267,36 @@ const InfoGroup = ({ selectedChat, onClose, isGroupSettingsVisible,setIsGroupSet
             }
           }
           return prev;
-        });  
+        });
+  
         setDisabledModalGroup(true);
-        break;
-
-        case "member":
-          console.log("-> Member");
-
-          // Cập nhật quyền trong danh sách members
-          setMembers((prev) =>
-            prev.map((member) =>
-              member.id === user_id ? { ...member, permission: permissions } : member
-            )
-          );
-          
-          // Xoá khỏi danh sách leader nếu tồn tại
-          setGroupSettings((prev) => ({
-            ...prev,
-            leaders: prev.leaders.filter((leader) => leader.id !== user_id),
-          }));
-          break;
-        case "moderator":
-          console.log("-> Moderator");
+      } else if (permissions === "moderator") {
+        console.log("-> Moderator");
   
-          // Cập nhật quyền trong danh sách members
-          setMembers((prev) =>
-            prev.map((member) =>
-              member.id === user_id ? { ...member, permission: permissions } : member
-            )
-          );
-          
-          // Thêm vào danh sách leaders nếu chưa có
-          setGroupSettings((prev) => {
-            const isAlreadyLeader = prev.leaders.some((l) => l.id === user_id);
-            if (!isAlreadyLeader) {
-              const memberData = members.find((m) => m.id === user_id);
-              if (memberData) {
-                const newLeader = {
-                  ...memberData,
-                  permission: "moderator", // Thêm permission tại đây
-                };
-                return {
-                  ...prev,
-                  leaders: [...prev.leaders, newLeader],
-                };
-              }
+        setGroupSettings((prev) => {
+          const isAlreadyLeader = prev.leaders.some((leader) => leader.id === user_id);
+          if (!isAlreadyLeader) {
+            const memberData = prev.members.find((m) => m.id === user_id);
+            if (memberData) {
+              const newLeader = { ...memberData, permission: "moderator" };
+              return {
+                ...prev,
+                leaders: [...prev.leaders, newLeader],
+              };
             }
-            return prev;
-          });  
-          break;
+          }
+          return prev;
+        });
+      } else if (permissions === "member") {
+        console.log("-> Member");
   
-        default:
-          console.warn("Unknown permission type:", permissions);
+        // Xoá khỏi danh sách leaders nếu có
+        setGroupSettings((prev) => ({
+          ...prev,
+          leaders: prev.leaders.filter((leader) => leader.id !== user_id),
+        }));
+      } else {
+        console.warn("Loại quyền không xác định:", permissions);
       }
     };
   
@@ -302,7 +305,8 @@ const InfoGroup = ({ selectedChat, onClose, isGroupSettingsVisible,setIsGroupSet
     return () => {
       socket.off("set_permissions", eventPermission);
     };
-  }, [socket, members,selectedChat]);
+  }, [socket, members, userMain?.id]);
+  
   
   const menu = (friend) => (
     <Menu>
