@@ -123,7 +123,7 @@ export default function GroupSettingsScreen({ navigation  }) {
       setAvatar(image); // Cập nhật UI nếu có
     
       const fileName = image.fileName || image.uri.split('/').pop();
-      const fileType = getMimeType(image.fileName );
+      const fileType = getMimeType(image.fileName);
       //const fileType = image.type || `image/${fileName.split('.').pop()}`;
       const ext = fileName.split('.').pop();
       //const fileType = mime.lookup(ext);
