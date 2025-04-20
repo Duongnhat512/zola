@@ -429,7 +429,7 @@ const ChatWindow = ({
       <div className="bg-white p-4 shadow flex items-center justify-between">
         <div className="flex items-center">
           <Avatar
-            src={selectedChat?.avatar || "https://via.placeholder.com/150"}
+            src={selectedChat?.avatar || "/default-avatar.jpg"}
             size="large"
             className="mr-3"
           />
@@ -477,7 +477,7 @@ const ChatWindow = ({
           >
             {msg.sender !== "me" && (
               <Avatar
-                src={msg.avatar || "https://via.placeholder.com/150"}
+                src={msg.avatar || "/default-avatar.jpg"}
                 size="small"
                 className="self-end"
               />

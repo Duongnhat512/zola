@@ -13,6 +13,7 @@ const HomeDetails = () => {
   const user = useSelector((state) => state.user.user);
   const [isLoading, setIsLoading] = useState(false);
   const [isInfoGroupVisible, setIsInfoGroupVisible] = useState(false);
+  const [isModalGroupVisible, setIsModalGroupVisible] = useState(false);
   const openChat = (chat) => {
     setSelectedChat(chat);
 
@@ -29,8 +30,10 @@ const HomeDetails = () => {
     socket.emit("get_conversations", { user_id: user.id });
     socket.on("conversations", (response) => {
       if (response.status === "success") {
-        console.log("Conversations:", response.conversations);
-        
+        console.log('====================================');
+        console.log(response.conversations);
+        console.log('====================================');
+     
         setChats(response.conversations);
       } else {
         console.error("Lỗi khi lấy danh sách hội thoại:", response.message);
@@ -47,34 +50,72 @@ const HomeDetails = () => {
   }, []);
   useEffect(() => {
     const handleGroupCreated = (data) => {
-      toast.success(`Nhóm ${data.conversation.name} đã được tạo thành công!`, {
+      setIsModalGroupVisible(false);
+      console.log("group_created data:", data);
+      const conversation = data?.conversation;
+    
+      if (!conversation) {
+        console.error("conversation không tồn tại trong dữ liệu!");
+        return;
+      }
+    
+      toast.success(`Nhóm ${conversation.conversation_id} đã được tạo thành công!`, {
         autoClose: 5000,
         hideProgressBar: true,
         closeOnClick: true,
         pauseOnHover: true,
       });
-      fetchConversations();
+    
+      setChats((prevChats) => [
+        {
+          conversation_id: conversation.conversation_id,
+          name: conversation.name,
+          avatar: conversation.avatar,
+          members: conversation.members ?? [],
+          unread_count: 0,
+          is_unread: false,
+        },
+        ...prevChats,
+      ]);
     };
+    
   
     const handleNewGroup = (data) => {
+      
       toast.info(data.message, {
         autoClose: 2000,
         hideProgressBar: false,
         closeOnClick: true,
         pauseOnHover: true,
       });
-      fetchConversations();
+      setChats((prevChats) => {
+        return [
+          {
+            conversation_id: data.conversation_id,
+            name: data.group_name,
+            avatar: data.group_avatar,
+            created_by: data.created_by,
+            members: data.members,
+            unread_count: 0,
+            is_unread: false
+          },
+          ...prevChats
+        ];
+      });
+      
     };
   
     const handleRemovedMember = (data) => {
-      console.log("Removed notification received:", data);
       toast.info(data.message, {
         autoClose: 2000,
         hideProgressBar: false,
         closeOnClick: true,
         pauseOnHover: true,
       });
-      fetchConversations();
+      //
+      setChats((prev) =>
+        prev.filter((chat) => String(chat.conversation_id) !== String(data.conversation_id))
+      );
       if (selectedChat?.conversation_id === data.conversation_id) {
         setSelectedChat(null);
       }
@@ -96,12 +137,22 @@ const HomeDetails = () => {
         closeOnClick: true,
         pauseOnHover: true,
       });
+    
       if (selectedChat?.conversation_id === data.conversation_id) {
         setSelectedChat((prev) => {
-          // Tránh thêm trùng user_id nếu đã có
-          const updatedList = prev.list_user_id.includes(data.user_id)
-            ? prev.list_user_id
-            : [...prev.list_user_id, data.user_id];
+          const isAlreadyMember = prev.list_user_id.some(
+            (member) => member.user_id === data.user_id
+          );
+    
+          if (isAlreadyMember) return prev;
+    
+          const updatedList = [
+            ...prev.list_user_id,
+            {
+              user_id: data.user_id,
+              permission: data.permission || "member", // mặc định là member nếu không có
+            },
+          ];
     
           return {
             ...prev,
@@ -111,14 +162,29 @@ const HomeDetails = () => {
       }
     };
     
-  
+    const handleGroupRemoved = (data) => {
+      toast.info(data.message, {
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+      });
+      setChats((prev) =>
+        prev.filter((chat) => String(chat.conversation_id) !== String(data.conversation_id))
+      );
+      setIsInfoGroupVisible(false);
+      setSelectedChat(null);
+    };
+    
     // Đăng ký sự kiện
     socket.on("group_created", handleGroupCreated);
     socket.on("new_group", handleNewGroup);
     socket.on("removed_member", handleRemovedMember);
     socket.on("error", handleError);
     socket.on("add_member", handleAddMember);
-  
+    socket.on("group_deleted", handleGroupRemoved);
+    socket.on("delete_group", handleGroupRemoved);
+
     // Cleanup
     return () => {
       socket.off("group_created", handleGroupCreated);
@@ -126,6 +192,8 @@ const HomeDetails = () => {
       socket.off("removed_member", handleRemovedMember);
       socket.off("error", handleError);
       socket.off("add_member", handleAddMember);
+      socket.off("delete_group", handleGroupRemoved);
+
     };
   }, [socket]);
   
@@ -138,17 +206,21 @@ const HomeDetails = () => {
         closeOnClick: true,
         pauseOnHover: true,
       });
-      console.log("Remove notification received:", data);
-      fetchConversations();
-      if (selectedChat?.conversation_id === data.conversation_id) {
-        
         setSelectedChat((prev) => ({
           ...prev,
-          list_user_id: prev.list_user_id.filter((id) => id !== data.user_id),
+          list_user_id: prev.list_user_id.filter(
+            (member) => member.user_id !== data.user_id
+          ),
         }));
-      }        
+      
     });
-  },[socket]);
+  
+    // Cleanup listener để tránh đăng ký nhiều lần
+    return () => {
+      socket.off("remove_member");
+    };
+  }, [socket, selectedChat?.conversation_id]);
+  
   return isLoading ? (
     <div className="flex h-screen w-full bg-gray-100">
       <Spin
@@ -158,7 +230,7 @@ const HomeDetails = () => {
     </div>
   ) : (
     <div className="flex h-screen w-full bg-gray-100">
-      <ChatSidebar chats={chats} openChat={openChat} />
+      <ChatSidebar chats={chats} openChat={openChat} setIsModalGroupVisible={setIsModalGroupVisible} isModalGroupVisible={isModalGroupVisible}/>
       <ChatWindow
         selectedChat={selectedChat}
         setSelectedChat={setSelectedChat}
@@ -167,6 +239,7 @@ const HomeDetails = () => {
         fetchConversations={fetchConversations}
         setIsInfoGroupVisible={setIsInfoGroupVisible}
         isInfoGroupVisible={isInfoGroupVisible}
+        isModalGroupVisible={isModalGroupVisible}
       />
       {isInfoGroupVisible && (
         <InfoGroup
