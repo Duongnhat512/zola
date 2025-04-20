@@ -205,30 +205,6 @@ const ConversationModel = {
   },
 
   /**
-   * Tìm danh sách thành viên có trong hội thoại
-   * @param {String} conversationId
-   * @returns {Array} danh sách thành viên
-   */
-  // getConversationMembers: async (conversationId) => {
-  //   const params = {
-  //     TableName: memberTableName,
-  //     IndexName: "id-index",
-  //     KeyConditionExpression: "id = :conversationId",
-  //     ExpressionAttributeValues: {
-  //       ":conversationId": conversationId,
-  //     },
-  //   };
-
-  //   try {
-  //     const result = await dynamodb.query(params).promise();
-  //     return result.Items;
-  //   } catch (error) {
-  //     console.error("Lỗi khi lấy thành viên hội thoại:", error);
-  //     throw new Error("Lỗi khi lấy thành viên hội thoại");
-  //   }
-  // },
-
-  /**
    * Lấy thông tin hội thoại theo ID
    * @param {String} conversationId
    * @returns
@@ -338,6 +314,7 @@ const ConversationModel = {
         conversation_id: conversationId,
         user_id: userId,
         created_at: new Date().toISOString(),
+        permissions: "member",
       },
     };
 
