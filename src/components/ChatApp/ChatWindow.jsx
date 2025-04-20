@@ -20,8 +20,23 @@ import socket from "../../services/Socket";
 import { useSelector } from "react-redux";
 import { useRef } from "react";
 import AddMember from "../../pages/Group/AddMember";
-import InfoGroup from "../../pages/Group/InfoGroup";
-import { toast } from "react-toastify";
+import {
+  addEmojiToInput,
+  copyMessage,
+  deleteMessage,
+  handleFileChange,
+  handleImageChange,
+  handleNewMessage,
+  handleVideoChange,
+  markAsRead,
+  revokeMessage,
+  scrollToBottom,
+  sendMessage,
+} from "../../utils/chatHelpers";
+import EmojiDropdown from "../untilChatWindow/EmojiDropdown";
+import MessageOptions from "../untilChatWindow/MessageOptions";
+import ChatHeader from "../untilChatWindow/ChatHeader";
+import MessageList from "../untilChatWindow/MessageList";
 const ChatWindow = ({
   selectedChat,
   setChats,
@@ -38,7 +53,7 @@ const ChatWindow = ({
   const [selectedImage, setSelectedImage] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
-
+  const [selectedVideo, setSelectedVideo] = useState(null);
   const handleOpen = () => setIsModalVisible(true);
   const handleClose = () => setIsModalVisible(false);
   useEffect(() => {
@@ -73,11 +88,9 @@ const ChatWindow = ({
         }),
         file_name: msg.file_name || null,
       }));
-      
+
       setMessages(formattedMessages);
     });
-
-    
 
     return () => {
       socket.off("list_messages");
@@ -86,85 +99,46 @@ const ChatWindow = ({
 
   useEffect(() => {
     if (!socket.connected) {
-      socket.connect(); // Đảm bảo socket được kết nối
+      socket.connect();
     }
-  
+
     socket.on("connect", () => {
       console.log("Socket connected");
     });
-  
+
     socket.on("disconnect", () => {
       console.log("Socket disconnected");
     });
-  
+
     socket.on("new_message", (msg) => {
       console.log("New message event received:", msg);
-
-      const currentChat = selectedChatRef.current;
-      if (currentChat?.conversation_id === msg.conversation_id) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: msg.message_id,
-            sender: msg.sender_id === userMain.id ? "me" : "other",
-            avatar:
-              msg.sender_id === userMain.id
-                ? userMain.avatar || "/default-avatar.jpg"
-                : msg.sender_avatar || "/default-avatar.jpg",
-            text: msg.message,
-            media: msg.media,
-            type: msg.type,
-            time: new Date(msg.created_at).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-            file_name: msg.file_name || null,
-          },
-        ]);
-      }
-      // Cập nhật danh sách hội thoại với số lượng tin nhắn chưa đọc
-      setChats((prevChats) => {
-        // Cập nhật danh sách hội thoại
-        const updatedChats = prevChats.map((chat) => {
-          console.log("chat", chat);
-          
-          if (chat.conversation_id === msg.conversation_id) {
-            const isCurrentChat =
-              selectedChat?.conversation_id === msg.conversation_id;
-
-            return {
-              ...chat,
-              last_message: {
-                ...chat.last_message,
-                message: msg.message,
-                created_at: msg.created_at,
-                type: msg.type,
-              },
-              unread_count: isCurrentChat ? 0 : (chat.unread_count || 0) + 1, // Tăng badge nếu không phải `selectedChat`
-            };
-          }
-          return chat;
-        });
-
-        // Sắp xếp danh sách hội thoại theo thời gian tin nhắn mới nhất
-        return updatedChats.sort(
-          (a, b) =>
-            new Date(b.last_message?.created_at || 0) -
-            new Date(a.last_message?.created_at || 0)
-        );
-      });
-      
+      handleNewMessage(
+        msg,
+        selectedChatRef,
+        userMain,
+        setMessages,
+        setChats,
+        (conversationId) =>
+          markAsRead(socket, conversationId, userMain.id, setChats)
+      );
     });
+
     return () => {
       socket.off("new_message");
       socket.off("connect");
       socket.off("disconnect");
     };
-  }, [userMain.id]);
-  
+  }, [userMain.id, setChats]);
   useEffect(() => {
-    scrollToBottom();
+    setTimeout(() => {
+      scrollToBottom(messagesEndRef);
+    }, 100);
   }, [messages]);
+  useEffect(() => {
+    if (selectedChat?.conversation_id) {
+      markAsRead(socket, selectedChat.conversation_id, userMain.id, setChats);
+    }
+  }, [selectedChat]);
   useEffect(() => {
     // Gọi API để lấy danh sách emoji
     const fetchEmojis = async () => {
@@ -194,12 +168,14 @@ const ChatWindow = ({
         );
       }
     });
-   
+
     return () => {
       socket.off("message_deleted");
     };
-  }, [userMain.id]); 
-
+  }, [userMain.id]);
+  const handleEmojiClick = (url) => {
+    addEmojiToInput(url, setInput, setIsEmojiPickerVisible);
+  };
   useEffect(() => {
     const handleNewMember = (data) => {
       toast.info("Bạn đã được thêm vào group", {
@@ -209,12 +185,7 @@ const ChatWindow = ({
         pauseOnHover: true,
       });
       fetchConversations();
-      if (selectedChat?.conversation_id === data.conversation_id) {
-        setSelectedChat((prev) => ({
-          ...prev,
-          list_user_id: [...prev.list_user_id, data.user_id],
-        }));
-      }
+      
     };
     socket.on("new_member", handleNewMember);
     return () => {
@@ -222,194 +193,37 @@ const ChatWindow = ({
     };
   },[socket, selectedChat?.conversation_id, fetchConversations]);
   
-  
-  const addEmojiToInput = (emojiUrl) => {
-    const emojiUnicode = String.fromCodePoint(
-      ...emojiUrl
-        .split("/")
-        .pop()
-        .split(".")[0]
-        .split("-")
-        .map((hex) => parseInt(hex, 16))
-    );
-    setInput((prev) => prev + emojiUnicode);
-    setIsEmojiPickerVisible(false);
-  };
-  const emojiDropdown = (
-    <div className="grid grid-cols-8 gap-2 p-2 bg-white shadow-lg rounded-lg max-h-64 overflow-y-auto">
-      {Object.entries(emojiList).map(([name, url]) => (
-        <img
-          key={name}
-          src={url}
-          alt={name}
-          className="w-8 h-8 cursor-pointer"
-          onClick={() => addEmojiToInput(url)}
-        />
-      ))}
-    </div>
-  );
-  const sendMessage = () => {
-    if (!input.trim() && !previewImage && !selectedFile) return; // Không gửi nếu không có nội dung
-    const tempId = `msg-${Date.now()}`;
-    const isGroup = selectedChat?.list_user_id?.length > 2;
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: tempId,
-        sender: "me",
-        avatar: userMain.avatar || "/default-avatar.jpg",
-        text: input || null,
-        media: previewImage || null,
-        file_name: msg.file_name || null,
-        time: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        status: "pending",
-      },
-    ]);
-    const msg = {
-      conversation_id: selectedChat?.conversation_id || null,
-      receiver_id: selectedChat?.list_user_id[0] || null,
-      message: input || null,
-      file_name: selectedImage?.file_name || selectedFile?.file_name || null,
-      file_type: selectedImage?.file_type || selectedFile?.file_type || null,
-      file_size: selectedImage?.file_size || selectedFile?.file_size || null,
-      file_data: selectedImage?.file_data || selectedFile?.file_data || null,
-    };
-    console.log("isGroup", isGroup);
-    
-    console.log("msg", msg);
-
-    const event = isGroup ? "send_group_message" : "send_private_message";
-    socket.emit(event, msg, (response) => {});
-    socket.on("message_sent", (msg) => {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === tempId
-            ? {
-                ...m,
-                id: msg.message_id,
-                text: msg.message || null,
-                media: msg.media || null,
-                file_name: msg.file_name || null,
-                type: msg.type || "text",
-                time: new Date(msg.created_at).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                }),
-                status: "sent",
-              }
-            : m
-        )
-      );
-      fetchConversations();
-    });
-    setInput("");
-    setPreviewImage(null);
-    setSelectedFile(null);
-    setSelectedImage(null);
-  };
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setPreviewImage(reader.result); // Lưu ảnh xem trước vào state
-        setSelectedImage({
-          file_name: file.name,
-          file_type: file.type,
-          file_size: file.size,
-          file_data: reader.result, // Base64 của ảnh
-        }); // Lưu thông tin file vào state
-      };
-      reader.readAsDataURL(file); // Đọc file dưới dạng Base64
-    }
-  };
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setSelectedFile({
-          file_name: file.name,
-          file_type: file.type,
-          file_size: file.size,
-          file_data: reader.result, // Base64 của file
-        }); // Lưu thông tin file vào state
-      };
-      reader.readAsDataURL(file); // Đọc file dưới dạng Base64
-    }
-    console.log("Selected file:", file);
-  };
   const messagesEndRef = useRef(null);
-  const scrollToBottom = () => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
+  const handleCopyMessage = (text) => {
+    copyMessage(text);
   };
-  const messageOptions = (msg) => (
-    <Menu>
-      <Menu.Item
-        key="copy"
-        icon={<CopyOutlined />}
-        onClick={() => copyMessage(msg.text)}
-      >
-        Copy tin nhắn
-      </Menu.Item>
-      <Menu.Item
-        key="delete"
-        icon={<DeleteOutlined />}
-        onClick={() => deleteMessage(msg.id)}
-      >
-        Xóa tin nhắn ở phía tôi
-      </Menu.Item>
-      {msg.sender === "me" && (
-        <Menu.Item
-          key="revoke"
-          icon={<UndoOutlined />}
-          onClick={() => revokeMessage(msg.id)}
-        >
-          Thu hồi tin nhắn
-        </Menu.Item>
-      )}
-    </Menu>
-  );
-  const copyMessage = (text) => {
-    navigator.clipboard.writeText(text);
-    console.log("Copied:", text);
-  };
-  const deleteMessage = (idMessage) => {
-    const payload = {
-      user_id: userMain.id,
-      message_id: idMessage,
-    };
-    console.log("hidden message payload:", payload);
 
-    socket.emit("set_hidden_message", payload, (response) => {});
-    setMessages((prev) => prev.filter((msg) => msg.id !== idMessage));
+  const handleDeleteMessage = (id) => {
+    deleteMessage(socket, userMain.id, id, setMessages);
   };
-  const revokeMessage = (idMessage) => {
-    console.log("Revoke message:", idMessage);
 
-    const payload = {
-      user_id: userMain.id,
-      message_id: idMessage,
-    };
-    console.log("Revoke message payload:", payload);
-    socket.emit("delete_message", payload, (response) => {});
-    setMessages((prev) =>
-      prev.map((msg) =>
-        msg.id === idMessage
-          ? {
-              ...msg,
-              text: "Tin nhắn đã thu hồi",
-              media: null,
-              file_name: null,
-            }
-          : msg
-      )
-    );
+  const handleRevokeMessage = (id) => {
+    revokeMessage(socket, userMain.id, id, setMessages);
+  };
+  const handleSendMessage = (fileData = null) => {
+    if (!input.trim() && !fileData) return; 
+    sendMessage({
+      input,
+      previewImage,
+      selectedFile: fileData || selectedFile,
+      selectedChat,
+      userMain,
+      setMessages,
+      fetchConversations,
+      setInput,
+      setPreviewImage,
+      setSelectedFile,
+      setSelectedImage,
+      socket,
+      selectedImage,
+      selectedVideo,
+      setSelectedVideo,
+    });
   };
   if (!selectedChat) {
     return (
@@ -426,158 +240,18 @@ const ChatWindow = ({
   }
   return (
     <div className="flex-1 flex flex-col bg-white">
-      <div className="bg-white p-4 shadow flex items-center justify-between">
-        <div className="flex items-center">
-          <Avatar
-            src={selectedChat?.avatar || "/default-avatar.jpg"}
-            size="large"
-            className="mr-3"
-          />
-          <div>
-            <h2 className="font-semibold">{selectedChat?.name}</h2>
-            {selectedChat?.list_user_id?.length > 2 ? (
-              <p className="text-sm text-gray-500">
-                {selectedChat?.list_user_id?.length} thành viên
-              </p>
-            ) : (
-              <p className="text-sm text-gray-500">Vừa truy cập</p>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <Button className="flex gap-2 ml-2" onClick={handleOpen}>
-            <UserOutlined className="text-gray-500 text-lg cursor-pointer hover:text-blue-500" />
-          </Button>
-          <button className="text-gray-600 hover:text-blue-500">
-            <VideoCameraOutlined className="text-xl" title="Video call" />
-          </button>
-          <button className="text-gray-600 hover:text-blue-500">
-            <SearchOutlined className="text-xl" title="Tìm kiếm" />
-          </button>
-          <button
-            className="text-gray-600 hover:text-blue-500"
-            onClick={() => setIsInfoGroupVisible(!isInfoGroupVisible)}
-          >
-            <InfoCircleOutlined
-              className="text-xl"
-              title="Thông tin hộp thoại"
-            />
-          </button>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`flex ${
-              msg.sender === "me" ? "justify-end" : "items-start"
-            } gap-2`}
-          >
-            {msg.sender !== "me" && (
-              <Avatar
-                src={msg.avatar || "/default-avatar.jpg"}
-                size="small"
-                className="self-end"
-              />
-            )}
-            <div
-              className={`flex flex-col items-${
-                msg.sender === "me" ? "end" : "start"
-              }`}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  position: "relative",
-                }}
-              >
-                <div
-                  style={{
-                    padding: "8px 12px",
-                    borderRadius: "12px",
-                    maxWidth: "300px",
-                    backgroundColor:
-                      msg.sender === "me" ? "#d1e7ff" : "#ffffff",
-                    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-                  }}
-                >
-                  {/* Hiển thị ảnh nếu có */}
-                  {msg.type === "image" && msg.media && (
-                    <Image
-                      src={msg.media}
-                      alt="Đã gửi ảnh"
-                      style={{
-                        maxWidth: "100%",
-                        height: "auto",
-                        borderRadius: "8px",
-                        marginTop: msg.text ? "8px" : "0", // Thêm khoảng cách nếu có text
-                      }}
-                    />
-                  )}
-                  {msg?.text && <p>{msg.text}</p>}
-
-                  {msg.type === "document" && msg.file_name && (
-                    <a
-                      href={msg.media || "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        display: "block",
-                        marginTop: msg.text || msg.image ? "8px" : "0", // Thêm khoảng cách nếu có text hoặc ảnh
-                        color: "#007bff",
-                        textDecoration: "underline",
-                      }}
-                    >
-                      {msg.file_name}
-                    </a>
-                  )}
-                </div>
-
-                <Dropdown
-                  overlay={messageOptions(msg)}
-                  trigger={["click"]}
-                  placement={msg.sender === "me" ? "bottomRight" : "bottomLeft"}
-                  getPopupContainer={(triggerNode) => triggerNode.parentNode}
-                  overlayStyle={{
-                    width: "200px",
-                    maxWidth: "300px",
-                    wordWrap: "break-word",
-                  }}
-                >
-                  {msg.text !== "Tin nhắn đã thu hồi" && (
-                    <span
-                      style={{
-                        fontSize: "16px",
-                        marginLeft: msg.sender === "me" ? "-15px" : "0",
-                        right: msg.sender !== "me" && "-15px",
-                        cursor: "pointer",
-                        color: "#888",
-                        position: "absolute",
-                      }}
-                    >
-                      ⋮
-                    </span>
-                  )}
-                </Dropdown>
-              </div>
-
-              <span
-                style={{
-                  fontSize: "12px",
-                  color: "#888",
-                  marginTop: "4px",
-                }}
-              >
-                {msg.time}
-              </span>
-            </div>
-          </div>
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
+      <ChatHeader
+        selectedChat={selectedChat}
+        handleOpen={handleOpen}
+        setIsInfoGroupVisible={setIsInfoGroupVisible}
+      />
+      <MessageList
+        messages={messages}
+        handleCopyMessage={handleCopyMessage}
+        handleDeleteMessage={handleDeleteMessage}
+        handleRevokeMessage={handleRevokeMessage}
+        messagesEndRef={messagesEndRef}
+      />
       {isModalVisible && (
         <AddMember
           selectedChat={selectedChat}
@@ -604,7 +278,9 @@ const ChatWindow = ({
           <input
             type="file"
             accept="image/*"
-            onChange={handleImageChange}
+            onChange={(e) =>
+              handleImageChange(e, setPreviewImage, setSelectedImage)
+            }
             style={{ display: "none" }}
             id="image-upload"
           />
@@ -615,7 +291,9 @@ const ChatWindow = ({
           <input
             type="file"
             accept=".pdf,.docx,.doc"
-            onChange={handleFileChange}
+            onChange={(e) =>
+              handleFileChange(e, setSelectedFile, handleSendMessage)
+            }
             style={{ display: "none" }}
             id="file-upload"
           />
@@ -624,7 +302,12 @@ const ChatWindow = ({
           </label>
 
           <Dropdown
-            overlay={emojiDropdown}
+            overlay={
+              <EmojiDropdown
+                emojiList={emojiList}
+                onEmojiClick={handleEmojiClick}
+              />
+            }
             trigger={["click"]}
             visible={isEmojiPickerVisible}
             onVisibleChange={(visible) => setIsEmojiPickerVisible(visible)}
@@ -633,6 +316,18 @@ const ChatWindow = ({
               <SmileOutlined style={{ fontSize: "20px" }} />
             </button>
           </Dropdown>
+          <input
+            type="file"
+            accept="video/*"
+            onChange={(e) =>
+              handleVideoChange(e, setSelectedVideo, handleSendMessage)
+            }
+            style={{ display: "none" }}
+            id="video-upload"
+          />
+          <label htmlFor="video-upload" className="cursor-pointer">
+            <VideoCameraOutlined style={{ fontSize: "20px" }} />
+          </label>
         </div>
 
         <div className="flex">
@@ -645,7 +340,7 @@ const ChatWindow = ({
           />
           <Button
             icon={<SendOutlined />}
-            onClick={sendMessage}
+            onClick={handleSendMessage}
             className="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-400"
           />
         </div>
