@@ -145,8 +145,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
     const now = new Date();
     const isGroup = chats.list_user_id?.length > 1;
   
-    const isImage = file?.type === 'image';
-  
+    // Thêm tin nhắn tạm thời vào danh sách
     setMessages((prev) => [
       ...prev,
       {
@@ -159,21 +158,23 @@ const ChatRoomScreen = ({ route, navigation }) => {
         avatar: currentUser.avt,
         time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         status: 'pending',
+        file: file ? { uri: file.uri, name: file.name } : null,
       },
     ]);
+  
     if (file) {
       try {
         const response = await fetch(file.uri);
         const blob = await response.blob();
-
+  
         const reader = new FileReader();
         reader.onloadend = () => {
           const base64Data = reader.result.split(',')[1];
-
+  
           const msg = {
             conversation_id: chats.conversation_id,
             sender_id: currentUser.id,
-            receiver_id: chats.receiver_id,
+            receiver_id: isGroup ? null : chats.list_user_id[0],
             message: inputText,
             file_name: file.name,
             file_type: file.mimeType,
@@ -182,14 +183,15 @@ const ChatRoomScreen = ({ route, navigation }) => {
             status: 'pending',
             created_at: now.toISOString(),
           };
-
-          console.log('Gửi tin nhắn:', msg);
+  
           const event = isGroup ? 'send_group_message' : 'send_private_message';
           socket.emit(event, msg, (response) => {
             if (response.status === 'success') {
               setMessages((prev) =>
                 prev.map((m) =>
-                  m.id === tempId ? { ...m, status: 'sent', time: response.time || m.time } : m
+                  m.id === tempId
+                    ? { ...m, status: 'sent', time: response.time || m.time }
+                    : m
                 )
               );
             } else {
@@ -198,37 +200,36 @@ const ChatRoomScreen = ({ route, navigation }) => {
               );
             }
           });
-        }
+        };
         reader.onerror = (error) => {
           console.error('Lỗi đọc tệp:', error);
         };
         reader.readAsDataURL(blob);
-        console.log('Đang đọc tệp...');
-       
-      
+        socket.emit("get_messages", { conversation_id: chats.conversation_id });
         setInputText('');
         setFile(null);
+        
       } catch (error) {
         console.error('Lỗi tải tệp:', error);
-      }   
-    }
-    else{
+      }
+    } else {
       const msg = {
         conversation_id: chats.conversation_id,
         sender_id: currentUser.id,
-        receiver_id: chats.receiver_id,
+        receiver_id: isGroup ? null : chats.list_user_id[0],
         message: inputText,
         status: 'pending',
         created_at: now.toISOString(),
       };
   
-      console.log('Gửi tin nhắn:', msg);
       const event = isGroup ? 'send_group_message' : 'send_private_message';
       socket.emit(event, msg, (response) => {
         if (response.status === 'success') {
           setMessages((prev) =>
             prev.map((m) =>
-              m.id === tempId ? { ...m, status: 'sent', time: response.time || m.time } : m
+              m.id === tempId
+                ? { ...m, status: 'sent', time: response.time || m.time }
+                : m
             )
           );
         } else {
@@ -237,12 +238,10 @@ const ChatRoomScreen = ({ route, navigation }) => {
           );
         }
       });
-  
+      socket.emit("get_messages", { conversation_id: chats.conversation_id });
       setInputText('');
+      
     }
-
- 
-  
   };
   
 
