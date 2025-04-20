@@ -8,10 +8,12 @@ import {
   ToolFilled,
   SettingFilled,
   UserOutlined,
+  MenuUnfoldOutlined,
+  MenuFoldOutlined,
 } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { Avatar, Dropdown, Layout, Menu } from "antd";
+import { Avatar, Button, Dropdown, Layout, Menu } from "antd";
 import Profile from "../Profile/Profile";
 import HomeDetails from "./HomeDetails";
 import { logoutUser } from "../../services/UserService";
@@ -98,6 +100,11 @@ const Home = () => {
     { type: "divider" },
     { label: "Đăng xuất", key: "4", onClick: handleLogout },
   ];
+  const toggleCollapsed = () => {
+    console.log(collapsed);
+    
+    setCollapsed(!collapsed);
+  };
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
@@ -174,6 +181,17 @@ const Home = () => {
               background: "#005ae0",
             }}
           />
+          <Button
+            type="text"
+            onClick={toggleCollapsed}
+            style={{
+              color: "#fff",
+              margin: "10px auto",
+              display: "block",
+            }}
+          >
+            {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+          </Button>
         </div>
       </Sider>
 
