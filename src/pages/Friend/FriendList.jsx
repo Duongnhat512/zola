@@ -20,10 +20,18 @@ const FriendList = () => {
   const [userInfo, setUserInfo] = useState(null);
   const [openModalFriend, setOpenModalFriend] = useState(false);
   const [step, setStep] = useState("info");  
+  const [chats, setChats] = useState([]);
+  
 
   const handleBack = () => {
     setOpenModalFriend(false);
   }
+
+  const fetchConversations = () => {
+     
+     
+  }
+
   useEffect(() => {
     const fetchFriends = async () => {
       try {
@@ -95,8 +103,22 @@ const FriendList = () => {
             list_user_id: [friendId],
             list_message: [],
           });
+          setChats((prevChats) =>
+            prevChats.map((c) =>
+              c.conversation_id === response.conversation.conversation_id
+                ? { ...c, unread_count: 0 }
+                : c
+            )
+          );
         } else {
           setSelectedChat(response.conversation);
+          setChats((prevChats) =>
+            prevChats.map((c) =>
+              c.conversation_id === response.conversation.conversation_id
+                ? { ...c, unread_count: 0 }
+                : c
+            )
+          );
         }
         fetchUserDetails(response.conversation, friendId); // Fetch user details for the conversation
       } else {
@@ -251,6 +273,9 @@ const FriendList = () => {
           input={input}
           setMessages={setMessages}
           setInput={setInput}
+          setChats={setChats}
+          fetchConversations={fetchConversations}
+          
         />
       )}
       {openModalFriend && (

@@ -136,8 +136,6 @@ const GroupSettingsModal = ({ visible, onClose, groupSettings, grantPermission ,
       onCancel={onClose}
       footer={null}
       width={400}
-     
-      
     >
       <div className="space-y-4">
         <div>

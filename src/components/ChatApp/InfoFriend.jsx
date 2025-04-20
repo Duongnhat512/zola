@@ -147,7 +147,7 @@ const InfoFriend = ({userInfo, handleBack,step}) => {
               className="bg-gray-100 rounded-lg p-2"
               style={{
                 backgroundImage: `url('${
-                  userInfo?.avt || "https://via.placeholder.com/300"
+                  userInfo?.avt || "/default-avatar.jpg"
                 }')`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",

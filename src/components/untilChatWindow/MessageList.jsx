@@ -46,7 +46,7 @@ const MessageList = ({
           >
             {msg.sender !== "me" && (
               <Avatar
-                src={msg.avatar || "https://via.placeholder.com/150"}
+                src={msg.avatar || "/default-avatar.jpg"}
                 size="small"
                 className="self-end"
               />
