@@ -224,7 +224,7 @@ export const sendMessage = ({
   const msg = {
     conversation_id: selectedChat?.conversation_id || null,
     receiver_id:
-      selectedChat?.list_user_id?.find((id) => id !== userMain.id) || null,
+      selectedChat?.list_user_id?.find((user) => user.user_id !== userMain.id) || null,
     message: input || null,
     file_name: selectedVideo?.file_name ||selectedImage?.file_name || selectedFile?.file_name || null,
     file_type: selectedVideo?.file_name ||selectedImage?.file_type || selectedFile?.file_type || null,
