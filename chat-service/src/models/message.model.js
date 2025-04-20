@@ -138,6 +138,19 @@ const MessageModel = {
         };
         try {
             const data = await dynamodb.get(params).promise();
+
+            const message = data.Item;
+
+            if(message?.is_deleted) {
+                return {
+                    ...message,
+                    message: "Tin nhắn đã thu hồi",
+                    file_name: null,
+                    is_deleted: true,
+                    media: null,
+                };
+            }
+
             return data.Item;
         } catch (error) {
             console.error("Error getting message:", error);
