@@ -31,7 +31,6 @@ import {
   markAsRead,
   revokeMessage,
   scrollToBottom,
-  sendMessage,
 } from "../../utils/chatHelpers";
 import EmojiDropdown from "../untilChatWindow/EmojiDropdown";
 import MessageOptions from "../untilChatWindow/MessageOptions";
@@ -42,7 +41,6 @@ const ChatWindow = ({
   selectedChat,
   setChats,
   fetchConversations,
-  isInfoGroupVisible,
   setIsInfoGroupVisible,
 }) => {
   const selectedChatRef = useRef();
@@ -77,7 +75,6 @@ const ChatWindow = ({
       const dataSort = data.sort(
         (a, b) => new Date(a.created_at) - new Date(b.created_at)
       );
-      console.log("list_messages", dataSort);
       const formattedMessages = dataSort.map((msg) => ({
         id: msg.id,
         sender: msg.sender_id === userMain.id ? "me" : "other",
@@ -94,8 +91,6 @@ const ChatWindow = ({
         }),
         file_name: msg.file_name || null,
       }));
-      console.log("formattedMessages", formattedMessages);
-
       setMessages(formattedMessages);
       setVisibleMessages(formattedMessages.slice(-pageSize));
     });
@@ -185,7 +180,7 @@ const ChatWindow = ({
     addEmojiToInput(url, setInput, setIsEmojiPickerVisible);
   };
   useEffect(() => {
-    const handleNewMember = (data) => {
+    const handleNewMember = () => {
       toast.info("Bạn đã được thêm vào group", {
         autoClose: 2000,
         hideProgressBar: false,
@@ -244,26 +239,83 @@ const ChatWindow = ({
   const handleRevokeMessage = (id) => {
     revokeMessage(socket, userMain.id, id, setMessages);
   };
-  const handleSendMessage = (fileData = null) => {
-    if (!input.trim() && !fileData) return;
-    sendMessage({
-      input,
-      previewImage,
-      selectedFile: fileData || selectedFile,
-      selectedChat,
-      userMain,
-      setMessages,
-      fetchConversations,
-      setInput,
-      setPreviewImage,
-      setSelectedFile,
-      setSelectedImage,
-      socket,
-      selectedImage,
-      selectedVideo,
-      setSelectedVideo,
+  const sendMessage = (fileData = null) => {
+    console.log("check fileData:", fileData);
+    console.log("selectedImage:", selectedImage);
+    console.log("selectedFile:", selectedFile);
+    console.log("selectedVideo:", selectedVideo);
+    console.log("previewImage:", previewImage);
+    console.log("input:", input);
+    
+    if (!input.trim() && !previewImage && !selectedFile && !selectedImage&& !selectedVideo && !fileData) {
+      toast.error("Vui lòng nhập nội dung tin nhắn hoặc chọn tệp để gửi.");
+      return; // Không gửi nếu không có nội dung
+    }; // Không gửi nếu không có nội dung
+    const tempId = `msg-${Date.now()}`;
+    const isGroup = selectedChat?.list_user_id?.length > 2;
+  
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: tempId,
+        sender: "me",
+        avatar: userMain.avatar || "/default-avatar.jpg",
+        text: input || null,
+        media: previewImage || null,
+        file_name: selectedFile?.file_name || fileData?.file_name || null,
+        time: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        status: "pending",
+      },
+    ]);
+  
+    const msg = {
+      conversation_id: selectedChat?.conversation_id || null,
+      receiver_id:
+        selectedChat?.list_user_id?.find((user) => user.user_id !== userMain.id) || null,
+      message: input || null,
+      file_name: selectedVideo?.file_name ||selectedImage?.file_name || selectedFile?.file_name || fileData?.file_name || null,
+      file_type: selectedVideo?.file_name ||selectedImage?.file_type || selectedFile?.file_type || fileData?.file_type || null,
+      file_size: selectedVideo?.file_name ||selectedImage?.file_size || selectedFile?.file_size || fileData?.file_size || null,
+      file_data: selectedVideo?.file_name ||selectedImage?.file_data || selectedFile?.file_data || fileData?.file_data || null,
+    };
+  
+    const event = isGroup ? "send_group_message" : "send_private_message";
+    socket.emit(event, msg, () => {});
+    socket.on("message_sent", (msg) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === tempId
+            ? {
+                ...m,
+                id: msg.message_id,
+                text: msg.message || null,
+                media: msg.media || null,
+                file_name: msg.file_name || null,
+                type: msg.type || "text",
+                time: new Date(msg.created_at).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
+                status: "sent",
+              }
+            : m
+        )
+      );
+      fetchConversations();
     });
+  
+    setInput("");
+    setPreviewImage(null);
+    setSelectedFile(null);
+    setSelectedImage(null);
+    setSelectedVideo(null);
+
+    
   };
+
   if (!selectedChat) {
     return (
       <div className="flex items-center justify-center flex-col text-center flex-1">
@@ -285,7 +337,8 @@ const ChatWindow = ({
         setIsInfoGroupVisible={setIsInfoGroupVisible}
       />
       <MessageList
-        messages={visibleMessages}
+        // messages={visibleMessages}
+        messages={messages}
         handleCopyMessage={handleCopyMessage}
         handleDeleteMessage={handleDeleteMessage}
         handleRevokeMessage={handleRevokeMessage}
@@ -334,7 +387,7 @@ const ChatWindow = ({
             type="file"
             accept=".pdf,.docx,.doc"
             onChange={(e) =>
-              handleFileChange(e, setSelectedFile, handleSendMessage)
+              handleFileChange(e, setSelectedFile, sendMessage)
             }
             style={{ display: "none" }}
             id="file-upload"
@@ -362,7 +415,7 @@ const ChatWindow = ({
             type="file"
             accept="video/*"
             onChange={(e) =>
-              handleVideoChange(e, setSelectedVideo, handleSendMessage)
+              handleVideoChange(e, setSelectedVideo, sendMessage)
             }
             style={{ display: "none" }}
             id="video-upload"
@@ -377,12 +430,12 @@ const ChatWindow = ({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Nhập tin nhắn"
-            onPressEnter={sendMessage}
+            onPressEnter={()=>sendMessage()}
             className="rounded-full py-2 px-4 flex-1 mr-2"
           />
           <Button
             icon={<SendOutlined />}
-            onClick={handleSendMessage}
+            onClick={()=> sendMessage()}
             className="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-400"
           />
         </div>
