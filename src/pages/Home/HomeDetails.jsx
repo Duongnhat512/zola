@@ -44,54 +44,109 @@ const HomeDetails = () => {
     setIsLoading(false);
   }, []);
   useEffect(() => {
-    socket.on("group_created", (data) => {
+    const handleGroupCreated = (data) => {
       toast.success(`Nhóm ${data.conversation.name} đã được tạo thành công!`, {
-        autoClose: 5000, // Thời gian tự động đóng sau 5 giây
-        hideProgressBar: true, // Ẩn thanh tiến độ
-        closeOnClick: true, // Đóng khi người dùng nhấn vào thông báo
-        pauseOnHover: true, // Dừng khi hover
-      });
-      fetchConversations();
-    });
-    socket.on("new_group", (data) => {
-      toast.info("Bạn có nhóm mới!", {
-        autoClose: 2000,
-        hideProgressBar: false,
+        autoClose: 5000,
+        hideProgressBar: true,
         closeOnClick: true,
         pauseOnHover: true,
       });
       fetchConversations();
-    });
-    socket.on("new_member", (data) => {
-      toast.info("Bạn có nhóm mới!", {
-        autoClose: 2000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-      });
-      fetchConversations();
-    });
-    socket.on("remove_member", (data) => {
-      console.log("Remove notification received:", data);
-      // Thông báo có nhóm mới
-      toast.info("Bạn vừa bị xóa khỏi nhóm!", {
-        autoClose: 2000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-      });
-      fetchConversations();
-    });
-    socket.on("error", (data) => {
-      // Thông báo có nhóm mới
+    };
+  
+    const handleNewGroup = (data) => {
       toast.info(data.message, {
         autoClose: 2000,
         hideProgressBar: false,
         closeOnClick: true,
         pauseOnHover: true,
       });
-    });
+      fetchConversations();
+    };
+  
+    const handleRemovedMember = (data) => {
+      console.log("Removed notification received:", data);
+      toast.info(data.message, {
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+      });
+      fetchConversations();
+      if (selectedChat?.conversation_id === data.conversation_id) {
+        setSelectedChat(null);
+      }
+    };
+  
+    const handleError = (data) => {
+      toast.info(data.message, {
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+      });
+    };
+  
+    const handleAddMember = (data) => {
+      toast.info(data.message, {
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+      });
+      if (selectedChat?.conversation_id === data.conversation_id) {
+        setSelectedChat((prev) => {
+          // Tránh thêm trùng user_id nếu đã có
+          const updatedList = prev.list_user_id.includes(data.user_id)
+            ? prev.list_user_id
+            : [...prev.list_user_id, data.user_id];
+    
+          return {
+            ...prev,
+            list_user_id: updatedList,
+          };
+        });
+      }
+    };
+    
+  
+    // Đăng ký sự kiện
+    socket.on("group_created", handleGroupCreated);
+    socket.on("new_group", handleNewGroup);
+    socket.on("removed_member", handleRemovedMember);
+    socket.on("error", handleError);
+    socket.on("add_member", handleAddMember);
+  
+    // Cleanup
+    return () => {
+      socket.off("group_created", handleGroupCreated);
+      socket.off("new_group", handleNewGroup);
+      socket.off("removed_member", handleRemovedMember);
+      socket.off("error", handleError);
+      socket.off("add_member", handleAddMember);
+    };
   }, [socket]);
+  
+
+  useEffect(() => {
+    socket.on("remove_member", (data) => {
+      toast.info(data.message, {
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+      });
+      console.log("Remove notification received:", data);
+      fetchConversations();
+      if (selectedChat?.conversation_id === data.conversation_id) {
+        
+        setSelectedChat((prev) => ({
+          ...prev,
+          list_user_id: prev.list_user_id.filter((id) => id !== data.user_id),
+        }));
+      }        
+    });
+  },[socket]);
   return isLoading ? (
     <div className="flex h-screen w-full bg-gray-100">
       <Spin

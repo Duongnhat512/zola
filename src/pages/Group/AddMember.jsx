@@ -5,6 +5,7 @@ import { getUserById } from "../../services/UserService";
 import { Avatar, Button, Checkbox, Input, Modal, Radio } from "antd";
 import { CloseOutlined, SearchOutlined, UserOutlined } from "@ant-design/icons";
 import socket from "../../services/Socket";
+import { toast } from "react-toastify";
 
 const AddMember = ({ visible = true, onClose, selectedChat }) => {
     const [searchTerm, setSearchTerm] = useState("");
@@ -79,20 +80,15 @@ const AddMember = ({ visible = true, onClose, selectedChat }) => {
           console.error("No members selected.");
           return;
         }
-      
-        // Emit add_member event to the server for each selected contact
         selectedContacts.forEach((memberId) => {
           socket.emit("add_member", {
             conversation_id: selectedChat.conversation_id,
             user_id: memberId,
           });
         });
-      
         console.log("Selected members:", selectedContacts);
         handleClose();
       };
-      
-  
     return (
       <Modal
         title={<div className="text-2xl font-semibold text-center pt-3">Thêm thành viên</div>}

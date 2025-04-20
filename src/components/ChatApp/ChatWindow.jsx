@@ -22,6 +22,7 @@ import { useRef } from "react";
 import { hiddenMessage } from "../../services/UserService";
 import AddMember from "../../pages/Group/AddMember";
 import InfoGroup from "../../pages/Group/InfoGroup";
+import { toast } from "react-toastify";
 const ChatWindow = ({
   selectedChat,
   setSelectedChat,
@@ -78,6 +79,8 @@ const ChatWindow = ({
 
       setMessages(formattedMessages);
     });
+
+    
 
     return () => {
       socket.off("list_messages");
@@ -138,11 +141,13 @@ const ChatWindow = ({
             new Date(a.last_message?.created_at || 0)
         );
       });
+      
     });
     return () => {
       socket.off("new_message");
     };
   }, [userMain.id]);
+  
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -175,11 +180,35 @@ const ChatWindow = ({
         );
       }
     });
-
+   
     return () => {
       socket.off("message_deleted");
     };
-  }, [userMain.id]);
+  }, [userMain.id]); 
+
+  useEffect(() => {
+    const handleNewMember = (data) => {
+      toast.info("Bạn đã được thêm vào group", {
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+      });
+      fetchConversations();
+      if (selectedChat?.conversation_id === data.conversation_id) {
+        setSelectedChat((prev) => ({
+          ...prev,
+          list_user_id: [...prev.list_user_id, data.user_id],
+        }));
+      }
+    };
+    socket.on("new_member", handleNewMember);
+    return () => {
+      socket.off("new_member", handleNewMember);
+    };
+  },[socket, selectedChat?.conversation_id, fetchConversations]);
+  
+  
   const addEmojiToInput = (emojiUrl) => {
     const emojiUnicode = String.fromCodePoint(
       ...emojiUrl
@@ -392,7 +421,7 @@ const ChatWindow = ({
             <h2 className="font-semibold">{selectedChat?.name}</h2>
             {selectedChat?.list_user_id?.length > 1 ? (
               <p className="text-sm text-gray-500">
-                {selectedChat?.list_user_id?.length + 1} thành viên
+                {selectedChat?.list_user_id?.length} thành viên
               </p>
             ) : (
               <p className="text-sm text-gray-500">Vừa truy cập</p>
