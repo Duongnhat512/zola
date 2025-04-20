@@ -11,117 +11,156 @@ import {
   Image,
   Modal,
 } from 'react-native';
-import { Buffer } from 'buffer';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as FileSystem from 'expo-file-system';
 import { StatusBar } from 'expo-status-bar';
 import * as DocumentPicker from 'expo-document-picker';
 import styles from '../styles/ChatRoomScreen.styles';
 import setupSocket from '../services/Socket';
 import { useSelector } from 'react-redux';
-import { deleteMessage as deleteMessageAPI } from '../services/ChatService';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import 'dayjs/locale/vi';
+
+dayjs.extend(relativeTime);
+dayjs.locale('vi');
 
 const ChatRoomScreen = ({ route, navigation }) => {
-  const { conversationId, ortherUser } = route.params;
+  const { chats } = route.params;
+  const currentUser = useSelector((state) => state.user.user);
+  const flatListRef = useRef(null);
+
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [file, setFile] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [socket, setSocket] = useState(null);
+  const [loading, setLoading] = useState(true);
+
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState(null);
-  const flatListRef = useRef(null);
-  const intervalRef = useRef(null);
-  const currentUser = useSelector((state) => state.user.user);
+  const [imagePreviewVisible, setImagePreviewVisible] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [emojiModalVisible, setEmojiModalVisible] = useState(false);
+  const [emojiList, setEmojiList] = useState([]);
+
+  useEffect(() => {
+    const fetchEmojis = async () => {
+      try {
+        const res = await fetch('https://api.github.com/emojis');
+        const data = await res.json();
+        setEmojiList(data);
+      } catch (err) {
+        console.error('Lỗi tải emoji:', err);
+      }
+    };
+    fetchEmojis();
+  }, []);
 
   useEffect(() => {
     const initSocket = async () => {
       try {
-        const s = await setupSocket();
-        setSocket(s);
+        const socketInstance = await setupSocket();
+        setSocket(socketInstance);
 
-        s.on("connect", () => {
-          console.log("Socket connected");
-          s.emit("get_messages", { conversation_id: conversationId });
+        socketInstance.on('connect', () => {
+          socketInstance.emit('get_messages', { conversation_id: chats.conversation_id });
         });
-        s.on("list_messages", (data) => {
-          // console.log("list_messages", data);
-          const sortedData = data
-          .filter((msg) => !msg.is_deleted)
-          .sort((a, b) =>
-            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-          );
-          const formatted = sortedData.map((msg) => ({
-            id: msg.message_id,
-            sender: msg.sender_id === currentUser.id ? "me" : "other",
-            senderName: msg.sender_id === currentUser.id ? currentUser.fullname : ortherUser.fullname,
-            text: msg.message,
-            avatar: msg.sender_id === currentUser.id ? currentUser.avt : ortherUser.avt,
-            time: new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-            file: msg.media ? { uri: msg.media, name: msg.media.split("/").pop() } : undefined,
-            status: "sent",
-          }));
+
+        socketInstance.on('list_messages', (data) => {
+          console.log('Nhận tin nhắn:', data);
+          const sortedData = data.sort((a, b) => a.created_at.localeCompare(b.created_at));
+          const fileddata = sortedData.filter((msg) => msg.message === "hahahahahaha");
+          console.log('fileddata', fileddata);
+          const formatted = sortedData.map((msg) => {
+            const isMe = msg.sender_id === currentUser.id;
+            return {
+              id: msg.id,
+              sender: isMe ? 'me' : 'other',
+              senderName: isMe ? currentUser.fullname : msg.sender_name,
+              text: msg.is_deleted ? 'Tin nhắn đã thu hồi' : msg.message,
+              avatar: isMe ? currentUser.avt : msg.sender_avatar,
+              time: dayjs(msg.created_at).fromNow(),
+              type: msg.is_deleted ? 'deleted' : msg.type,
+              file: msg.media ? { uri: msg.media, name: msg.media.split('/').pop() } : undefined,
+              status: 'sent',
+            };
+          });
           setMessages(formatted);
           setLoading(false);
         });
 
-        s.emit("get_messages", { conversation_id: conversationId });
+        socketInstance.on('hidden_message', (data) => {
+          setMessages((prev) => prev.filter((msg) => msg.id !== data.message_id));
+        });
 
-        intervalRef.current = setInterval(() => {
-          s.emit("get_messages", { conversation_id: conversationId });
-        }, 1000);
+        socketInstance.on('message_deleted', (data) => {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === data.message_id
+                ? { ...msg, text: 'Tin nhắn đã thu hồi', file: null, type: 'deleted' }
+                : msg
+            )
+          );
+        });
 
-
-        return () => clearInterval(intervalRef.current);
+        return () => {
+          socketInstance.off('connect');
+          socketInstance.off('list_messages');
+          socketInstance.off('hidden_message');
+          socketInstance.off('message_deleted');
+        };
       } catch (error) {
-        console.error("Lỗi khi thiết lập socket:", error);
+        console.error('Socket init error:', error);
         setLoading(false);
       }
     };
 
     initSocket();
-
-    return () => {
-      if (socket) {
-        socket.off("connect");
-        socket.off("list_messages");
-        socket.off("new_message");
-        socket.off("connect_error");
-      }
-      clearTimeout(intervalRef.current);
-    };
-  }, [conversationId]);
-
+  }, [chats.conversation_id]);
+  useEffect(() => {
+    if (socket && chats.conversation_id) {
+      const timeout = setTimeout(() => {
+        socket.emit("get_messages", { conversation_id: chats.conversation_id });
+      }, 500); 
+    
+      return () => clearTimeout(timeout);
+    }
+  }, [socket, chats.conversation_id]);
   const pickFile = async () => {
     const result = await DocumentPicker.getDocumentAsync({ type: '*/*' });
     if (!result.canceled && result.assets?.length > 0) {
       setFile(result.assets[0]);
     }
   };
+  
 
   const sendMessage = async () => {
     if (!inputText.trim() && !file) {
       Alert.alert('Thông báo', 'Vui lòng nhập tin nhắn hoặc chọn tệp đính kèm.');
       return;
     }
-
+  
     const tempId = `msg-${Date.now()}`;
     const now = new Date();
-
-    const newMsg = {
-      id: tempId,
-      text: inputText || undefined,
-      sender: 'me',
-      senderName: currentUser.fullname,
-      file: file || undefined,
-      avatar: currentUser.avt,
-      time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      status: 'pending',
-    };
-
-    setMessages((prev) => [...prev, newMsg]);
-    setInputText('');
-    setFile(null);
-
+    const isGroup = chats.list_user_id?.length > 1;
+  
+    const isImage = file?.type === 'image';
+  
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: tempId,
+        text: inputText,
+        type: file ? file.type : 'text',
+        sender: 'me',
+        senderName: currentUser.fullname,
+        file_name: file?.name,
+        avatar: currentUser.avt,
+        time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        status: 'pending',
+      },
+    ]);
     if (file) {
       try {
         const response = await fetch(file.uri);
@@ -131,19 +170,23 @@ const ChatRoomScreen = ({ route, navigation }) => {
         reader.onloadend = () => {
           const base64Data = reader.result.split(',')[1];
 
-          const fileMessage = {
-            conversation_id: conversationId,
+          const msg = {
+            conversation_id: chats.conversation_id,
             sender_id: currentUser.id,
-            receiver_id: ortherUser?.id,
+            receiver_id: chats.receiver_id,
+            message: inputText,
             file_name: file.name,
             file_type: file.mimeType,
             file_size: file.size,
             file_data: `data:${file.mimeType};base64,${base64Data}`,
-            message: `Đã gửi file: ${file.name}`,
+            status: 'pending',
+            created_at: now.toISOString(),
           };
 
-          socket?.emit('send_private_file', fileMessage, (response) => {
-            if (response.success) {
+          console.log('Gửi tin nhắn:', msg);
+          const event = isGroup ? 'send_group_message' : 'send_private_message';
+          socket.emit(event, msg, (response) => {
+            if (response.status === 'success') {
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === tempId ? { ...m, status: 'sent', time: response.time || m.time } : m
@@ -155,98 +198,102 @@ const ChatRoomScreen = ({ route, navigation }) => {
               );
             }
           });
+        }
+        reader.onerror = (error) => {
+          console.error('Lỗi đọc tệp:', error);
         };
         reader.readAsDataURL(blob);
+        console.log('Đang đọc tệp...');
+       
+      
+        setInputText('');
+        setFile(null);
       } catch (error) {
-        console.error("Lỗi khi xử lý file:", error);
-        setMessages((prev) =>
-          prev.map((m) => (m.id === tempId ? { ...m, status: 'failed' } : m))
-        );
-      }
+        console.error('Lỗi tải tệp:', error);
+      }   
     }
-
-    if (inputText.trim()) {
-      const textMessage = {
-        conversation_id: conversationId,
-        user_id: currentUser.id,
+    else{
+      const msg = {
+        conversation_id: chats.conversation_id,
         sender_id: currentUser.id,
-        receiver_id: ortherUser?.id,
+        receiver_id: chats.receiver_id,
         message: inputText,
-        type: 'text',
-        status: 'sent',
+        status: 'pending',
         created_at: now.toISOString(),
-        temp_id: tempId + '-text',
       };
-
-      socket?.emit('send_private_message', textMessage, (response) => {
+  
+      console.log('Gửi tin nhắn:', msg);
+      const event = isGroup ? 'send_group_message' : 'send_private_message';
+      socket.emit(event, msg, (response) => {
         if (response.status === 'success') {
           setMessages((prev) =>
             prev.map((m) =>
-              m.id === textMessage.temp_id ? { ...m, status: 'sent', time: response.time || m.time } : m
+              m.id === tempId ? { ...m, status: 'sent', time: response.time || m.time } : m
             )
           );
         } else {
           setMessages((prev) =>
-            prev.map((m) => (m.id === textMessage.temp_id ? { ...m, status: 'failed' } : m))
+            prev.map((m) => (m.id === tempId ? { ...m, status: 'failed' } : m))
           );
         }
       });
+  
+      setInputText('');
     }
+
+ 
+  
+  };
+  
+
+  const deleteMessage = (id) => {
+    socket.emit('set_hidden_message', { user_id: currentUser.id, message_id: id });
+    setMessages((prev) => prev.filter((msg) => msg.id !== id));
   };
 
-  const handleLongPressMessage = (msg) => {
-    if (msg.sender === 'me') {
-      setSelectedMessage(msg);
-      setModalVisible(true);
-    }
-  };
-
-  const deleteMessage = async () => {
-    try {
-      // Gọi API xóa tin nhắn
-      await deleteMessageAPI(selectedMessage.id);
-
-      // Cập nhật UI sau khi xóa tin nhắn
-      setMessages((prev) => prev.filter((m) => m.id !== selectedMessage.id));
-      setModalVisible(false);
-    } catch (error) {
-      console.error("Lỗi khi xóa tin nhắn:", error);
-      Alert.alert("Lỗi", "Không thể xóa tin nhắn. Vui lòng thử lại.");
-    }
-  };
-
-  const editMessage = () => {
-    setInputText(selectedMessage.text);
-    setMessages((prev) => prev.filter((m) => m.id !== selectedMessage.id));
-    setModalVisible(false);
+  const revokeMessage = (id) => {
+    socket.emit('delete_message', { user_id: currentUser.id, message_id: id });
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.id === id ? { ...msg, text: 'Tin nhắn đã thu hồi', file: null, type: 'deleted' } : msg
+      )
+    );
   };
 
   const renderMessage = ({ item }) => (
-    <TouchableOpacity onLongPress={() => handleLongPressMessage(item)}>
+    <TouchableOpacity
+      onLongPress={() => {
+        if (item.sender === 'me') {
+          setSelectedMessage(item);
+          setModalVisible(true);
+        }
+      }}
+    >
       <View style={styles.messageContainer}>
         <View style={[styles.senderInfo, item.sender === 'me' ? styles.rowReverse : styles.rowNormal]}>
           <Image source={{ uri: item.avatar }} style={styles.avatarSmall} />
           <Text style={styles.senderName}>{item.senderName}</Text>
         </View>
 
-        <View style={[styles.messageBubble, item.sender === 'me' ? styles.myMessage : styles.theirMessage]}>
-          {/* Hiển thị file (nếu có) trước */}
-          {item.file && (
-            <View>
-              {item.file.uri.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i) ? (
-                <Image source={{ uri: item.file.uri }} style={styles.mediaPreview} />
-              ) : (
-                <Text>{item.file.name}</Text>
-              )}
-            </View>
-          )}
-
-          {/* Hiển thị tin nhắn văn bản nếu có */}
-          {item.text && <Text style={styles.messageText}>{item.text}</Text>}
-
+        <View style={[item.type === 'deleted' ? styles.deletedMessage : styles.messageBubble,
+          item.sender === 'me' ? styles.myMessage : styles.theirMessage]}>
+          {item.file && item.type !== 'deleted' && (
+  <TouchableOpacity onPress={() => {
+    if (item.type === 'image') {
+      setSelectedImage(item.file.uri);
+      setImagePreviewVisible(true);
+    }
+  }}>
+    {item.type === 'image' ? (
+      <Image source={{ uri: item.file.uri }} style={styles.mediaPreview} />
+    ) : (
+      <Text>{item.file.name}</Text>
+    )}
+  </TouchableOpacity>
+)}
+          <Text style={styles.messageText}>{item.text}</Text>
           <Text style={styles.messageTime}>
-            {item.time}{' '}
-            {item.status === 'pending' ? '🕓' : item.status === 'sent' ? '✅' : item.status === 'failed' ? '❌' : ''}
+            {item.time} {item.status === 'pending' ? '🕓' : item.status === 'sent' ? '✅' : '❌'}
           </Text>
         </View>
       </View>
@@ -261,7 +308,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Text style={styles.backButtonText}>←</Text>
           </TouchableOpacity>
-          <Text style={styles.header}>{ortherUser.fullname}</Text>
+          <Text style={styles.header}>{chats.name || 'Người khác'}</Text>
         </View>
 
         <FlatList
@@ -270,22 +317,28 @@ const ChatRoomScreen = ({ route, navigation }) => {
           renderItem={renderMessage}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.messageList}
-          keyboardShouldPersistTaps="handled"
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
         />
 
-        {file?.mimeType?.startsWith('image') && (
-          <View style={{ alignItems: 'center', marginBottom: 10 }}>
-            <Text>{file.name}</Text>
-            <Image source={{ uri: file.uri }} style={{ width: 200, height: 200, resizeMode: 'contain' }} />
-          </View>
-        )}
+{file?.mimeType?.startsWith('image') && file.uri && (
+  <View style={styles.previewContainer}>
+    <Image
+      source={{ uri: file.uri }}
+      style={styles.previewImage}
+    />
+    <TouchableOpacity onPress={() => setFile(null)} style={styles.cancelPreviewButton}>
+      <Text style={styles.cancelPreviewText}>Hủy chọn ảnh</Text>
+    </TouchableOpacity>
+  </View>
+)}
 
         <View style={styles.footerWrapper}>
           <TouchableOpacity onPress={pickFile} style={styles.fileButton}>
             <Text style={{ fontSize: 22 }}>📎</Text>
           </TouchableOpacity>
-
+          <TouchableOpacity onPress={() => setEmojiModalVisible(true)} style={styles.emojiButton}>
+            <Text style={styles.emojiButtonText}>🙂</Text>
+          </TouchableOpacity>
           <View style={styles.footerContainer}>
             <TextInput
               style={styles.input}
@@ -298,30 +351,31 @@ const ChatRoomScreen = ({ route, navigation }) => {
             </TouchableOpacity>
           </View>
         </View>
-
-        {/* Modal sửa xoá */}
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              <Text style={styles.modalTitle}>Tuỳ chọn tin nhắn</Text>
-              {/* <TouchableOpacity onPress={editMessage} style={styles.modalButton}>
-                <Text style={styles.modalButtonText}>✏️ Sửa</Text>
-              </TouchableOpacity> */}
-              <TouchableOpacity onPress={deleteMessage} style={styles.modalButton}>
-                <Text style={styles.modalButtonText}>🗑️ Xoá</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.modalButton}>
-                <Text style={styles.modalButtonText}>❌ Huỷ</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
       </KeyboardAvoidingView>
+
+      {/* Modal: Ảnh */}
+      <Modal visible={imagePreviewVisible} transparent animationType="fade">
+        <TouchableOpacity onPress={() => setImagePreviewVisible(false)} style={styles.modalContainer}>
+          <Image source={{ uri: selectedImage }} style={styles.squareImage} resizeMode="contain" />
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Modal: Thu hồi/Xóa */}
+      <Modal visible={modalVisible} transparent animationType="fade">
+        <View style={styles.overlayBackground}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity onPress={() => { revokeMessage(selectedMessage.id); setModalVisible(false); }}>
+              <Text style={styles.modalOptionText}>Thu hồi</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => { deleteMessage(selectedMessage.id); setModalVisible(false); }}>
+              <Text style={styles.modalOptionText}>Xóa ở phía bạn</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <Text style={styles.modalOptionText}>Hủy</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };

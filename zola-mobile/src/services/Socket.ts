@@ -1,26 +1,56 @@
 import { io } from "socket.io-client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const setupSocket = async () => {
-  const token = await AsyncStorage.getItem("accessToken"); // Lấy token từ AsyncStorage
-  if (!token) {
-    console.error("Không tìm thấy token. Vui lòng đăng nhập lại.");
-    throw new Error("Token không hợp lệ");
+const getAccessToken = async () => {
+  try {
+    const token = await AsyncStorage.getItem("accessToken");
+    if (token) {
+      console.log("Access Token:", token);
+      return token;
+    } else {
+      console.error("Access Token is missing");
+      return null;
+    }
+  } catch (err) {
+    console.error("Error retrieving access token:", err);
+    return null;
   }
+};
 
-  const socket = io("http://172.20.10.9:5002", {
-    transportOptions: {
-      polling: {
-        extraHeaders: {
-          Authorization: `${token}`, // Gửi token qua header Authorization
+const setupSocket = async () => {
+  try {
+    const token = await getAccessToken();
+    if (!token) {
+      throw new Error("Access Token is missing");
+    }
+
+    const socket = io("http://192.168.2.58:5002", { // Fixed the cursor position
+      transportOptions: {
+        polling: {
+          extraHeaders: {
+            Authorization: `${token}`, // Gửi token qua header Authorization
+          },
         },
       },
-    },
-  });
+    });
 
+    socket.on("connect", () => {
+      console.log("Socket connected:", socket.id);
+    });
 
-  return socket;
+    socket.on("disconnect", () => {
+      console.log("Socket disconnected");
+    });
+
+    socket.on("connect_error", (err) => {
+      console.error("Socket connection error:", err);
+    });
+
+    return socket;
+  } catch (err) {
+    console.error("Error setting up socket:", err);
+    throw err;
+  }
 };
 
 export default setupSocket;
-

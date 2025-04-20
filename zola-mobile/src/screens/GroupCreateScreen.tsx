@@ -12,8 +12,7 @@ const dummyFriends = [
   { id: '4', fullname: 'Bảo', avatar: { uri: 'https://randomuser.me/api/portraits/men/4.jpg' } },
   { id: '5', fullname: 'Phạm Minh Châu', avatar: { uri: 'https://randomuser.me/api/portraits/women/5.jpg' } },
 ];
-const [friendsList, setFriendsList] = useState([]);
-const user = useSelector((state: any) => state.user.user);
+
 const fetchFriendsWithDetails = async () => {
         try {
           const response = await getListFriends(user.id);
@@ -41,6 +40,8 @@ const fetchFriendsWithDetails = async () => {
         }
       };
 export default function GroupCreateScreen() {
+  const [friendsList, setFriendsList] = useState([]);
+  const user = useSelector((state: any) => state.user.user);
   const [selectedFriends, setSelectedFriends] = useState([]);
   const [groupAvatar, setGroupAvatar] = useState(null);
   const [groupName, setGroupName] = useState('');

@@ -94,13 +94,22 @@ export default StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
   },
+  chatMessageRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   chatMessage: {
     fontSize: 14,
     color: '#666',
-    marginTop: 2,
+    flex: 1,
+    marginRight: 8,
   },
   chatTime: {
     fontSize: 12,
     color: '#999',
   },
+  
+
+
 });

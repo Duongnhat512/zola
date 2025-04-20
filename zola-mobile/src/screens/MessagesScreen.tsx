@@ -11,83 +11,111 @@ import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import styles from '../styles/MessagesScreen.styles';
 import { useSelector } from 'react-redux';
-import { getConversation } from '../services/ChatService';
-import { getUserById } from '../services/UserService';
+import setupSocket from '../services/Socket';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import 'dayjs/locale/vi';
+
 
 const MessagesScreen = () => {
   const navigation = useNavigation();
   const user = useSelector((state) => state.user.user);
   const [activeTab, setActiveTab] = useState('priority');
   const [chats, setChats] = useState([]);
-  const [otherUser, setOtherUser] = useState(null);
-
+  const [socket, setSocket] = useState(null);
+  
+  dayjs.extend(relativeTime);
+  dayjs.locale('vi');
+  
+  const formatRelativeTime = (timestamp) => {
+    if (!timestamp) return '';
+    return dayjs(timestamp).fromNow(); // ví dụ: "5 phút trước"
+  };
   useEffect(() => {
-    fetchConversations();
-  }, []);
-
-  const fetchConversations = async () => {
-    try {
-      const response = await getConversation(user.id);
-      if (response.status === 'success') {
-        fetchUserDetails(response.all_members);
-      } else {
-        console.error("Lỗi khi lấy danh sách hội thoại:", response.message);
-      }
-    } catch (error) {
-      console.error("Lỗi khi gọi API:", error);
-    }
-  };
-
-  const fetchUserDetails = async (chatList) => {
-    try {
-      const updatedChats = await Promise.all(
-        chatList.map(async (chat) => {
-          // Lọc user khác với user hiện tại
-          const otherUserId = chat.list_user_id.find(id => id !== user.id);
-          const response = await getUserById(otherUserId);
-          if (response.status === 'success') {
-            setOtherUser(response.user);
-            return {
-              ...chat,
-              user: response.user,
-            };
+    let socketInstance;
+  
+    const initSocket = async () => {
+      try {
+        socketInstance = await setupSocket();
+        setSocket(socketInstance);
+  
+        socketInstance.on("connect", () => {
+          console.log("✅ Socket connected:", socketInstance.id);
+        });
+  
+        socketInstance.on("connect_error", (err) => {
+          console.error("❌ Socket connection error:", err);
+        });
+  
+        socketInstance.on("conversations", (response) => {
+          if (response.status === "success") {
+            console.log("📥 Conversations:", response.conversations);
+            setChats(response.conversations);
+          } else {
+            console.error("Lỗi khi lấy danh sách hội thoại:", response.message);
           }
-          
-          return chat;
-        })
-      );
-      console.log("chat", chats);
-      setChats(updatedChats);
-      console.log("Danh sách hội thoại:", updatedChats);
-    } catch (error) {
-      console.error("Lỗi khi lấy thông tin người dùng:", error);
+        });
+  
+      } catch (err) {
+        console.error("Lỗi khởi tạo socket:", err);
+      }
+    };
+  
+    initSocket();
+  
+    return () => {
+      if (socketInstance) {
+        socketInstance.off("conversations");
+        socketInstance.disconnect();
+      }
+    };
+  }, []);
+  
+  
+  useEffect(() => {
+    if (socket && user?.id) {
+      const timeout = setTimeout(() => {
+        socket.emit("get_conversations", { user_id: user.id });
+      }, 500); 
+  
+      return () => clearTimeout(timeout);
     }
-  };
+  }, [socket, user]);
 
   const renderChatItem = ({ item }) => (
-    <TouchableOpacity onPress={() => navigation.navigate('ChatRoom', { conversationId: item.conversation_id,ortherUser: item.user })}>
+    <TouchableOpacity onPress={() => navigation.navigate('ChatRoom', { chats: item })}>
       <View style={styles.chatItem}>
         <Image
           source={{
-            uri: item.user?.avt || 'https://via.placeholder.com/100x100.png?text=No+Avatar',
+            uri: item.avatar || 'https://dgyllnary2zyb.cloudfront.net/6sao.png',
           }}
           style={styles.avatar}
         />
         <View style={styles.chatInfo}>
           <Text style={styles.chatName}>
-            {item.user?.fullname || 'Chưa đặt tên'}
+            {item.name || 'Người dùng không xác định'}
           </Text>
-          <Text style={styles.chatMessage}>
-            {item.last_message?.message || 'Chưa có tin nhắn'}
-          </Text>
+          <View style={styles.chatMessageRow}>
+            <Text
+              style={styles.chatMessage}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {item.last_message?.message || 'Chưa có tin nhắn'}
+            </Text>
+            <Text style={styles.chatTime}>
+              {formatRelativeTime(item.last_message?.created_at)}
+            </Text>
+          </View>
         </View>
       </View>
     </TouchableOpacity>
   );
+  
+  
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <View style={styles.searchContainer}>
           <Image
@@ -107,7 +135,6 @@ const MessagesScreen = () => {
         </View>
       </View>
 
-      {/* Tabs */}
       <View style={styles.tabContainer}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'priority' && styles.activeTab]}
@@ -135,7 +162,6 @@ const MessagesScreen = () => {
         </View>
       </View>
 
-      {/* Danh sách chat */}
       <FlatList
         data={chats}
         renderItem={renderChatItem}
