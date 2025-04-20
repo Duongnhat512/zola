@@ -21,6 +21,7 @@ import { useSelector } from "react-redux";
 import { useRef } from "react";
 import AddMember from "../../pages/Group/AddMember";
 import InfoGroup from "../../pages/Group/InfoGroup";
+import { toast } from "react-toastify";
 const ChatWindow = ({
   selectedChat,
   setChats,
@@ -75,6 +76,8 @@ const ChatWindow = ({
 
       setMessages(formattedMessages);
     });
+
+    
 
     return () => {
       socket.off("list_messages");
@@ -141,7 +144,12 @@ const ChatWindow = ({
               : chat
           )
         );
+<<<<<<< HEAD
       }
+=======
+      });
+      
+>>>>>>> c69c638b64b324ac7929b4700da6a64953cfe489
     });
   
     return () => {
@@ -149,7 +157,12 @@ const ChatWindow = ({
       socket.off("connect");
       socket.off("disconnect");
     };
+<<<<<<< HEAD
   }, [userMain.id, setChats]);
+=======
+  }, [userMain.id]);
+  
+>>>>>>> c69c638b64b324ac7929b4700da6a64953cfe489
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -187,10 +200,11 @@ const ChatWindow = ({
         );
       }
     });
-
+   
     return () => {
       socket.off("message_deleted");
     };
+<<<<<<< HEAD
   }, [userMain.id]);
   const markAsRead = (conversationId) => {
     socket.emit("mark_as_read", {
@@ -206,6 +220,33 @@ const ChatWindow = ({
       )
     );
   };
+=======
+  }, [userMain.id]); 
+
+  useEffect(() => {
+    const handleNewMember = (data) => {
+      toast.info("Bạn đã được thêm vào group", {
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+      });
+      fetchConversations();
+      if (selectedChat?.conversation_id === data.conversation_id) {
+        setSelectedChat((prev) => ({
+          ...prev,
+          list_user_id: [...prev.list_user_id, data.user_id],
+        }));
+      }
+    };
+    socket.on("new_member", handleNewMember);
+    return () => {
+      socket.off("new_member", handleNewMember);
+    };
+  },[socket, selectedChat?.conversation_id, fetchConversations]);
+  
+  
+>>>>>>> c69c638b64b324ac7929b4700da6a64953cfe489
   const addEmojiToInput = (emojiUrl) => {
     const emojiUnicode = String.fromCodePoint(
       ...emojiUrl

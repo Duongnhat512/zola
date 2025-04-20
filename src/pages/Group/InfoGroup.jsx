@@ -25,6 +25,7 @@ import {
 import { getUserById } from "../../services/UserService";
 import AddMember from "../../pages/Group/AddMember";
 import socket from "../../services/Socket";
+import { toast } from "react-toastify";
 
 const InfoGroup = ({ selectedChat, onClose }) => {
   const [isMemberModalVisible, setIsMemberModalVisible] = useState(false);
@@ -75,7 +76,6 @@ const InfoGroup = ({ selectedChat, onClose }) => {
     });
     handleClose();
   };
-
   return (
     <div
     className="w-1/4 border-r border-gray-300 flex flex-col bg-white shadow-lg "
