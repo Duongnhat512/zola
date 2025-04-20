@@ -30,10 +30,8 @@ const HomeDetails = () => {
     socket.emit("get_conversations", { user_id: user.id });
     socket.on("conversations", (response) => {
       if (response.status === "success") {
-        console.log('====================================');
-        console.log(response.conversations);
-        console.log('====================================');
-     
+        console.log("Conversations:", response.conversations);
+        
         setChats(response.conversations);
       } else {
         console.error("Lỗi khi lấy danh sách hội thoại:", response.message);

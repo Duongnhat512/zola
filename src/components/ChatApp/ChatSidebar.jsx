@@ -30,7 +30,7 @@ const ChatSidebar = ({ chats, openChat, isModalGroupVisible,setIsModalGroupVisib
   return (
     <div
       className="w-1/4 border-r border-gray-300 flex flex-col bg-white shadow-lg "
-      style={{ width: "350px" }}
+      style={{ width: "320px" }}
     >
       {/* Header */}
       <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
@@ -69,8 +69,14 @@ const ChatSidebar = ({ chats, openChat, isModalGroupVisible,setIsModalGroupVisib
         {chats.map((chat) => (
           <div
             key={chat?.conversation_id}
-            className="px-4 py-3 border-b border-gray-100 hover:bg-gray-100 cursor-pointer transition-all duration-200"
+            className="px-4 py-3 border-b border-gray-100 hover:bg-gray-100 cursor-pointer transition-all duration-200 "
             onClick={() => openChat(chat)}
+            style={{
+              height: "100px",
+              margin: "0 auto",
+              display: "flex",
+              
+            }}
           >
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-3">
@@ -93,7 +99,7 @@ const ChatSidebar = ({ chats, openChat, isModalGroupVisible,setIsModalGroupVisib
                     ) : chat?.last_message?.type === "video" && chat?.last_message?.media ? (
                       <span className="text-gray-400">Đã gửi một video</span>
                     ) : 
-                      <span className="text-gray-400">Đã gửi một tin nhắn</span>}
+                      <span className="text-gray-400">{chat.text ? "Đã gửi một tin nhắn":"Không có tin nhắn"}</span>}
                   </div>
                 </div>
               </div>
@@ -106,7 +112,7 @@ const ChatSidebar = ({ chats, openChat, isModalGroupVisible,setIsModalGroupVisib
                         minute: "2-digit",
                       }
                     )
-                  : "Chưa có tin nhắn"}
+                  : ""}
               </div>
             </div>
           </div>
