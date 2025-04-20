@@ -14,6 +14,7 @@ const HomeDetails = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isInfoGroupVisible, setIsInfoGroupVisible] = useState(false);
   const [isModalGroupVisible, setIsModalGroupVisible] = useState(false);
+  const [ IsGroupSettingsVisible,setIsGroupSettingsVisible] = useState(false)
   const openChat = (chat) => {
     setSelectedChat(chat);
 
@@ -114,9 +115,10 @@ const HomeDetails = () => {
       setChats((prev) =>
         prev.filter((chat) => String(chat.conversation_id) !== String(data.conversation_id))
       );
-      if (selectedChat?.conversation_id === data.conversation_id) {
-        setSelectedChat(null);
-      }
+              setSelectedChat(null);
+      setIsInfoGroupVisible(false);
+
+    
     };
   
     const handleError = (data) => {
@@ -173,6 +175,33 @@ const HomeDetails = () => {
       setIsInfoGroupVisible(false);
       setSelectedChat(null);
     };
+    const handleUpdatePermissions = (data) => {
+      console.log(data);
+      
+      toast.info(data.message, {
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+      });
+
+      setSelectedChat((prev) => {
+        const updatedList = prev.list_user_id.map((member) => {
+          if (data.permissions==="owner" && member.permission === "owner") {
+            return { ...member, permission: "member" };
+          }
+          if (member.user_id === data.user_id) {
+            return { ...member, permission: data.permissions };
+          }
+          return member;
+        }); 
+        return {
+          ...prev,
+          list_user_id: updatedList,
+        };
+      });
+      setIsGroupSettingsVisible(false);  
+    }
     
     // Đăng ký sự kiện
     socket.on("group_created", handleGroupCreated);
@@ -182,6 +211,7 @@ const HomeDetails = () => {
     socket.on("add_member", handleAddMember);
     socket.on("group_deleted", handleGroupRemoved);
     socket.on("delete_group", handleGroupRemoved);
+    socket.on("update_permissions", handleUpdatePermissions);
 
     // Cleanup
     return () => {
@@ -210,7 +240,7 @@ const HomeDetails = () => {
             (member) => member.user_id !== data.user_id
           ),
         }));
-      
+        
     });
   
     // Cleanup listener để tránh đăng ký nhiều lần
@@ -243,6 +273,8 @@ const HomeDetails = () => {
         <InfoGroup
           selectedChat={selectedChat}
           onClose={() => setIsInfoGroupVisible(false)}
+          isGroupSettingsVisible={IsGroupSettingsVisible}
+          setIsGroupSettingsVisible={setIsGroupSettingsVisible}
         />
       )}
     </div>

@@ -29,10 +29,9 @@ import GroupSettingsModal from "../../components/ChatApp/GroupSettingsModal";
 import { useSelector } from "react-redux";
 import Swal from "sweetalert2";
 
-const InfoGroup = ({ selectedChat, onClose }) => {
+const InfoGroup = ({ selectedChat, onClose, isGroupSettingsVisible,setIsGroupSettingsVisible }) => {
   const [isMemberModalVisible, setIsMemberModalVisible] = useState(false);
   const [members, setMembers] = useState([]);
-  const [isGroupSettingsVisible, setIsGroupSettingsVisible] = useState(false);
   const [userOwner, setUserOwner] = useState(null);
   const user = useSelector((state) => state.user.user);
   const [userMain,setUserMain] = useState(null);
@@ -169,6 +168,16 @@ const InfoGroup = ({ selectedChat, onClose }) => {
       user_id: friend.id,
     });
     handleClose();
+
+    if(members.length === 2){
+      socket.emit("delete_conversation", {
+        conversation_id: selectedChat.conversation_id,
+      });
+      handleClose();
+    }
+
+    
+
   };
 
   const grantPermission = (friend,permission) => {
@@ -189,11 +198,16 @@ const InfoGroup = ({ selectedChat, onClose }) => {
   }
   useEffect(() => {
     const eventPermission = (data) => {
-      const { permissions, user_id } = data;
-      console.log("Phân quyền:", permissions);
-  
-      
 
+      console.log(data.permissions);
+      
+      const { permissions, user_id } = data;
+
+      if(data.user_id === userMain.id){
+        setUserMain((prev) => ({ ...prev, permission: permissions }));
+      }
+
+      console.log("Phân quyền:", permissions);
       setGroupSettings((prev) => {
         const updatedMembers = prev.members.map((member) =>
           member.id === user_id ? { ...member, permission: permissions } : member
@@ -210,6 +224,7 @@ const InfoGroup = ({ selectedChat, onClose }) => {
             member.id === user_id ? { ...member, permission: permissions } : member
           )
         );
+       
         // Xoá khỏi danh sách leader nếu tồn tại
         setGroupSettings((prev) => {
           const isAlreadyLeader = prev.leaders.some((l) => l.id === user_id);
@@ -240,7 +255,7 @@ const InfoGroup = ({ selectedChat, onClose }) => {
               member.id === user_id ? { ...member, permission: permissions } : member
             )
           );
-  
+          
           // Xoá khỏi danh sách leader nếu tồn tại
           setGroupSettings((prev) => ({
             ...prev,
@@ -256,7 +271,7 @@ const InfoGroup = ({ selectedChat, onClose }) => {
               member.id === user_id ? { ...member, permission: permissions } : member
             )
           );
-  
+          
           // Thêm vào danh sách leaders nếu chưa có
           setGroupSettings((prev) => {
             const isAlreadyLeader = prev.leaders.some((l) => l.id === user_id);
@@ -287,7 +302,7 @@ const InfoGroup = ({ selectedChat, onClose }) => {
     return () => {
       socket.off("set_permissions", eventPermission);
     };
-  }, [socket, members]);
+  }, [socket, members,selectedChat]);
   
   const menu = (friend) => (
     <Menu>
@@ -379,7 +394,7 @@ const InfoGroup = ({ selectedChat, onClose }) => {
         <GroupSettingsModal
           disable={disabledModalGroup}
           visible={isGroupSettingsVisible}
-          onClose={handleCloseModelSetting}
+          onClose={() => setIsGroupSettingsVisible(false)}
           groupSettings={groupSettings}
           onUpdateSettings={handleUpdateSettings}
           seletedChat={selectedChat}
@@ -398,7 +413,7 @@ const InfoGroup = ({ selectedChat, onClose }) => {
           <div>
             <h3 className="font-semibold text-gray-800">Thành viên nhóm</h3>
             <p className="text-gray-600">
-              {members.length || selectedChat.list_user_id.length} thành viên
+              {members.length || selectedChat?.list_user_id.length} thành viên
             </p>
           </div>
         </div>
@@ -478,7 +493,7 @@ const InfoGroup = ({ selectedChat, onClose }) => {
                     : "Thành viên"
                 }
               />
-              {userOwner?.id === userMain.id && (
+              {userMain?.permission==="owner" && (
                 <Dropdown  overlay={menu(user)} trigger={["click"]}>
                 <MoreOutlined style={{ transform: 'rotate(90deg)' }} className="text-xl cursor-pointer hover:text-gray-600" />
               </Dropdown>
