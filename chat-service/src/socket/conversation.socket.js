@@ -117,6 +117,26 @@ const conversationSocket = (io, socket) => {
         }
     });
 
+    socket.on("update_group_name", async (data) => {
+        console.log("Nhận yêu cầu cập nhật tên nhóm từ client:", data);
+        try {
+            await conversationController.updateGroupName(socket, data);
+        } catch (error) {
+            console.error("Lỗi khi cập nhật tên nhóm:", error);
+            socket.emit("error", { message: "Lỗi khi cập nhật tên nhóm" });
+        }
+    });
+
+    socket.on("mark_as_read", async (data) => {
+        console.log("Nhận yêu cầu đánh dấu đã đọc từ client:", data);
+        try {
+            await conversationController.markAsRead(socket, data);
+        } catch (error) {
+            console.error("Lỗi khi đánh dấu đã đọc:", error);
+            socket.emit("error", { message: "Lỗi khi đánh dấu đã đọc" });
+        }
+    });
+
 };
 
 module.exports = conversationSocket;

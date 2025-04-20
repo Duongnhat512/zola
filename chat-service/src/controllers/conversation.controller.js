@@ -515,7 +515,8 @@ ConversationController.getConversations = async (socket, data) => {
         let avt = conversation.avatar || "";
 
         if (conversation.type === "private") {
-          const friend = await UserCacheService.getUserProfile(list_user_id[0], socket.handshake.headers.authorization);
+          const friendId = list_user_id.find((id) => id !== user_id);
+          const friend = await UserCacheService.getUserProfile(friendId, socket.handshake.headers.authorization);
 
           console.log("friend", friend);
           name = friend?.fullname || "";
@@ -526,6 +527,7 @@ ConversationController.getConversations = async (socket, data) => {
         const last_message = last_message_id ? await MessageModel.getMessageById(last_message_id) : "";
 
         const isUnread = unreadConversations.includes(conversationId);
+        const unreadCount = await ConversationController.getUnreadCount(user_id, conversationId); 
 
         conversations.push({
           conversation_id: conversationId,
@@ -533,7 +535,8 @@ ConversationController.getConversations = async (socket, data) => {
           avatar: avt,
           last_message: last_message,
           list_user_id,
-          is_read: isUnread,
+          is_unread: isUnread,
+          unread_count: unreadCount,
         });
       }
     }
@@ -738,34 +741,16 @@ ConversationController.outGroup = async (socket, data) => {
   }
 }
 
-ConversationController.markAsUnread = async (conversation_id, exceptUserId = null) => {
-  try {
-    const members = await redisClient.smembers(`group:${conversation_id}`);
-
-    const timestamp = Date.now();
-
-    for (const member of members) {
-      if (member === exceptUserId) {
-        continue;
-      }
-
-      await redisClient.sadd(`unread:${member}`, conversation_id);
-    }
-  } catch (error) {
-    console.error("Có lỗi khi đánh dấu hội thoại là chưa đọc:", error);
-  }
-}
-
-
 ConversationController.markAsRead = async (socket, data) => {
   const { conversation_id } = data;
+  const user_id = socket.user.id; 
 
   if (!conversation_id) {
     return socket.emit("error", { message: "Thiếu conversation_id" });
   }
 
   try {
-    await redisClient.srem(`unread:${socket.user.id}`, conversation_id);
+    await ConversationController.resetUnreadCount(user_id, conversation_id);
 
     socket.emit("mark_as_read", {
       status: "success",
@@ -774,6 +759,47 @@ ConversationController.markAsRead = async (socket, data) => {
   } catch (error) {
     console.error("Có lỗi khi đánh dấu hội thoại là đã đọc:", error);
     socket.emit("error", { message: "Có lỗi khi đánh dấu hội thoại là đã đọc" });
+  }
+}
+
+ConversationController.getUnreadCount = async (user_id, conversation_id) => {
+  try {
+    const key = `unread_count:${user_id}:${conversation_id}`;
+    const count = await redisClient.get(key)
+
+    return count ? parseInt(count) : 0;
+  } catch (error) {
+    console.error("Có lỗi khi lấy số lượng hội thoại chưa đọc:", error);
+    return 0;
+  }
+}
+
+ConversationController.increaseUnreadCount = async (conversation_id, exceptUserId = null) => {
+  try {
+    const members = await redisClient.smembers(`group:${conversation_id}`);
+
+    for (const member of members) {
+      if (member === exceptUserId) {
+        continue;
+      }
+      
+      const key = `unread_count:${member}:${conversation_id}`;
+      await redisClient.incr(key);
+      const newCount = await redisClient.get(key);
+      await redisClient.sadd(`unread:${member}`, conversation_id);
+    }
+  } catch (error) {
+    console.error("Có lỗi khi tăng số lượng hội thoại chưa đọc:", error);
+  }
+}
+
+ConversationController.resetUnreadCount = async (user_id, conversation_id) => {
+  try {
+    const key = `unread_count:${user_id}:${conversation_id}`;
+    await redisClient.set(key, 0);
+    await redisClient.srem(`unread:${user_id}`, conversation_id);
+  } catch (error) {
+    console.error("Có lỗi khi đặt lại số tin nhắn chưa đọc:", error);
   }
 }
 

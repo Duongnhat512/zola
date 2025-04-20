@@ -134,12 +134,15 @@ MessageController.sendGroupMessage = async (socket, data) => {
     const savedMessage = await MessageModel.sendMessage(fileMessage);
     const sender = await UserCacheService.getUserProfile(savedMessage.sender_id);
 
-    await ConversationController.markAsUnread(data.conversation_id, data.sender_id)
+    await ConversationController.increaseUnreadCount(
+      data.conversation_id,
+      socket.user.id,
+    )
 
     const message = {
       ...savedMessage,
-      sender_name: sender.fullname,
-      sender_avatar: sender.avt,
+      sender_name: sender?.fullname,
+      sender_avatar: sender?.avt,
     };
 
     await ConversationModel.updateLastMessage(
@@ -231,12 +234,17 @@ MessageController.sendPrivateMessage = async (socket, data) => {
       sender_id: socket.user.id,
       receiver_id: data.receiver_id || null,
       type: fileType,
-      message: data.message || (fileUrl ? `Đã gửi ${getReadableFileTypeName(fileType)}: ${data.file_name}` : ""),
+      message: data.message || null,
       media: fileUrl,
       file_name: data.file_name,
     };
 
     const savedMessage = await MessageModel.sendMessage(fileMessage);
+
+    await ConversationController.increaseUnreadCount(
+      conversation.id,
+      socket.user.id,
+    )
 
     await ConversationModel.updateLastMessage(
       conversation.id,
