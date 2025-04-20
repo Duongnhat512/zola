@@ -587,9 +587,6 @@ ConversationController.setPermisstions = async (socket, data) => {
       conversation_id,
       permissions
     );
-    console.log('====================================');
-    console.log(result);
-    console.log('====================================');
 
     await UserCacheService.setConversationPermissions(user_id, conversation_id, permissions);
 
