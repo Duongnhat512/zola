@@ -152,19 +152,19 @@ ConversationController.updateGroupAvt = async (socket, data) => {
       try {
         data.avatar = await uploadFile(file);
       } catch (error) {
-        return socket.emit("error", { message: "lỗi uploadfile"+error });
+        return socket.emit("error", { message: "lỗi uploadfile" + error });
       }
-    
+
     }
 
     if (!data.conversation_id) {
       return socket.emit("error", { message: "Thiếu conversation_id" });
     }
     const result = await ConversationModel.updateAvtGroup(
-        data.conversation_id,
-        data.avatar
-      );
-  
+      data.conversation_id,
+      data.avatar
+    );
+
 
     socket.emit("update_avt_group", {
       status: "success",
@@ -526,12 +526,15 @@ ConversationController.getConversations = async (socket, data) => {
         let avt = conversation.avatar || "";
 
         if (conversation.type === "private") {
-          const friendId = list_user_id.find((id) => id.user_id !== user_id);
-          const friend = await UserCacheService.getUserProfile(friendId, socket.handshake.headers.authorization);
+          const receiver = list_user_id.find((id) => id.user_id !== user_id);
 
-          console.log("friend", friend);
-          name = friend?.fullname || "";
-          avt = friend?.avt || "";
+          if (receiver) {
+            const friend = await UserCacheService.getUserProfile(receiver.user_id, socket.handshake.headers.authorization);
+
+            console.log("friend", friend);
+            name = friend?.fullname || "";
+            avt = friend?.avt || "";
+          }
         }
 
         const last_message_id = conversation.last_message_id
