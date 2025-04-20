@@ -526,7 +526,7 @@ ConversationController.getConversations = async (socket, data) => {
         const last_message = last_message_id ? await MessageModel.getMessageById(last_message_id) : "";
 
         const isUnread = unreadConversations.includes(conversationId);
-        const unreadCount = await ConversationController.getUnreadCount(user_id, conversationId); 
+        const unreadCount = await ConversationController.getUnreadCount(user_id, conversationId);
 
         conversations.push({
           conversation_id: conversationId,
@@ -565,8 +565,8 @@ ConversationController.setPermisstions = async (socket, data) => {
     return socket.emit("error", { message: "Thiếu conversation_id" });
   }
 
-  if (!permissions) {
-    return socket.emit("error", { message: "Thiếu permissions" });
+  if (permissions !== 'admin' && permissions !== 'moderator' && permissions !== 'member') {
+    return socket.emit("error", { message: "permissions không hợp lệ" });
   }
 
   try {
@@ -577,6 +577,10 @@ ConversationController.setPermisstions = async (socket, data) => {
     );
 
     await UserCacheService.setConversationPermissions(user_id, conversation_id, permissions);
+
+    if (permissions === 'owner' && per === 'owner') {
+      await UserCacheService.setConversationPermissions(socket.user.id, conversation_id, 'member');
+    }
 
     socket.emit("set_permissions", {
       status: "success",
@@ -742,7 +746,7 @@ ConversationController.outGroup = async (socket, data) => {
 
 ConversationController.markAsRead = async (socket, data) => {
   const { conversation_id } = data;
-  const user_id = socket.user.id; 
+  const user_id = socket.user.id;
 
   if (!conversation_id) {
     return socket.emit("error", { message: "Thiếu conversation_id" });
@@ -781,7 +785,7 @@ ConversationController.increaseUnreadCount = async (conversation_id, exceptUserI
       if (member === exceptUserId) {
         continue;
       }
-      
+
       const key = `unread_count:${member}:${conversation_id}`;
       await redisClient.incr(key);
       const newCount = await redisClient.get(key);
