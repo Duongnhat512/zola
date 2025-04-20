@@ -13,12 +13,20 @@ const HomeDetails = () => {
   const [isLoading, setIsLoading] = useState(false);
   const openChat = (chat) => {
     setSelectedChat(chat);
+
+    // Đặt badge về 0 khi mở cuộc trò chuyện
+    setChats((prevChats) =>
+      prevChats.map((c) =>
+        c.conversation_id === chat.conversation_id
+          ? { ...c, unread_count: 0 }
+          : c
+      )
+    );
   };
   const fetchConversations = () => {
     socket.emit("get_conversations", { user_id: user.id });
     socket.on("conversations", (response) => {
       if (response.status === "success") {
-        console.log("Conversations:", response.conversations);
         setChats(response.conversations);
       } else {
         console.error("Lỗi khi lấy danh sách hội thoại:", response.message);
@@ -35,8 +43,6 @@ const HomeDetails = () => {
   }, []);
   useEffect(() => {
     socket.on("group_created", (data) => {
-      console.log("Group created successfully:", data);
-      // Thông báo cho người dùng về việc tạo nhóm thành công
       toast.success(`Nhóm ${data.conversation.name} đã được tạo thành công!`, {
         autoClose: 5000, // Thời gian tự động đóng sau 5 giây
         hideProgressBar: true, // Ẩn thanh tiến độ
@@ -44,12 +50,8 @@ const HomeDetails = () => {
         pauseOnHover: true, // Dừng khi hover
       });
       fetchConversations();
-      // Đóng modal sau khi nhóm được tạo
-     
     });
     socket.on("new_group", (data) => {
-      console.log("New group notification received:", data);
-      // Thông báo có nhóm mới
       toast.info("Bạn có nhóm mới!", {
         autoClose: 2000,
         hideProgressBar: false,
@@ -59,8 +61,6 @@ const HomeDetails = () => {
       fetchConversations();
     });
     socket.on("new_member", (data) => {
-      console.log("New group notification received:", data);
-      // Thông báo có nhóm mới
       toast.info("Bạn có nhóm mới!", {
         autoClose: 2000,
         hideProgressBar: false,
@@ -88,41 +88,24 @@ const HomeDetails = () => {
         closeOnClick: true,
         pauseOnHover: true,
       });
-     
     });
   }, [socket]);
-  useEffect(() => {
-    socket.on("new_message", (msg) => {
-      fetchConversations();
-      console.log("New message notification received:", msg);
-    });
-
-    return () => {
-      socket.off("new_message");
-    };
-  }, [selectedChat]);
-  useEffect(() => {
-    socket.on("message_sent", (msg) => {
-      fetchConversations();
-      console.log("New message notification received:", msg);
-    });
-
-    return () => {
-      socket.off("message_sent");
-    };
-  }, [selectedChat]);
-  return (
+  return isLoading ? (
     <div className="flex h-screen w-full bg-gray-100">
-      {isLoading && (
-        <Spin
-          size="large"
-          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
-        />
-      )}
+      <Spin
+        size="large"
+        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+      />
+    </div>
+  ) : (
+    <div className="flex h-screen w-full bg-gray-100">
       <ChatSidebar chats={chats} openChat={openChat} />
       <ChatWindow
         selectedChat={selectedChat}
         setSelectedChat={setSelectedChat}
+        setChats={setChats}
+        chats={chats}
+        fetchConversations={fetchConversations}
       />
     </div>
   );

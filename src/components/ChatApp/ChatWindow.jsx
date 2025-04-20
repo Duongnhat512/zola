@@ -22,7 +22,13 @@ import { useRef } from "react";
 import { hiddenMessage } from "../../services/UserService";
 import AddMember from "../../pages/Group/AddMember";
 import InfoGroup from "../../pages/Group/InfoGroup";
-const ChatWindow = ({ selectedChat,setSelectedChat}) => {
+const ChatWindow = ({
+  selectedChat,
+  setSelectedChat,
+  setChats,
+  fetchConversations,
+  chats,
+}) => {
   const selectedChatRef = useRef();
   const [emojiList, setEmojiList] = useState({});
   const [isEmojiPickerVisible, setIsEmojiPickerVisible] = useState(false);
@@ -48,8 +54,6 @@ const ChatWindow = ({ selectedChat,setSelectedChat}) => {
     });
 
     socket.on("list_messages", (data) => {
-      console.log("Received messages:", data);
-
       const dataSort = data.sort(
         (a, b) => new Date(a.created_at) - new Date(b.created_at)
       );
@@ -81,6 +85,8 @@ const ChatWindow = ({ selectedChat,setSelectedChat}) => {
 
   useEffect(() => {
     socket.on("new_message", (msg) => {
+      console.log("New message event received:", msg);
+
       const currentChat = selectedChatRef.current;
       if (currentChat?.conversation_id === msg.conversation_id) {
         setMessages((prev) => [
@@ -103,6 +109,34 @@ const ChatWindow = ({ selectedChat,setSelectedChat}) => {
           },
         ]);
       }
+      // Cập nhật danh sách hội thoại với số lượng tin nhắn chưa đọc
+      setChats((prevChats) => {
+        // Cập nhật danh sách hội thoại
+        const updatedChats = prevChats.map((chat) => {
+          if (chat.conversation_id === msg.conversation_id) {
+            const isCurrentChat =
+              selectedChat?.conversation_id === msg.conversation_id;
+
+            return {
+              ...chat,
+              last_message: {
+                ...chat.last_message,
+                message: msg.message,
+                created_at: msg.created_at,
+              },
+              unread_count: isCurrentChat ? 0 : (chat.unread_count || 0) + 1, // Tăng badge nếu không phải `selectedChat`
+            };
+          }
+          return chat;
+        });
+
+        // Sắp xếp danh sách hội thoại theo thời gian tin nhắn mới nhất
+        return updatedChats.sort(
+          (a, b) =>
+            new Date(b.last_message?.created_at || 0) -
+            new Date(a.last_message?.created_at || 0)
+        );
+      });
     });
     return () => {
       socket.off("new_message");
@@ -223,6 +257,7 @@ const ChatWindow = ({ selectedChat,setSelectedChat}) => {
             : m
         )
       );
+      fetchConversations();
     });
     setInput("");
     setPreviewImage(null);
@@ -283,13 +318,15 @@ const ChatWindow = ({ selectedChat,setSelectedChat}) => {
       >
         Xóa tin nhắn ở phía tôi
       </Menu.Item>
-      <Menu.Item
-        key="revoke"
-        icon={<UndoOutlined />}
-        onClick={() => revokeMessage(msg.id)}
-      >
-        Thu hồi tin nhắn
-      </Menu.Item>
+      {msg.sender === "me" && (
+        <Menu.Item
+          key="revoke"
+          icon={<UndoOutlined />}
+          onClick={() => revokeMessage(msg.id)}
+        >
+          Thu hồi tin nhắn
+        </Menu.Item>
+      )}
     </Menu>
   );
   const copyMessage = (text) => {
@@ -341,14 +378,12 @@ const ChatWindow = ({ selectedChat,setSelectedChat}) => {
       </div>
     );
   }
-  console.log(messages);
-
   return (
     <div className="flex-1 flex flex-col bg-white">
       <div className="bg-white p-4 shadow flex items-center justify-between">
         <div className="flex items-center">
           <Avatar
-            src={selectedChat?.avatar || "/default-avatar.jpg"}
+            src={selectedChat?.avatar || "https://via.placeholder.com/150"}
             size="large"
             className="mr-3"
           />
@@ -374,7 +409,10 @@ const ChatWindow = ({ selectedChat,setSelectedChat}) => {
           <button className="text-gray-600 hover:text-blue-500">
             <SearchOutlined className="text-xl" title="Tìm kiếm" />
           </button>
-          <button className="text-gray-600 hover:text-blue-500" onClick={() => setIsInfoGroupVisible(!isInfoGroupVisible)}>
+          <button
+            className="text-gray-600 hover:text-blue-500"
+            onClick={() => setIsInfoGroupVisible(!isInfoGroupVisible)}
+          >
             <InfoCircleOutlined
               className="text-xl"
               title="Thông tin hộp thoại"
@@ -393,7 +431,7 @@ const ChatWindow = ({ selectedChat,setSelectedChat}) => {
           >
             {msg.sender !== "me" && (
               <Avatar
-                src={msg.avatar || "/default-avatar.jpg"}
+                src={msg.avatar || "https://via.placeholder.com/150"}
                 size="small"
                 className="self-end"
               />
@@ -495,11 +533,13 @@ const ChatWindow = ({ selectedChat,setSelectedChat}) => {
         <div ref={messagesEndRef} />
       </div>
       {isModalVisible && (
-      <AddMember selectedChat={selectedChat} visible={isModalVisible} onClose={handleClose} />
-     )}
-     {isInfoGroupVisible && (
-      <InfoGroup selectedChat={selectedChat}/>
-     )}
+        <AddMember
+          selectedChat={selectedChat}
+          visible={isModalVisible}
+          onClose={handleClose}
+        />
+      )}
+      {isInfoGroupVisible && <InfoGroup selectedChat={selectedChat} />}
       <div className="p-4 bg-white border-t">
         {previewImage && (
           <div className="mb-4">
@@ -529,7 +569,7 @@ const ChatWindow = ({ selectedChat,setSelectedChat}) => {
 
           <input
             type="file"
-            accept=".pdf,.docx,.doc"
+            // accept=".pdf,.docx,.doc"
             onChange={handleFileChange}
             style={{ display: "none" }}
             id="file-upload"

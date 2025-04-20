@@ -76,7 +76,7 @@ const ChatSidebar = ({ chats, openChat }) => {
           >
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-3">
-                <Badge count={0} size="small">
+                <Badge count={chat?.unread_count||0} size="small">
                   <Avatar
                     size="large"
                     src={chat?.avatar || "https://via.placeholder.com/150"}
