@@ -53,6 +53,9 @@ export default function GroupSettingsScreen({ navigation  }) {
 
   const [groupName, setGroupName] = useState(conversation.name);
   const [avatar, setAvatar] = useState(conversation.avatar);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [selectedNewOwner, setSelectedNewOwner] = useState(null);
+  const [memberDetails, setMemberDetails] = useState([]);
   console.log(avatar);
   const [permissions, setPermissions] = useState(""); // 'owner', 'member'
   const [modalVisible, setModalVisible] = useState(false);
@@ -78,6 +81,7 @@ export default function GroupSettingsScreen({ navigation  }) {
   //loaddata
   useEffect(() => {
     fetchFriendsWithDetails();
+    fetchMemberDetails();
     setPermissions(getMyPermission(conversation));
     socket.on("update_name_group", handleNameUpdate);
     socket.on("update_avt_group",handleAvatarUpdate)
@@ -175,6 +179,23 @@ export default function GroupSettingsScreen({ navigation  }) {
   {
 
   }
+  const fetchMemberDetails = async () => {
+    if (!conversation?.list_user_id) return;
+  
+    const fetched = await Promise.all(
+      conversation.list_user_id.map(async (member) => {
+        const userRes = await GetUserById(member.user_id);
+        console.log(member.permission);
+        return {
+          ...member,
+          fullname: userRes?.user?.fullname || "Không rõ tên",
+          avatar: userRes?.user?.avt || null,
+        };
+      })
+    );
+  
+    setMemberDetails(fetched);
+  };
   const openAddMemberModal = () => {
         const notInGroup = friendList.filter(
           friend => !conversation.list_user_id.includes(friend.friendInfo.id)
@@ -223,19 +244,112 @@ export default function GroupSettingsScreen({ navigation  }) {
         <TouchableOpacity onPress={openAddMemberModal} style={styles.option}>
           <Text>➕ Thêm thành viên</Text>
         </TouchableOpacity>
+        <View style={{ marginTop: 20 }}>
+  <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 10 }}>Thành viên nhóm</Text>
+  <FlatList
+    data={memberDetails}
+    keyExtractor={(item) => item.user_id}
+    renderItem={({ item }) => (
+    <View style={styles.memberRow}>
+      <Image
+        source={
+          item.avatar ? { uri: item.avatar } : require('../assets/icon.png')
+        }
+        style={styles.friendAvatar}
+      />
+      <Text style={{ flex: 1 }}>{item.fullname}</Text>
+      <Text style={[styles.permissionTag, styles[item.permission]]}>
+     {item.permission === 'owner'
+      ? 'Trưởng nhóm'
+      : item.permission === 'member'
+      ? 'Thành viên'
+      : item.permission === 'moderator'
+      ? 'Quản trị viên'
+      : item.permission}
+      </Text>
+    </View>
+    )}
+    />
+  
+
+  {permissions === 'owner' && (
+    <TouchableOpacity onPress={() => setShowTransferModal(true)} style={styles.transferButton}>
+      <Text style={styles.transferButtonText}>🔁 Chuyển quyền nhóm trưởng</Text>
+    </TouchableOpacity>
+  )}
+</View>
+<Modal visible={showTransferModal} animationType="slide">
+  <View style={styles.modal}>
+    <Text style={styles.modalTitle}>Chọn người nhận quyền nhóm trưởng</Text>
+
+    <FlatList
+      data={memberDetails.filter(m => m.user_id !== user.id)}
+      keyExtractor={(item) => item.user_id}
+      renderItem={({ item }) => (
+        <TouchableOpacity
+          style={[
+            styles.transferItem,
+            selectedNewOwner === item.user_id && styles.selectedTransferItem,
+          ]}
+          onPress={() => setSelectedNewOwner(item.user_id)}
+        >
+          <Image
+            source={item.avatar ? { uri: item.avatar } : require('../assets/icon.png')}
+            style={styles.friendAvatar}
+          />
+          <Text style={{ flex: 1 }}>{item.fullname}</Text>
+
+          <View style={styles.radioCircle}>
+            {selectedNewOwner === item.user_id && <View style={styles.radioDot} />}
+          </View>
+        </TouchableOpacity>
+      )}
+    />
+
+    <TouchableOpacity
+      onPress={() => {
+        if (selectedNewOwner) {
+          socket.emit("set_permissions", {
+            conversation_id: conversation.conversation_id,
+            user_id: selectedNewOwner,
+            permissions: "owner",
+          });
+
+          socket.emit("set_permissions", {
+            conversation_id: conversation.conversation_id,
+            user_id: user.id,
+            permissions: "member",
+          });
+
+          setShowTransferModal(false);
+          setSelectedNewOwner(null);
+          Alert.alert("✅ Thành công", "Đã chuyển quyền nhóm trưởng.");
+        }
+      }}
+      style={styles.confirmAdd}
+    >
+      <Text style={styles.confirmAddText}>Xác nhận chuyển quyền</Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity onPress={() => setShowTransferModal(false)} style={styles.closeModal}>
+      <Text style={styles.closeText}>Đóng</Text>
+    </TouchableOpacity>
+  </View>
+</Modal>
 
         <TouchableOpacity onPress={leaveGroup} style={styles.leave}>
-          <Text style={styles.leaveText}>🚪 Rời nhóm</Text>
+          <Text style={styles.leaveText}> Rời nhóm</Text>
         </TouchableOpacity>
 
         {permissions === "owner"&& (
           <TouchableOpacity onPress={deleteGroup} style={styles.delete}>
-            <Text style={styles.deleteText}>💥 Giải tán nhóm</Text>
+            <Text style={styles.deleteText}> Giải tán nhóm</Text>
           </TouchableOpacity>
         )}
       </View>
 
       <Modal visible={modalVisible} animationType="slide">
+        
   <View style={styles.modal}>
     <Text style={styles.modalTitle}>Chọn bạn để thêm vào nhóm</Text>
 
@@ -294,6 +408,7 @@ console.log("Emit add_member:", {
     </TouchableOpacity>
   </View>
 </Modal>
+
 
     </View>
   );
@@ -358,6 +473,65 @@ friendItem: {
     color: 'white',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  memberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderColor: '#eee',
+  },
+  permissionTag: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    color: 'white',
+    fontWeight: 'bold',
+    textTransform: 'capitalize',
+  },
+  owner: { color: '#FFD700' },
+  member: { color: '#ccc' },
+  moderator: { color: '#87CEEB' },
+  
+  transferButton: {
+    backgroundColor: '#007AFF',
+    padding: 10,
+    marginTop: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  transferButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  
+  transferItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 6,
+    marginVertical: 4,
+  },
+  selectedTransferItem: {
+    borderColor: '#007AFF',
+    backgroundColor: '#e6f0ff',
+  },
+  radioCircle: {
+    height: 20,
+    width: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#007AFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioDot: {
+    height: 10,
+    width: 10,
+    borderRadius: 5,
+    backgroundColor: '#007AFF',
   },
   
 });
