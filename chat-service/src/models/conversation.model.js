@@ -132,20 +132,42 @@ const ConversationModel = {
     }
   },
 
-  updateConversation: async (conversationId, conversation) => {
+  updateConversationName: async (conversationId, conversation) => {
     const params = {
       TableName: tableName,
       Key: {
         id: conversationId,
       },
-      UpdateExpression: "set #name = :name, #description = :description",
+      UpdateExpression: "set #name = :name",
       ExpressionAttributeNames: {
         "#name": "name",
-        "#description": "description",
       },
       ExpressionAttributeValues: {
         ":name": conversation.name,
-        ":description": conversation.description,
+      },
+      ReturnValues: "UPDATED_NEW",
+    };
+    try {
+      const result = await dynamodb.update(params).promise();
+      return result.Attributes;
+    } catch (error) {
+      console.error("Có lỗi khi cập nhật hội thoại:", error);
+      throw new Error("Có lỗi khi cập nhật hội thoại");
+    }
+  },
+
+  updateConversationAvatar: async (conversationId, conversation) => {
+    const params = {
+      TableName: tableName,
+      Key: {
+        id: conversationId,
+      },
+      UpdateExpression: "set #avatar = :avatar",
+      ExpressionAttributeNames: {
+        "#avatar": "avatar",
+      },
+      ExpressionAttributeValues: {
+        ":avatar": conversation.avatar,
       },
       ReturnValues: "UPDATED_NEW",
     };

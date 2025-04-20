@@ -136,6 +136,43 @@ ConversationController.createGroup = async (socket, data) => {
   }
 }
 
+ConversationController.updateAvtGroup = async (socket, data) => {
+  try {
+    if (data.file_data) {
+      const fileBuffer = Buffer.from(data.file_data, "base64");
+
+      const file = {
+        originalname: data.file_name,
+        mimetype: data.file_type || getMimeTypeFromFileName(data.file_name),
+        buffer: fileBuffer,
+        size: data.file_size || fileBuffer.length,
+      }
+      
+      data.avatar = await uploadFile(file);
+    }
+
+    if (!data.conversation_id) {
+      return socket.emit("error", { message: "Thiếu conversation_id" });
+    }
+
+    const result = await ConversationModel.updateAvtGroup(
+      data.conversation_id,
+      data.avatar
+    );
+
+    socket.emit("update_avt_group", {
+      status: "success",
+      message: "Cập nhật ảnh đại diện nhóm thành công",
+      result,
+    });
+
+  } catch (error) {
+    console.error("Có lỗi khi cập nhật ảnh đại diện nhóm:", error);
+    socket.emit("error", { message: "Có lỗi khi cập nhật ảnh đại diện nhóm" });
+  }
+
+}
+
 ConversationController.getConversationsByUserId = async (req, res) => {
   const { user_id } = req.query;
 
@@ -623,7 +660,7 @@ ConversationController.outGroup = async (socket, data) => {
   }
 
   try {
-    const result = await ConversationModel.outGroup(conversation_id, socket.user.id);
+    const result = await ConversationModel.outGroup(socket.user.id, conversation_id);
 
     await redisClient.srem(`group:${conversation_id}`, socket.user.id);
     await redisClient.zrem(`chatlist:${socket.user.id}`, conversation_id);
