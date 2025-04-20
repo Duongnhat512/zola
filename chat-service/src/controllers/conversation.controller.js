@@ -66,11 +66,11 @@ ConversationController.createGroup = async (socket, data) => {
         buffer: fileBuffer,
         size: data.file_size || fileBuffer.length,
       }
-      
+
       data.avatar = await uploadFile(file);
     }
 
-    
+
 
     if (!data.members.includes(socket.user.id)) {
       data.members.push(socket.user.id);
@@ -117,7 +117,7 @@ ConversationController.createGroup = async (socket, data) => {
     }
 
     console.log(conversation);
-    
+
 
     socket.emit("group_created", {
       status: "success",
@@ -136,7 +136,7 @@ ConversationController.createGroup = async (socket, data) => {
   }
 }
 
-ConversationController.updateAvtGroup = async (socket, data) => {
+ConversationController.updateGroupAvt = async (socket, data) => {
   try {
     if (data.file_data) {
       const fileBuffer = Buffer.from(data.file_data, "base64");
@@ -147,7 +147,7 @@ ConversationController.updateAvtGroup = async (socket, data) => {
         buffer: fileBuffer,
         size: data.file_size || fileBuffer.length,
       }
-      
+
       data.avatar = await uploadFile(file);
     }
 
@@ -171,6 +171,48 @@ ConversationController.updateAvtGroup = async (socket, data) => {
     socket.emit("error", { message: "Có lỗi khi cập nhật ảnh đại diện nhóm" });
   }
 
+}
+
+ConversationController.updateGroupName = async (socket, data) => {
+  try {
+    if (!data.conversation_id) {
+      return socket.emit("error", { message: "Thiếu conversation_id" });
+    }
+
+    if (!data.name) {
+      return socket.emit("error", { message: "Thiếu name" });
+    }
+
+    const result = await ConversationModel.updateNameGroup(
+      data.conversation_id,
+      data.name
+    );
+
+    socket.emit("update_name_group", {
+      status: "success",
+      message: "Cập nhật tên nhóm thành công",
+      result,
+    });
+
+    const members = await redisClient.smembers(
+      `group:${data.conversation_id}`
+    );
+
+    for (const member of members) {
+      const socketIds = await redisClient.smembers(`sockets:${member}`);
+      socketIds.forEach((socketId) => {
+        socket.to(socketId).emit("update_name_group", {
+          conversation_id: data.conversation_id,
+          message: "Tên nhóm đã được cập nhật",
+          name: data.name,
+        });
+      });
+    }
+
+  } catch (error) {
+    console.error("Có lỗi khi cập nhật tên nhóm:", error);
+    socket.emit("error", { message: "Có lỗi khi cập nhật tên nhóm" });
+  }
 }
 
 ConversationController.getConversationsByUserId = async (req, res) => {
@@ -418,7 +460,7 @@ ConversationController.removeMember = async (socket, data) => {
     );
 
     await redisClient.srem(`group:${conversation_id}`, user_id);
-    await redisClient.srem(`chatlist:${user_id}`, conversation_id); 
+    await redisClient.srem(`chatlist:${user_id}`, conversation_id);
     await UserCacheService.removePermissions(user_id, conversation_id);
 
     const socketIds = await redisClient.smembers(`sockets:${user_id}`);
@@ -558,7 +600,7 @@ ConversationController.muteMember = async (socket, data) => {
   if (permissions !== 'admin' || permissions !== 'moderator') {
     return socket.emit("error", { message: "Bạn không có quyền tắt tiếng thành viên" });
   }
-  
+
   if (!permissions) {
     return socket.emit("error", { message: "Thiếu quyền truy cập" });
   }
@@ -688,7 +730,7 @@ ConversationController.outGroup = async (socket, data) => {
   } catch (error) {
     console.error("Có lỗi khi rời nhóm:", error);
     socket.emit("error", { message: "Có lỗi khi rời nhóm" });
-  } 
+  }
 }
 
 

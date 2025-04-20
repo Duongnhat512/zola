@@ -132,7 +132,7 @@ const ConversationModel = {
     }
   },
 
-  updateConversationName: async (conversationId, conversation) => {
+  updateConversationName: async (conversationId, name) => {
     const params = {
       TableName: tableName,
       Key: {
@@ -143,7 +143,7 @@ const ConversationModel = {
         "#name": "name",
       },
       ExpressionAttributeValues: {
-        ":name": conversation.name,
+        ":name": name,
       },
       ReturnValues: "UPDATED_NEW",
     };

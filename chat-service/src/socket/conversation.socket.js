@@ -107,6 +107,16 @@ const conversationSocket = (io, socket) => {
         }
     })
 
+    socket.on("update_group_avt", async (data) => {
+        console.log("Nhận yêu cầu cập nhật nhóm từ client:", data);
+        try {
+            await conversationController.updateGroupAvt(socket, data);
+        } catch (error) {
+            console.error("Lỗi khi cập nhật nhóm:", error);
+            socket.emit("error", { message: "Lỗi khi cập nhật nhóm" });
+        }
+    });
+
 };
 
 module.exports = conversationSocket;
