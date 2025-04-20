@@ -16,7 +16,7 @@ const dummyFriends = [
 ];
 
 
-export default function GroupCreateScreen() {
+export default function GroupCreateScreen({ navigation  }) {
   const route = useRoute();
   const { friendsList } = route.params;
   const [friendssList, setFriendsList] = useState(friendsList);
@@ -36,6 +36,7 @@ useEffect(() => {
 
     socketInstance.on("group_created", (data) => {
       console.log("🎉 Nhóm tạo thành công:", data);
+      navigation.navigate("Main");
     });
   };
 
@@ -110,6 +111,9 @@ useEffect(() => {
   };
   return (
     <View style={styles.container}>
+       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Text style={styles.backText}>←</Text>
+        </TouchableOpacity>
       <TouchableOpacity style={styles.groupImagePicker} onPress={pickGroupImage}>
         {groupAvatar ? (
           <Image source={groupAvatar} style={styles.groupImage} />
@@ -244,5 +248,7 @@ const styles = StyleSheet.create({
   createButtonText: {
     color: '#fff',
     fontWeight: 'bold'
-  }
+  },
+  backButton: { padding: 8 },
+backText: { fontSize: 24 },
 });

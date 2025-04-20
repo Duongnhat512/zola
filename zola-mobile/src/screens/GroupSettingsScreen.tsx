@@ -5,7 +5,6 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { useRoute } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
-import mime from "mime-types";
 import { sendFriendRequest, getFriendRequests, getSentFriendRequests, getListFriends,acceptFriendRequest,rejectFriendRequest} from '../services/FriendService';
 import {GetUserById} from '../services/UserService';
 export default function GroupSettingsScreen({ navigation  }) {
@@ -54,20 +53,37 @@ export default function GroupSettingsScreen({ navigation  }) {
 
   const [groupName, setGroupName] = useState(conversation.name);
   const [avatar, setAvatar] = useState(conversation.avatar);
+  console.log(avatar);
   const [permissions, setPermissions] = useState(""); // 'owner', 'member'
   const [modalVisible, setModalVisible] = useState(false);
+  const getMyPermission = (conversation) => {
+    if (!conversation || !conversation.list_user_id) return null;
+   
+    const member = conversation.list_user_id.find(
+      (item) => item.user_id === user.id
+    );
+    console.log(member.permissions);
+    return member ? member.permission : null;
+  };
   const handleNameUpdate = (data) => {
     console.log("✅ Tên nhóm đã cập nhật:", data.name);
     Alert.alert("Thành công", data.message || "Tên nhóm đã được cập nhật.");
+    navigation.navigate("Main");
   };
   const handleAvatarUpdate = (data) => {
     console.log("✅ anh nhóm đã cập nhật:");
     Alert.alert("Thành công", data.message || "Tên nhóm đã được cập nhật.");
+    navigation.navigate("Main");
   };
+  //loaddata
   useEffect(() => {
     fetchFriendsWithDetails();
+    setPermissions(getMyPermission(conversation));
     socket.on("update_name_group", handleNameUpdate);
     socket.on("update_avt_group",handleAvatarUpdate)
+    socket.on("delete_group",()=>{console.log("delete group thanh cong!");
+      navigation.navigate("Main");
+    })
     socket.on("error", (err) => {
         console.log("❌ Lỗi socket:", err.message);
         Alert.alert("Lỗi", err.message);
@@ -97,6 +113,7 @@ export default function GroupSettingsScreen({ navigation  }) {
         socket.off("update_name_group", handleNameUpdate);
         socket.off("update_name_group");
         socket.off("update_avt_group");
+        socket.off("delete_group");
       };
   }, []);
   const getMimeType = (filename) => {
@@ -192,7 +209,7 @@ export default function GroupSettingsScreen({ navigation  }) {
 </View>
 
       <TouchableOpacity onPress={pickImage}>
-        <Image source={avatar?.uri ? { uri: avatar.uri } : require('../assets/icon.png')} style={styles.avatar} />
+        <Image source={avatar? { uri: avatar } : require('../assets/icon.png')} style={styles.avatar} />
       </TouchableOpacity>
 
       <TextInput
@@ -211,7 +228,7 @@ export default function GroupSettingsScreen({ navigation  }) {
           <Text style={styles.leaveText}>🚪 Rời nhóm</Text>
         </TouchableOpacity>
 
-        {user.id === conversation.create && (
+        {permissions === "owner"&& (
           <TouchableOpacity onPress={deleteGroup} style={styles.delete}>
             <Text style={styles.deleteText}>💥 Giải tán nhóm</Text>
           </TouchableOpacity>
