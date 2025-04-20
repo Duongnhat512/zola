@@ -28,6 +28,8 @@ const ChatWindow = ({
   setChats,
   fetchConversations,
   chats,
+  isInfoGroupVisible,
+  setIsInfoGroupVisible,
 }) => {
   const selectedChatRef = useRef();
   const [emojiList, setEmojiList] = useState({});
@@ -38,7 +40,6 @@ const ChatWindow = ({
   const [selectedImage, setSelectedImage] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [isInfoGroupVisible, setIsInfoGroupVisible] = useState(false);
 
   const handleOpen = () => setIsModalVisible(true);
   const handleClose = () => setIsModalVisible(false);
@@ -539,7 +540,6 @@ const ChatWindow = ({
           onClose={handleClose}
         />
       )}
-      {isInfoGroupVisible && <InfoGroup selectedChat={selectedChat} />}
       <div className="p-4 bg-white border-t">
         {previewImage && (
           <div className="mb-4">

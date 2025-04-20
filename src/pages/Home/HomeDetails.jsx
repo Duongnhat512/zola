@@ -6,11 +6,13 @@ import { useSelector } from "react-redux";
 import { Spin } from "antd";
 import "react-toastify/dist/ReactToastify.css"; // Import CSS cho Toastify
 import { toast } from "react-toastify"; // Import react-toastify
+import InfoGroup from "../Group/InfoGroup";
 const HomeDetails = () => {
   const [selectedChat, setSelectedChat] = useState(null);
   const [chats, setChats] = useState([]);
   const user = useSelector((state) => state.user.user);
   const [isLoading, setIsLoading] = useState(false);
+  const [isInfoGroupVisible, setIsInfoGroupVisible] = useState(false);
   const openChat = (chat) => {
     setSelectedChat(chat);
 
@@ -106,7 +108,15 @@ const HomeDetails = () => {
         setChats={setChats}
         chats={chats}
         fetchConversations={fetchConversations}
+        setIsInfoGroupVisible={setIsInfoGroupVisible}
+        isInfoGroupVisible={isInfoGroupVisible}
       />
+      {isInfoGroupVisible && (
+        <InfoGroup
+          selectedChat={selectedChat}
+          onClose={() => setIsInfoGroupVisible(false)}
+        />
+      )}
     </div>
   );
 };
