@@ -6,7 +6,7 @@ import {
   DeleteOutlined,
   UndoOutlined,
 } from "@ant-design/icons";
-import { Input, Avatar, Button, Dropdown, Menu, Image, message } from "antd";
+import { Input, Avatar, Button, Dropdown, Menu, Image } from "antd";
 import {
   UserOutlined,
   SearchOutlined,
@@ -19,15 +19,12 @@ import {
 import socket from "../../services/Socket";
 import { useSelector } from "react-redux";
 import { useRef } from "react";
-import { hiddenMessage } from "../../services/UserService";
 import AddMember from "../../pages/Group/AddMember";
 import InfoGroup from "../../pages/Group/InfoGroup";
 const ChatWindow = ({
   selectedChat,
-  setSelectedChat,
   setChats,
   fetchConversations,
-  chats,
   isInfoGroupVisible,
   setIsInfoGroupVisible,
 }) => {
@@ -58,7 +55,7 @@ const ChatWindow = ({
       const dataSort = data.sort(
         (a, b) => new Date(a.created_at) - new Date(b.created_at)
       );
-
+      console.log("list_messages", dataSort);
       const formattedMessages = dataSort.map((msg) => ({
         id: msg.id,
         sender: msg.sender_id === userMain.id ? "me" : "other",
@@ -75,7 +72,7 @@ const ChatWindow = ({
         }),
         file_name: msg.file_name || null,
       }));
-
+      
       setMessages(formattedMessages);
     });
 
@@ -85,6 +82,18 @@ const ChatWindow = ({
   }, [selectedChat?.conversation_id, selectedChat?.user_id, userMain.id]);
 
   useEffect(() => {
+    if (!socket.connected) {
+      socket.connect(); // Đảm bảo socket được kết nối
+    }
+  
+    socket.on("connect", () => {
+      console.log("Socket connected");
+    });
+  
+    socket.on("disconnect", () => {
+      console.log("Socket disconnected");
+    });
+  
     socket.on("new_message", (msg) => {
       console.log("New message event received:", msg);
 
@@ -114,6 +123,8 @@ const ChatWindow = ({
       setChats((prevChats) => {
         // Cập nhật danh sách hội thoại
         const updatedChats = prevChats.map((chat) => {
+          console.log("chat", chat);
+          
           if (chat.conversation_id === msg.conversation_id) {
             const isCurrentChat =
               selectedChat?.conversation_id === msg.conversation_id;
@@ -124,6 +135,7 @@ const ChatWindow = ({
                 ...chat.last_message,
                 message: msg.message,
                 created_at: msg.created_at,
+                type: msg.type,
               },
               unread_count: isCurrentChat ? 0 : (chat.unread_count || 0) + 1, // Tăng badge nếu không phải `selectedChat`
             };
@@ -141,6 +153,8 @@ const ChatWindow = ({
     });
     return () => {
       socket.off("new_message");
+      socket.off("connect");
+      socket.off("disconnect");
     };
   }, [userMain.id]);
   useEffect(() => {
@@ -208,7 +222,7 @@ const ChatWindow = ({
   const sendMessage = () => {
     if (!input.trim() && !previewImage && !selectedFile) return; // Không gửi nếu không có nội dung
     const tempId = `msg-${Date.now()}`;
-    const isGroup = selectedChat?.list_user_id?.length > 1;
+    const isGroup = selectedChat?.list_user_id?.length > 2;
     setMessages((prev) => [
       ...prev,
       {
@@ -227,13 +241,15 @@ const ChatWindow = ({
     ]);
     const msg = {
       conversation_id: selectedChat?.conversation_id || null,
-      receiver_id: selectedChat?.user_id || null,
+      receiver_id: selectedChat?.list_user_id[0] || null,
       message: input || null,
       file_name: selectedImage?.file_name || selectedFile?.file_name || null,
       file_type: selectedImage?.file_type || selectedFile?.file_type || null,
       file_size: selectedImage?.file_size || selectedFile?.file_size || null,
       file_data: selectedImage?.file_data || selectedFile?.file_data || null,
     };
+    console.log("isGroup", isGroup);
+    
     console.log("msg", msg);
 
     const event = isGroup ? "send_group_message" : "send_private_message";
@@ -390,9 +406,9 @@ const ChatWindow = ({
           />
           <div>
             <h2 className="font-semibold">{selectedChat?.name}</h2>
-            {selectedChat?.list_user_id?.length > 1 ? (
+            {selectedChat?.list_user_id?.length > 2 ? (
               <p className="text-sm text-gray-500">
-                {selectedChat?.list_user_id?.length + 1} thành viên
+                {selectedChat?.list_user_id?.length} thành viên
               </p>
             ) : (
               <p className="text-sm text-gray-500">Vừa truy cập</p>
@@ -569,7 +585,7 @@ const ChatWindow = ({
 
           <input
             type="file"
-            // accept=".pdf,.docx,.doc"
+            accept=".pdf,.docx,.doc"
             onChange={handleFileChange}
             style={{ display: "none" }}
             id="file-upload"

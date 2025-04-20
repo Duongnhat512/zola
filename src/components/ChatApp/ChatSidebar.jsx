@@ -11,7 +11,6 @@ import AddGroupModal from "./AddGroupModal";
 const ChatSidebar = ({ chats, openChat }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isModalGroupVisible, setIsModalGroupVisible] = useState(false);
-
   const openModal = () => {
     setIsModalVisible(true);
   };
@@ -88,7 +87,14 @@ const ChatSidebar = ({ chats, openChat }) => {
                     {chat?.name || "Người dùng"}
                   </div>
                   <div className="text-xs text-gray-500 truncate">
-                    {chat?.last_message?.message || "Không có tin nhắn"}
+                    {chat?.last_message?.type === "image" && chat?.last_message?.media ? (
+                      <span className="text-gray-400">Đã gửi một ảnh</span>
+                    ) : chat?.last_message?.type === "document" && chat?.last_message?.media ? (
+                      <span className="text-gray-400">Đã gửi một tệp</span>
+                    ) : chat?.last_message?.type === "video" && chat?.last_message?.media ? (
+                      <span className="text-gray-400">Đã gửi một video</span>
+                    ) : 
+                      <span className="text-gray-400">Đã gửi một tin nhắn</span>}
                   </div>
                 </div>
               </div>
