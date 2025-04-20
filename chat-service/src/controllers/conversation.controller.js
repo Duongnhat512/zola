@@ -424,6 +424,7 @@ ConversationController.addMember = async (socket, data) => {
     socket.emit("add_member", {
       message: "Thêm thành viên thành công",
       result,
+      user_id: user_id,
     });
 
   } catch (error) {
