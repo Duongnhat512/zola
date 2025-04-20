@@ -326,18 +326,37 @@ ConversationController.findPrivateConversation = async (req, res) => {
     return res.status(400).json({ message: "Thiếu thông tin" });
   }
 
+ 
+
   try {
     const conversation = await ConversationModel.findPrivateConversation(
       user_id,
       friend_id
     );
-    if (conversation === null) {
-      return res.status(202).json({
+    console.log('====================================');
+    console.log(conversation);
+    console.log('====================================');
+    if (conversation === undefined) {
+      const user_friend = await UserCacheService.getUserProfile(friend_id, req.headers.authorization);
+      console.log('====================================');
+      console.log(user_friend);
+      console.log('====================================');
+      const newConversation = await ConversationModel.createConversation({
+        created_by: user_id,
+        type: "private",
+        name: user_friend.fullname,
+        avatar: user_friend.avt,
+        members: [
+          user_id,friend_id
+        ]
+      });
+      res.status(200).json({
         status: "success",
-        message: "Không tìm thấy hội thoại",
-        conversation: null,
+        message: "Lấy cuộc hội thoại thành công",
+        newConversation,
       });
     }
+    
 
     const members = await ConversationModel.getAllUserInConversation(
       conversation.id

@@ -29,6 +29,8 @@ const ConversationModel = {
    * @returns {Object} conversation
    */
   createConversation: async (conversation) => {
+    console.log(conversation);
+    
     if (conversation.type === "private") {
       conversation.id = generateConversationId(
         conversation.members[0],

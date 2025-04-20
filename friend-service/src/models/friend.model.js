@@ -260,11 +260,61 @@ const FriendModel = {
   },
   
   deleteRequest : async (user_id, user_friend_id) => {
-    return deleteBothSides(friendRequestTableName, user_id, user_friend_id);
+    const params1 = {
+      TableName: friendRequestTableName,
+      Key: {
+        user_id,
+        user_friend_id,
+      },
+    };
+  
+    const params2 = {
+      TableName: friendRequestTableName,
+      Key: {
+        user_id: user_friend_id,
+        user_friend_id: user_id,
+      },
+    };
+  
+    try {
+      await Promise.all([
+        dynamodb.delete(params1).promise(),
+        dynamodb.delete(params2).promise(),
+      ]);
+      return { success: true };
+    } catch (error) {
+      console.error(`Error deleting data in table ${tableName}:`, error);
+      throw new Error(`Failed to delete records in ${tableName}`);
+    }
   },
   
   deleteFriend : async (user_id, user_friend_id) => {
-    return deleteBothSides(friendTableName, user_id, user_friend_id);
+    const params1 = {
+      TableName: friendTableName,
+      Key: {
+        user_id,
+        user_friend_id,
+      },
+    };
+  
+    const params2 = {
+      TableName: friendTableName,
+      Key: {
+        user_id: user_friend_id,
+        user_friend_id: user_id,
+      },
+    };
+  
+    try {
+      await Promise.all([
+        dynamodb.delete(params1).promise(),
+        dynamodb.delete(params2).promise(),
+      ]);
+      return { success: true };
+    } catch (error) {
+      console.error(`Error deleting data in table ${tableName}:`, error);
+      throw new Error(`Failed to delete records in ${tableName}`);
+    }
   },
   
   getRequestByUserIdAndUserFriendId: async (user_id, user_friend_id) => {
