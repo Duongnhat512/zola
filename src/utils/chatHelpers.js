@@ -150,13 +150,12 @@ export const handleImageChange = (e, setPreviewImage, setSelectedImage) => {
     };
     reader.readAsDataURL(file); // Đọc file dưới dạng Base64
   }
+  e.target.value = ""
 };
 
 // Hàm xử lý thay đổi tệp
 export const handleFileChange = (e, setSelectedFile, sendMessageCallback) => {
   const file = e.target.files[0];
-  console.log("Selected file:", file);
-
   if (!file) {
     console.error("No file selected");
     return;
@@ -182,87 +181,9 @@ export const handleFileChange = (e, setSelectedFile, sendMessageCallback) => {
   };
 
   reader.readAsDataURL(file); // Đọc file dưới dạng Base64
+  e.target.value = ""; // Đặt lại giá trị của input file để có thể chọn lại cùng một file
 };
-export const sendMessage = ({
-  input,
-  previewImage,
-  selectedFile,
-  selectedChat,
-  userMain,
-  setMessages,
-  fetchConversations,
-  setInput,
-  setPreviewImage,
-  setSelectedFile,
-  setSelectedImage,
-  socket,
-  selectedImage,
-  selectedVideo,
-  setSelectedVideo,
-}) => {
-  if (!input.trim() && !previewImage && !selectedFile) return; // Không gửi nếu không có nội dung
-  const tempId = `msg-${Date.now()}`;
-  const isGroup = selectedChat?.list_user_id?.length > 2;
 
-  setMessages((prev) => [
-    ...prev,
-    {
-      id: tempId,
-      sender: "me",
-      avatar: userMain.avatar || "/default-avatar.jpg",
-      text: input || null,
-      media: previewImage || null,
-      file_name: selectedFile?.file_name || null,
-      time: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      status: "pending",
-    },
-  ]);
-
-  const msg = {
-    conversation_id: selectedChat?.conversation_id || null,
-    receiver_id:
-      selectedChat?.list_user_id?.find((user) => user.user_id !== userMain.id) || null,
-    message: input || null,
-    file_name: selectedVideo?.file_name ||selectedImage?.file_name || selectedFile?.file_name || null,
-    file_type: selectedVideo?.file_name ||selectedImage?.file_type || selectedFile?.file_type || null,
-    file_size: selectedVideo?.file_name ||selectedImage?.file_size || selectedFile?.file_size || null,
-    file_data: selectedVideo?.file_name ||selectedImage?.file_data || selectedFile?.file_data || null,
-  };
-
-  const event = isGroup ? "send_group_message" : "send_private_message";
-  socket.emit(event, msg, () => {});
-  socket.on("message_sent", (msg) => {
-    setMessages((prev) =>
-      prev.map((m) =>
-        m.id === tempId
-          ? {
-              ...m,
-              id: msg.message_id,
-              text: msg.message || null,
-              media: msg.media || null,
-              file_name: msg.file_name || null,
-              type: msg.type || "text",
-              time: new Date(msg.created_at).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              }),
-              status: "sent",
-            }
-          : m
-      )
-    );
-    fetchConversations();
-  });
-
-  setInput("");
-  setPreviewImage(null);
-  setSelectedFile(null);
-  setSelectedImage(null);
-  setSelectedVideo(null);
-};
 export const handleVideoChange = (e, setSelectedVideo, sendMessageCallback) => {
   const file = e.target.files[0];
   if (!file) {
@@ -290,4 +211,5 @@ export const handleVideoChange = (e, setSelectedVideo, sendMessageCallback) => {
   };
 
   reader.readAsDataURL(file); // Đọc video dưới dạng Base64
+  e.target.value = ""; // Đặt lại giá trị của input video để có thể chọn lại cùng một video
 };

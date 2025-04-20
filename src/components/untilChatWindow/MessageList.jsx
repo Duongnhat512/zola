@@ -16,10 +16,10 @@ const MessageList = ({
 
   return (
     <div
-      className="flex-1 overflow-y-auto p-4 space-y-4 message-list-container" 
-      onScroll={onScroll} 
+      className="flex-1 overflow-y-auto p-4 space-y-4 message-list-container"
+      // onScroll={onScroll}
     >
-      {!hasMoreMessages && messages.length>10&&( 
+      {/* {!hasMoreMessages && messages.length>10&&( 
         <div className="text-center text-gray-500 mb-4">
           Đã ở tin nhắn đầu tiên
         </div>
@@ -28,15 +28,18 @@ const MessageList = ({
         <div className="flex justify-center items-center mb-4">
           <Spin size="small" tip="Đang tải..." />
         </div>
-      )}
+      )} */}
       {messages
         .filter(
           (msg) =>
-            (msg.type === "text" && msg.text) || msg.media || msg.file_name
+            msg.text === "Tin nhắn đã thu hồi" || 
+            (msg.type === "text" && msg.text) ||
+            msg.media ||
+            msg.file_name
         )
         .map((msg) => (
           <div
-            // key={msg.id}
+            key={msg.id}
             className={`flex ${
               msg.sender === "me" ? "justify-end" : "items-start"
             } gap-2`}
@@ -62,7 +65,7 @@ const MessageList = ({
               >
                 <div
                   style={{
-                    padding: msg.type === "text" ? "8px 12px" : "0",
+                    padding: msg.type === "text" || msg.text==="Tin nhắn đã thu hồi" ? "8px 12px" : "0",
                     borderRadius: "12px",
                     maxWidth: "300px",
                     backgroundColor:
