@@ -603,7 +603,7 @@ ConversationController.setPermisstions = async (socket, data) => {
     return socket.emit("error", { message: "Thiếu conversation_id" });
   }
 
-  if (permissions !== 'admin' && permissions !== 'moderator' && permissions !== 'member') {
+  if (permissions !== 'owner' && permissions !== 'moderator' && permissions !== 'member') {
     return socket.emit("error", { message: "permissions không hợp lệ" });
   }
 
@@ -647,7 +647,7 @@ ConversationController.muteMember = async (socket, data) => {
   const { conversation_id, user_id } = data;
   const permissions = await UserCacheService.getConversationPermissions(socket.user.id, conversation_id);
 
-  if (permissions !== 'admin' || permissions !== 'moderator') {
+  if (permissions !== 'owner' || permissions !== 'moderator') {
     return socket.emit("error", { message: "Bạn không có quyền tắt tiếng thành viên" });
   }
 
