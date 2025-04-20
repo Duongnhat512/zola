@@ -78,37 +78,7 @@ const AddGroupModal = ({ onClose, visible = true }) => {
     fetchFriends();
   }, [user.id]);
 
-  useEffect(() => {
-    socket.on("group_created", (data) => {
-      console.log("Group created successfully:", data);
-      // Thông báo cho người dùng về việc tạo nhóm thành công
-      toast.success(`Nhóm ${data.conversation.name} đã được tạo thành công!`, {
-        autoClose: 5000, // Thời gian tự động đóng sau 5 giây
-        hideProgressBar: true, // Ẩn thanh tiến độ
-        closeOnClick: true, // Đóng khi người dùng nhấn vào thông báo
-        pauseOnHover: true, // Dừng khi hover
-      });
-
-      // Đóng modal sau khi nhóm được tạo
-      onClose();
-    });
-    socket.on("new_member", (data) => {
-      console.log("New member added to group:", data);
-      // Thông báo có thành viên mới trong nhóm
-      toast.info(`Có thành viên mới trong nhóm ${data.conversation.name}!`, {
-        autoClose: 5000,
-        hideProgressBar: true,
-        closeOnClick: true,
-        pauseOnHover: true,
-      });
-    });
-
-    return () => {
-      socket.off("group_created");
-      socket.off("new_group");
-    };
-
-  }, [socket, onClose]);
+  
 
   const handleCreateGroup = () => {
     if (!groupName || selectedContacts.length < 2) {
@@ -149,8 +119,7 @@ const AddGroupModal = ({ onClose, visible = true }) => {
       const groupData = {
         name: groupName,
         members: selectedContacts,
-      };
-  
+      };  
       socket.emit("create_group", groupData, (response) => {
         if (response.status === "success") {
           console.log("Group created successfully:", response);
@@ -245,7 +214,7 @@ const AddGroupModal = ({ onClose, visible = true }) => {
             >
               <div className="flex items-center flex-1">
                 <Avatar
-                  src={contact.avt || "https://via.placeholder.com/150"}
+                  src={contact.avt || "/default-avatar.jpg"}
                   icon={<UserOutlined />}
                   className="bg-blue-100 text-blue-500 flex items-center justify-center mr-4"
                   size={48}

@@ -160,7 +160,7 @@ const InfoFriend = ({userInfo, handleBack,step}) => {
             <div className="flex flex-col items-center -mt-10">
               <Avatar
                 size={64}
-                src={userInfo.avt || "https://via.placeholder.com/150"}
+                src={userInfo.avt || "/default-avatar.jpg"}
                 className="border-2 border-white shadow"
               />
               <p className="text-lg font-semibold mt-2">

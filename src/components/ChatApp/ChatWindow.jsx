@@ -176,7 +176,23 @@ const ChatWindow = ({
   const handleEmojiClick = (url) => {
     addEmojiToInput(url, setInput, setIsEmojiPickerVisible);
   };
-
+  useEffect(() => {
+    const handleNewMember = (data) => {
+      toast.info("Bạn đã được thêm vào group", {
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+      });
+      fetchConversations();
+      
+    };
+    socket.on("new_member", handleNewMember);
+    return () => {
+      socket.off("new_member", handleNewMember);
+    };
+  },[socket, selectedChat?.conversation_id, fetchConversations]);
+  
   const messagesEndRef = useRef(null);
   const handleCopyMessage = (text) => {
     copyMessage(text);

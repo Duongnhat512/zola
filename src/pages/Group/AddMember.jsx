@@ -36,36 +36,41 @@ const AddMember = ({ visible = true, onClose, selectedChat }) => {
     useEffect(() => {
       const fetchFriends = async () => {
         try {
-            const response = await getListFriend(user.id);
-
-            if (response.code === 200) {
-              // Loại bỏ các user_friend_id đã có trong selectedChat.list_user_id
-              const filteredFriends = response.data.filter(
-                (friend) => !selectedChat.list_user_id.includes(friend.user_friend_id)
-              );
-            
-              const detailedUsers = await Promise.all(
-                filteredFriends.map(async (request) => {
-                  try {
-                    const userDetail = await getUserById(request.user_friend_id);
-                    return userDetail?.user || null;
-                  } catch (error) {
-                    console.error("Error fetching user details:", error);
-                    return null;
-                  }
-                })
-              );
-            
-              setContacts(detailedUsers.filter((user) => user !== null));
-            }
-            
+          const response = await getListFriend(user.id);
+    
+          if (response.code === 200) {
+            // Lấy danh sách user_id đã có trong nhóm
+            const existingUserIds = selectedChat?.list_user_id.map(user => user.user_id) || [];
+    
+            // Lọc ra bạn bè chưa có trong nhóm
+            const filteredFriends = response.data.filter(
+              (friend) => !existingUserIds.includes(friend.user_friend_id)
+            );
+    
+            // Lấy thông tin chi tiết của những bạn bè chưa có trong nhóm
+            const detailedUsers = await Promise.all(
+              filteredFriends.map(async (friend) => {
+                try {
+                  const res = await getUserById(friend.user_friend_id);
+                  return res?.user || null;
+                } catch (err) {
+                  console.error("Lỗi khi lấy thông tin người dùng:", err);
+                  return null;
+                }
+              })
+            );
+    
+            // Cập nhật danh bạ
+            setContacts(detailedUsers.filter(Boolean));
+          }
         } catch (error) {
-          console.error("Error fetching friend list:", error);
+          console.error("Lỗi khi lấy danh sách bạn bè:", error);
         }
       };
-  
+    
       fetchFriends();
-    }, [user.id]);
+    }, [user.id, selectedChat]);
+    
   
     const handleContactSelect = (contactId) => {
         if (selectedContacts.includes(contactId)) {
@@ -135,7 +140,7 @@ const AddMember = ({ visible = true, onClose, selectedChat }) => {
               >
                 <div className="flex items-center flex-1">
                   <Avatar
-                    src={contact.avt || "https://via.placeholder.com/150"}
+                    src={contact.avt || "/default-avatar.jpg"}
                     icon={<UserOutlined />}
                     className="bg-blue-100 text-blue-500 flex items-center justify-center mr-4"
                     size={48}

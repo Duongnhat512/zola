@@ -23,36 +23,67 @@ import {
   MoreOutlined,
 } from "@ant-design/icons";
 import { getUserById } from "../../services/UserService";
-import AddMember from "../../pages/Group/AddMember";
 import socket from "../../services/Socket";
-import { toast } from "react-toastify";
+import GroupSettingsModal from "../../components/ChatApp/GroupSettingsModal";
 
 const InfoGroup = ({ selectedChat, onClose }) => {
   const [isMemberModalVisible, setIsMemberModalVisible] = useState(false);
   const [members, setMembers] = useState([]);
+  const [isGroupSettingsVisible, setIsGroupSettingsVisible] = useState(false);
+  const [groupSettings, setGroupSettings] = useState({
+    changeGroupInfo: true,
+    pinMessages: false,
+    createReminders: true,
+    createPolls: true,
+    sendMessages: true,
+    approveNewMembers: false,
+    markLeaderMessages: false,
+    allowNewMembersRead: true,
+    allowJoinLink: true,
+  });
 
   const fetchMembers = async () => {
+    console.log('====================================');
+    console.log(selectedChat);
+    console.log('====================================');
     try {
+      if (!Array.isArray(selectedChat?.list_user_id)) {
+        console.error("list_user_id không phải mảng:", selectedChat?.list_user_id);
+        return;
+      }
+  
       const memberData = await Promise.all(
-        selectedChat.list_user_id.map(async (userId) => {
-          const response = await getUserById(userId);
-          if (response.status === "success") {
-            return response.user;
-          } else {
-            console.error("Không tìm thấy người dùng với ID này.");
+        selectedChat.list_user_id.map(async ({ user_id, permission }) => {
+          try {
+            const response = await getUserById(user_id);
+            if (response.status === "success") {
+              return {
+                ...response.user,
+                permission, // gán quyền
+              };
+            } else {
+              console.warn("Không tìm thấy người dùng với ID:", user_id);
+              return null;
+            }
+          } catch (err) {
+            console.error("Lỗi khi lấy thông tin người dùng:", err);
             return null;
           }
         })
       );
-      setMembers(memberData.filter((member) => member !== null));
+  
+      setMembers(memberData.filter(Boolean)); // loại bỏ null
     } catch (error) {
-      console.error("Error fetching members:", error);
+      console.error("Lỗi khi fetch thành viên:", error);
     }
   };
+  
+  
+  
 
   useEffect(() => {
     fetchMembers();
-  }, [selectedChat.list_user_id]);
+  }, [selectedChat?.list_user_id]);
 
   const handleOpen = () => {
     setIsMemberModalVisible(true);
@@ -61,14 +92,12 @@ const InfoGroup = ({ selectedChat, onClose }) => {
     setIsMemberModalVisible(false);
   };
 
-  const menu = (friend) => (
-    <Menu>
-      <Menu.Item key="info" onClick={() => removeMember(friend)}>
-        Rời nhóm
-      </Menu.Item>
-    </Menu>
-  );
+  const handleUpdateSettings = (updatedSettings) => {
+    setGroupSettings(updatedSettings);
+    console.log("Updated group settings:", updatedSettings);
+  };
 
+  
   const removeMember = (friend) => {
     socket.emit("remove_member", {
       conversation_id: selectedChat.conversation_id,
@@ -76,6 +105,38 @@ const InfoGroup = ({ selectedChat, onClose }) => {
     });
     handleClose();
   };
+
+  const grantPermission = (friend) => {
+    socket.emit("set_permissions", {
+      conversation_id: selectedChat.conversation_id,
+      user_id: friend.id,
+      permissions: "moderator"
+    });  
+  }
+  useEffect(()=> {
+    const eventPermission = (data) => {
+      alert(data.message);
+    }
+
+    socket.on("set_permissions",eventPermission)
+    return () => {
+      socket.off("set_permissions", eventPermission);
+    };
+  },[socket])
+  const menu = (friend) => (
+    <Menu>
+      <Menu.Item key="info" onClick={() => removeMember(friend)}>
+        Rời nhóm
+      </Menu.Item>
+      <Menu.Item key="permission" onClick={() => grantPermission(friend)}>
+        Thêm phó nhóm
+      </Menu.Item>
+    </Menu>
+  );
+
+  
+
+  
   return (
     <div
     className="w-1/4 border-r border-gray-300 flex flex-col bg-white shadow-lg "
@@ -104,54 +165,64 @@ const InfoGroup = ({ selectedChat, onClose }) => {
 
       <Divider className="my-4" />
 
-      {/* Action Buttons */}
-      <div className="grid grid-cols-4 gap-4 px-6 mb-6 text-center">
-        <Tooltip title="Tắt thông báo">
-          <Button
-            icon={<BellOutlined />}
-            type="ghost"
-            className="flex flex-col items-center justify-center"
-            size="large"
-          >
-            <span className="text-xs mt-1">Thông báo</span>
-          </Button>
-        </Tooltip>
-        <Tooltip title="Ghim hội thoại">
-          <Button
-            icon={<PushpinOutlined />}
-            type="ghost"
-            className="flex flex-col items-center justify-center"
-            size="large"
-          >
-            <span className="text-xs mt-1">Ghim</span>
-          </Button>
-        </Tooltip>
-        <Tooltip title="Thêm thành viên">
-          <Button
-            icon={<UserAddOutlined />}
-            type="ghost"
-            className="flex flex-col items-center justify-center"
-            size="large"
-            onClick={handleOpen}
-          >
-            <span className="text-xs mt-1">Thêm</span>
-          </Button>
-        </Tooltip>
-        <Tooltip title="Quản lý nhóm">
-          <Button
-            icon={<SettingOutlined />}
-            type="ghost"
-            className="flex flex-col items-center justify-center"
-            size="large"
-          >
-            <span className="text-xs mt-1">Cài đặt</span>
-          </Button>
-        </Tooltip>
-      </div>
+    
+        <div className="grid grid-cols-4 gap-4 px-6 mb-6 text-center">
+          <Tooltip title="Tắt thông báo">
+            <Button
+          icon={<BellOutlined />}
+          type="ghost"
+          className="flex flex-col items-center justify-center"
+          size="large"
+            >
+          <span className="text-xs mt-1">Thông báo</span>
+            </Button>
+          </Tooltip>
+          <Tooltip title="Ghim hội thoại">
+            <Button
+          icon={<PushpinOutlined />}
+          type="ghost"
+          className="flex flex-col items-center justify-center"
+          size="large"
+            >
+          <span className="text-xs mt-1">Ghim</span>
+            </Button>
+          </Tooltip>
+          <Tooltip title="Thêm thành viên">
+            <Button
+          icon={<UserAddOutlined />}
+          type="ghost"
+          className="flex flex-col items-center justify-center"
+          size="large"
+          onClick={handleOpen}
+            >
+          <span className="text-xs mt-1">Thêm</span>
+            </Button>
+          </Tooltip>
+          <Tooltip title="Quản lý nhóm">
+            <Button
+          icon={<SettingOutlined />}
+          type="ghost"
+          className="flex flex-col items-center justify-center"
+          size="large"
+          onClick={() => setIsGroupSettingsVisible(true)}
+            >
+          <span className="text-xs mt-1">Cài đặt</span>
+            </Button>
+          </Tooltip>
+        </div>
 
-      <Divider className="my-4" />
+        <Divider className="my-4" />
 
-      {/* Group Info */}
+        {/* Group Settings Modal */}
+        <GroupSettingsModal
+          visible={isGroupSettingsVisible}
+          onClose={() => setIsGroupSettingsVisible(false)}
+          groupSettings={groupSettings}
+          onUpdateSettings={handleUpdateSettings}
+          seletedChat={selectedChat}
+        />
+
+        {/* Group Info */}
       <div className="space-y-6 px-6 text-sm flex-1 overflow-y-auto">
         <div
           onClick={handleOpen}
@@ -228,20 +299,21 @@ const InfoGroup = ({ selectedChat, onClose }) => {
           renderItem={(user) => (
             <List.Item
               key={user.id}
-              className="hover:bg-gray-50 p-2 rounded-lg transition-colors cursor-pointer"
+              className="items-center hover:bg-gray-50 p-2 rounded-lg transition-colors cursor-pointer"
             >
               <List.Item.Meta
                 avatar={<Avatar src={user.avt} />}
                 title={user.fullname}
-                description="Thành viên"
+                description={user.permission}
               />
               <Dropdown overlay={menu(user)} trigger={["click"]}>
-                <MoreOutlined className="text-xl cursor-pointer hover:text-gray-600" />
+                <MoreOutlined style={{ transform: 'rotate(90deg)' }} className="text-xl cursor-pointer hover:text-gray-600" />
               </Dropdown>
             </List.Item>
           )}
         />
       </Modal>
+      
     </div>
   );
 };

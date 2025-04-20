@@ -8,9 +8,8 @@ import {
 import AddFriendModal from "./AddFriendModal";
 import AddGroupModal from "./AddGroupModal";
 
-const ChatSidebar = ({ chats, openChat }) => {
+const ChatSidebar = ({ chats, openChat, isModalGroupVisible,setIsModalGroupVisible }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [isModalGroupVisible, setIsModalGroupVisible] = useState(false);
   const openModal = () => {
     setIsModalVisible(true);
   };
@@ -78,7 +77,7 @@ const ChatSidebar = ({ chats, openChat }) => {
                 <Badge count={chat?.unread_count||0} size="small">
                   <Avatar
                     size="large"
-                    src={chat?.avatar || "https://via.placeholder.com/150"}
+                    src={chat?.avatar || "/default-avatar.jpg"}
                     icon={!chat?.avatar && <UserOutlined />}
                   />
                 </Badge>
