@@ -508,7 +508,7 @@ ConversationController.getConversations = async (socket, data) => {
 
         let list_user_id = await redisClient.smembers(`group:${conversationId}`);
 
-        list_user_id = list_user_id.filter((id) => id !== user_id);
+        // list_user_id = list_user_id.filter((id) => id !== user_id);
 
         let name = conversation.name || "";
         let avt = conversation.avatar || "";
