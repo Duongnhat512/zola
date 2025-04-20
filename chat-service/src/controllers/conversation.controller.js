@@ -460,7 +460,7 @@ ConversationController.removeMember = async (socket, data) => {
     );
 
     await redisClient.srem(`group:${conversation_id}`, user_id);
-    await redisClient.srem(`chatlist:${user_id}`, conversation_id);
+    await redisClient.zrem(`chatlist:${user_id}`, conversation_id);
     await UserCacheService.removePermissions(user_id, conversation_id);
 
     const socketIds = await redisClient.smembers(`sockets:${user_id}`);
@@ -474,7 +474,7 @@ ConversationController.removeMember = async (socket, data) => {
 
     socket.emit("remove_member", {
       message: "Xóa thành viên thành công",
-      result,
+      user_id: user_id,
     });
 
   } catch (error) {
@@ -496,6 +496,8 @@ ConversationController.getConversations = async (socket, data) => {
         conversations: [],
       });
     }
+
+    const unreadConversations = await redisClient.smembers(`unread:${user_id}`);
 
     // lấy thông tin conversation
     let conversations = []
@@ -520,8 +522,9 @@ ConversationController.getConversations = async (socket, data) => {
         }
 
         const last_message_id = conversation.last_message_id
-
         const last_message = last_message_id ? await MessageModel.getMessageById(last_message_id) : "";
+
+        const isUnread = unreadConversations.includes(conversationId);
 
         conversations.push({
           conversation_id: conversationId,
@@ -529,6 +532,7 @@ ConversationController.getConversations = async (socket, data) => {
           avatar: avt,
           last_message: last_message,
           list_user_id,
+          is_read: isUnread,
         });
       }
     }
@@ -733,6 +737,43 @@ ConversationController.outGroup = async (socket, data) => {
   }
 }
 
+ConversationController.markAsUnread = async (conversation_id, exceptUserId = null) => {
+  try {
+    const members = await redisClient.smembers(`group:${conversation_id}`);
 
+    const timestamp = Date.now();
+
+    for (const member of members) {
+      if (member === exceptUserId) {
+        continue;
+      }
+
+      await redisClient.sadd(`unread:${member}`, conversation_id);
+    }
+  } catch (error) {
+    console.error("Có lỗi khi đánh dấu hội thoại là chưa đọc:", error);
+  }
+}
+
+
+ConversationController.markAsRead = async (socket, data) => {
+  const { conversation_id } = data;
+
+  if (!conversation_id) {
+    return socket.emit("error", { message: "Thiếu conversation_id" });
+  }
+
+  try {
+    await redisClient.srem(`unread:${socket.user.id}`, conversation_id);
+
+    socket.emit("mark_as_read", {
+      status: "success",
+      message: "Đánh dấu hội thoại là đã đọc",
+    });
+  } catch (error) {
+    console.error("Có lỗi khi đánh dấu hội thoại là đã đọc:", error);
+    socket.emit("error", { message: "Có lỗi khi đánh dấu hội thoại là đã đọc" });
+  }
+}
 
 module.exports = ConversationController;

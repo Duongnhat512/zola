@@ -5,6 +5,7 @@ const { uploadFile } = require('../services/file.service.js')
 const redisClient = require('../configs/redis.config.js')
 const { getFileCategory, getReadableFileTypeName } = require('../utils/file.helper')
 const UserCacheService = require('../services/user-cache.service.js')
+const ConversationController = require('./conversation.controller.js')
 const MessageController = {}
 
 MessageController.getMessages = async (socket, data) => {
@@ -30,8 +31,6 @@ MessageController.getMessages = async (socket, data) => {
     socket.emit("error", { message: "Lỗi khi nhận tin nhắn" });
   }
 };
-
-// MessageController.sendGroupMessage = async (socket, data) => {
 //   data.sender_id = socket.user.id
 //   const permissions = await UserCacheService.getConversationPermissions(socket.user.id, data.conversation_id);
 
@@ -133,8 +132,9 @@ MessageController.sendGroupMessage = async (socket, data) => {
     };
 
     const savedMessage = await MessageModel.sendMessage(fileMessage);
-
     const sender = await UserCacheService.getUserProfile(savedMessage.sender_id);
+
+    await ConversationController.markAsUnread(data.conversation_id, data.sender_id)
 
     const message = {
       ...savedMessage,
@@ -321,8 +321,6 @@ MessageController.updateMessage = async (socket, data) => {
     socket.emit("error", { message: "Lỗi khi cập nhật tin nhắn" });
   }
 };
-
-// MessageController.sendPrivateMessage = async (socket, data) => {
 //   if (!data.receiver_id) {
 //     socket.emit("error", { message: "Thiếu receiver_id" });
 //     return;
