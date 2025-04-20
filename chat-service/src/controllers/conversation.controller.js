@@ -127,6 +127,8 @@ ConversationController.createGroup = async (socket, data) => {
         name: conversation.name,
         avatar: conversation.avatar,
         members: members,
+        created_by: socket.user.id,
+
       },
     });
 
@@ -147,18 +149,22 @@ ConversationController.updateGroupAvt = async (socket, data) => {
         buffer: fileBuffer,
         size: data.file_size || fileBuffer.length,
       }
-
-      data.avatar = await uploadFile(file);
+      try {
+        data.avatar = await uploadFile(file);
+      } catch (error) {
+        return socket.emit("error", { message: "lỗi uploadfile"+error });
+      }
+    
     }
 
     if (!data.conversation_id) {
       return socket.emit("error", { message: "Thiếu conversation_id" });
     }
-
     const result = await ConversationModel.updateAvtGroup(
-      data.conversation_id,
-      data.avatar
-    );
+        data.conversation_id,
+        data.avatar
+      );
+  
 
     socket.emit("update_avt_group", {
       status: "success",
@@ -183,7 +189,7 @@ ConversationController.updateGroupName = async (socket, data) => {
       return socket.emit("error", { message: "Thiếu name" });
     }
 
-    const result = await ConversationModel.updateNameGroup(
+    const result = await ConversationModel.updateConversationName(
       data.conversation_id,
       data.name
     );
@@ -424,6 +430,7 @@ ConversationController.addMember = async (socket, data) => {
     socket.emit("add_member", {
       message: "Thêm thành viên thành công",
       result,
+      user_id: user_id,
     });
 
   } catch (error) {
@@ -507,14 +514,19 @@ ConversationController.getConversations = async (socket, data) => {
       if (conversation) {
 
         let list_user_id = await redisClient.smembers(`group:${conversationId}`);
-
+        list_user_id = await Promise.all(
+          list_user_id.map(async (id) => {
+            const permission = await UserCacheService.getConversationPermissions(id, conversationId);
+            return { user_id: id, permission: permission };
+          })
+        );
         // list_user_id = list_user_id.filter((id) => id !== user_id);
 
         let name = conversation.name || "";
         let avt = conversation.avatar || "";
 
         if (conversation.type === "private") {
-          const friendId = list_user_id.find((id) => id !== user_id);
+          const friendId = list_user_id.find((id) => id.user_id !== user_id);
           const friend = await UserCacheService.getUserProfile(friendId, socket.handshake.headers.authorization);
 
           console.log("friend", friend);
@@ -585,7 +597,8 @@ ConversationController.setPermisstions = async (socket, data) => {
     socket.emit("set_permissions", {
       status: "success",
       message: "Cập nhật quyền thành công",
-      result,
+      permissions: permissions,
+      user_id: user_id,
     });
 
     const socketIds = await redisClient.smembers(`sockets:${user_id}`);
@@ -675,6 +688,7 @@ ConversationController.deleteConversation = async (socket, data) => {
       status: "success",
       message: "Đã giải tán nhóm",
       result,
+      conversation_id
     });
 
     // Thông báo cho tất cả thành viên trong nhóm
@@ -683,7 +697,7 @@ ConversationController.deleteConversation = async (socket, data) => {
       socketIds.forEach((socketId) => {
         socket.to(socketId).emit("group_deleted", {
           conversation_id: conversation_id,
-          message: "Nhóm đã bị giải tán",
+          message: `Nhóm đã bị giải tán`,
         });
       });
     });
