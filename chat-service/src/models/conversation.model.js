@@ -433,6 +433,24 @@ const ConversationModel = {
     }
   },
 
+  outGroup: async (userId, conversationId) => {
+    const params = {
+      TableName: memberTableName,
+      Key: {
+        conversation_id: conversationId,
+        user_id: userId,
+      },
+    };
+
+    try {
+      await dynamodb.delete(params).promise();
+      return { message: "Đã rời khỏi nhóm" };
+    } catch (error) {
+      console.error("Có lỗi khi rời khỏi nhóm:", error);
+      throw new Error("Có lỗi khi rời khỏi nhóm");
+    }
+  }
+
 };
 
 module.exports = ConversationModel;

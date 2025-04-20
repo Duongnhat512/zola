@@ -91,11 +91,7 @@ const MessageModel = {
                         message: "Tin nhắn đã thu hồi",
                         file_name: null,
                         is_deleted: true,
-<<<<<<< HEAD
                         media: null,
-=======
-                        media: "",
->>>>>>> 0e071e2a32a20856d4fb5d5fa73379686082065b
                     };
                 }
                 return message;

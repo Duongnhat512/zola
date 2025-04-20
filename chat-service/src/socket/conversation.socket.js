@@ -97,6 +97,16 @@ const conversationSocket = (io, socket) => {
         }
     });
 
+    socket.on("out_group", async (data) => {
+        console.log("Nhận yêu cầu rời nhóm từ client:", data);
+        try {
+            await conversationController.outGroup(socket, data);
+        } catch (error) {
+            console.error("Lỗi khi rời nhóm:", error);
+            socket.emit("error", { message: "Lỗi khi rời nhóm" });
+        }
+    })
+
 };
 
 module.exports = conversationSocket;
