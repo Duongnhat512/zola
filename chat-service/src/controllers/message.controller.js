@@ -231,7 +231,7 @@ MessageController.sendPrivateMessage = async (socket, data) => {
       sender_id: socket.user.id,
       receiver_id: data.receiver_id || null,
       type: fileType,
-      message: data.message || (fileUrl ? `Đã gửi ${getReadableFileTypeName(fileType)}: ${data.file_name}` : ""),
+      message: data.message || null,
       media: fileUrl,
       file_name: data.file_name,
     };

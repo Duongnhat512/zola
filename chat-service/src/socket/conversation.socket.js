@@ -127,6 +127,16 @@ const conversationSocket = (io, socket) => {
         }
     });
 
+    socket.on("mark_as_read", async (data) => {
+        console.log("Nhận yêu cầu đánh dấu đã đọc từ client:", data);
+        try {
+            await conversationController.markAsRead(socket, data);
+        } catch (error) {
+            console.error("Lỗi khi đánh dấu đã đọc:", error);
+            socket.emit("error", { message: "Lỗi khi đánh dấu đã đọc" });
+        }
+    });
+
 };
 
 module.exports = conversationSocket;
