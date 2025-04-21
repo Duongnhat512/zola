@@ -20,6 +20,8 @@ import GroupCreateScreen from '../screens/GroupCreateScreen';
 import ChatRoomScreen from '../screens/ChatRoomScreen';
 import MessagesScreen from '../screens/MessagesScreen';
 import GroupSettingsScreen from '../screens/GroupSettingsScreen';
+import FlashMessage from "react-native-flash-message";
+
 // Define navigation types
 export type RootStackParamList = {
   Welcome: undefined;
@@ -123,7 +125,10 @@ const AppNavigator: React.FC = () => {
       ) : (
         <AuthStack />
       )}
+         {/* FlashMessage hiển thị toàn app, nên để dưới NavigationContainer */}
+    <FlashMessage position="top" />
     </NavigationContainer>
+    
   );
 };
 

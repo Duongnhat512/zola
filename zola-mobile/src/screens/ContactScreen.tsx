@@ -283,7 +283,7 @@ const ContactScreen = () => {
           </TouchableOpacity>
         ))}
       </View>
-      <ScrollView style={styles.topHalf}>
+      <View style={styles.topHalf}>
  {/* Friends List */}
  {activeTab === 'Bạn bè' && (
     <View style={{gap:40}}>    
@@ -337,20 +337,12 @@ const ContactScreen = () => {
         />
         </View>    
       )}    
-      </ScrollView>
-      <ScrollView style={styles.bottomHalf}>
-      <View style={styles.groupHeader}>
-          <TouchableOpacity onPress={handleCreateGroup}>
-            <Text>Tạo nhóm</Text>
-          </TouchableOpacity>
-        </View>
-        <FlatList
-          data={sampleGroups}
-          keyExtractor={item => item.id}
-          renderItem={renderGroupItem}
-          contentContainerStyle={styles.groupList}
-        />
-      </ScrollView>   
+      </View>
+      <View style={styles.bottomHalf}>
+  <TouchableOpacity style={styles.createGroupButton} onPress={handleCreateGroup}>
+    <Text style={styles.createGroupText}>+ Tạo nhóm</Text>
+  </TouchableOpacity>
+</View>
 
      
       
@@ -420,6 +412,20 @@ const styles = StyleSheet.create({
       alignItems: 'center',
       paddingVertical: 10,
     },
+    createGroupButton: {
+      backgroundColor: '#007bff',
+      paddingVertical: 14,
+      paddingHorizontal: 24,
+      borderRadius: 10,
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    createGroupText: {
+      color: 'white',
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+    
     groupAvatar: {
       width: 40,
       height: 40,
