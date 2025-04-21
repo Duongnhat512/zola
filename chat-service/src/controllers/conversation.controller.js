@@ -336,13 +336,20 @@ ConversationController.findPrivateConversation = async (req, res) => {
       const newConversation = await ConversationModel.createConversation({
         created_by: user_id,
         type: "private",
-        name: user_friend.fullname,
-        avatar: user_friend.avt,
         members: [
           user_id,friend_id
         ]
       });
-      res.status(200).json({
+
+      await redisClient.sadd(`group:${newConversation.id}`, user_id);
+      await redisClient.sadd(`group:${newConversation.id}`, friend_id);
+
+      newConversation.name = user_friend.fullname;
+      newConversation.avatar = user_friend.avt;
+      
+
+      
+      return res.status(200).json({
         status: "success",
         message: "Lấy cuộc hội thoại thành công",
         newConversation,
@@ -385,7 +392,7 @@ ConversationController.findPrivateConversation = async (req, res) => {
     conversation.list_user_id = list_user_id;
     conversation.conversation_id = conversation.id;
 
-    res.status(200).json({
+    return res.status(200).json({
       status: "success",
       message: "Lấy cuộc hội thoại thành công",
       conversation,
