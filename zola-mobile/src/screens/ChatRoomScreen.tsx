@@ -27,6 +27,7 @@ dayjs.locale('vi');
 const ChatRoomScreen = ({ route, navigation }) => {
   const { chats } = route.params;
   const currentUser = useSelector((state) => state.user.user);
+  console.log('Current user:', currentUser);
   const flatListRef = useRef(null);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
@@ -53,6 +54,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
         });
 
         socketInstance.on('list_messages', (data) => {
+          console.log('Received messages:', data.filter(msg => msg.type === 'text'));
           const sortedData = data.sort((a, b) => a.created_at.localeCompare(b.created_at));
           const formatted = sortedData.map((msg) => {
             const isMe = msg.sender_id === currentUser.id;
