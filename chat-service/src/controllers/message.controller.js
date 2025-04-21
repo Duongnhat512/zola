@@ -90,6 +90,8 @@ MessageController.getMessages = async (socket, data) => {
 // };
 
 MessageController.sendGroupMessage = async (socket, data) => {
+  console.log("sendGroupMessage data: ", data);
+  
   data.sender_id = socket.user.id
 
   if (!data.conversation_id) {
@@ -115,7 +117,6 @@ MessageController.sendGroupMessage = async (socket, data) => {
       };
 
       fileType = getFileCategory(file.mimetype);
-
       fileUrl = await uploadFile(file);
     }
 
@@ -124,7 +125,7 @@ MessageController.sendGroupMessage = async (socket, data) => {
       conversation_id: data.conversation_id,
       sender_id: data.sender_id,
       user_target: data.receiver_id || null,
-      type: fileType,
+      type: data.is_notify ? "notify" : fileType,
       message: data.message || null,
       media: fileUrl,
       file_name: data.file_name,
