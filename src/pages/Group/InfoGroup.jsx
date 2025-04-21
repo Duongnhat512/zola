@@ -469,7 +469,34 @@ const InfoGroup = ({ selectedChat, onClose, isGroupSettingsVisible,setIsGroupSet
             </p>
           </Collapse.Panel>
         </Collapse>
+        
       </div>
+      <Tooltip title="Rời nhóm">
+          <Button
+            type="ghost"
+            className="flex flex-col items-center justify-center bg-red-500 my-2 text-white"
+            size="large"
+            onClick={() => {
+              Swal.fire({
+                title: "Bạn có chắc chắn muốn rời nhóm?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Rời nhóm",
+                cancelButtonText: "Hủy",
+              }).then((result) => {
+                if (result.isConfirmed) {
+                  socket.emit("out_group", {
+                    conversation_id: selectedChat.conversation_id,
+                    user_id: userMain.id,
+                  });
+                  onClose();
+                }
+              });
+            }}
+          >
+            <span className="text-sm mt-1">Rời nhóm</span>
+          </Button>
+        </Tooltip>
 
       {/* Member Modal */}
       <Modal

@@ -67,10 +67,6 @@ const HomeDetails = () => {
       closeOnClick: true,
       pauseOnHover: true,
     });
-
-    
-    
-
     const membersWithPermissions = conversation.members.map((member) => ({
       user_id: member,
       permission: member === user.id ? "owner" : "member",
@@ -120,6 +116,8 @@ const HomeDetails = () => {
   };
 
   const handleRemovedMember = (data) => {
+    console.log(data); // Log dữ liệu để kiểm tra
+    
     toast.info(data.message, {
       autoClose: 2000,
       hideProgressBar: false,
@@ -219,7 +217,7 @@ const HomeDetails = () => {
   // === Đăng ký ===
   socket.on("group_created", handleGroupCreated);
   socket.on("new_group", handleNewGroup);
-  socket.on("removed_member", handleRemovedMember);
+  socket.on("user_left_group", handleRemovedMember);
   socket.on("error", handleError);
   socket.on("add_member", handleAddMember);
   socket.on("group_deleted", handleGroupRemoved);
@@ -231,7 +229,7 @@ const HomeDetails = () => {
     console.log("🔌 Socket reconnected, re-registering listeners...");
     socket.on("group_created", handleGroupCreated);
     socket.on("new_group", handleNewGroup);
-    socket.on("removed_member", handleRemovedMember);
+    socket.on("user_left_group", handleRemovedMember);
     socket.on("error", handleError);
     socket.on("add_member", handleAddMember);
     socket.on("group_deleted", handleGroupRemoved);
@@ -242,7 +240,7 @@ const HomeDetails = () => {
   return () => {
     socket.off("group_created", handleGroupCreated);
     socket.off("new_group", handleNewGroup);
-    socket.off("removed_member", handleRemovedMember);
+    socket.off("user_left_group", handleRemovedMember);
     socket.off("error", handleError);
     socket.off("add_member", handleAddMember);
     socket.off("group_deleted", handleGroupRemoved);

@@ -99,7 +99,7 @@ const ChatSidebar = ({ chats, openChat, isModalGroupVisible,setIsModalGroupVisib
                     ) : chat?.last_message?.type === "video" && chat?.last_message?.media ? (
                       <span className="text-gray-400">Đã gửi một video</span>
                     ) : 
-                      <span className="text-gray-400">{chat.last_message.message ? "Đã gửi một tin nhắn":"Không có tin nhắn"}</span>}
+                      <span className="text-gray-400">{chat.last_message?.message ? "Đã gửi một tin nhắn":"Không có tin nhắn"}</span>}
                   </div>
                 </div>
               </div>
