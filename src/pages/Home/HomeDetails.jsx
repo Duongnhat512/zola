@@ -67,15 +67,7 @@ const HomeDetails = () => {
       if (!conversation) {
         console.error("conversation không tồn tại trong dữ liệu!");
         return;
-      }
-  
-      toast.success(`Nhóm ${conversation.conversation_id} đã được tạo thành công!`, {
-        autoClose: 5000,
-        hideProgressBar: true,
-        closeOnClick: true,
-        pauseOnHover: true,
-      });
-  
+      } 
       const membersWithPermissions = conversation.members.map((member) => ({
         user_id: member,
         permission: member === user.id ? "owner" : "member",
@@ -105,14 +97,7 @@ const HomeDetails = () => {
       });
     };
   
-    const handleNewGroup = (data) => {
-      toast.info(data.message, {
-        autoClose: 2000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-      });
-  
+    const handleNewGroup = (data) => {  
       const membersWithPermissions = data.members.map((member) => ({
         user_id: member,
         permission: member === data.created_by ? "owner" : "member",
@@ -199,15 +184,7 @@ const HomeDetails = () => {
       if (!selectedChat || selectedChat.conversation_id !== data.conversation_id) {
         fetchConversations();
         return;
-      }
-  
-      toast.info(data.message, {
-        autoClose: 2000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-      });
-      
+      }     
       // Lưu user_id vào biến để tránh truy cập lặp lại
       const userId = data.user_id;
       
