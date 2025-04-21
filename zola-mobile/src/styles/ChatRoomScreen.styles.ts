@@ -351,7 +351,21 @@ const styles = StyleSheet.create({
   cancelPreviewText: {
     color: 'white',
     fontSize: 14,
-  }
+  },
+  notifyContainer: {
+    alignSelf: 'center',
+    backgroundColor: '#e0e0e0', // màu xám
+    padding: 8,
+    borderRadius: 12,
+    marginVertical: 5,
+    maxWidth: '80%',
+  },
+  
+  notifyText: {
+    color: 'darkcyan',
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
   
   
 });

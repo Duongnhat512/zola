@@ -27,7 +27,6 @@ dayjs.locale('vi');
 const ChatRoomScreen = ({ route, navigation }) => {
   const { chats } = route.params;
   const currentUser = useSelector((state) => state.user.user);
-  console.log('Current user:', currentUser);
   const flatListRef = useRef(null);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
@@ -54,7 +53,6 @@ const ChatRoomScreen = ({ route, navigation }) => {
         });
 
         socketInstance.on('list_messages', (data) => {
-          console.log('Received messages:', data.filter(msg => msg.type === 'text'));
           const sortedData = data.sort((a, b) => a.created_at.localeCompare(b.created_at));
           const formatted = sortedData.map((msg) => {
             const isMe = msg.sender_id === currentUser.id;
@@ -248,54 +246,66 @@ const ChatRoomScreen = ({ route, navigation }) => {
           setModalVisible(true);
         }
       }}
+      disabled={item.type === 'notify'} // Không cho long press notify
     >
       <View style={styles.messageContainer}>
-        <View style={[styles.senderInfo, item.sender === 'me' ? styles.rowReverse : styles.rowNormal]}>
-          <Image source={{ uri: item.avatar }} style={styles.avatarSmall} />
-          <Text style={styles.senderName}>{item.senderName}</Text>
-        </View>
-
-        <View style={[item.type === 'deleted' ? styles.deletedMessage : styles.messageBubble,
-        item.sender === 'me' ? styles.myMessage : styles.theirMessage]}>
-          {item.file && item.type !== 'deleted' && (
-            <TouchableOpacity onPress={() => {
-              if (item.type === 'image') {
-                setSelectedImage(item.file.uri);
-                setImagePreviewVisible(true);
-              }
-              if (item.type === 'video') {
-                setSelectedVideo(item.file.uri);
-                setVideoPreviewVisible(true);
-              }
-
-            }}>
-              {item.type === 'image' ? (
-                <Image source={{ uri: item.file.uri }} style={styles.mediaPreview} />
-              ) : 
-                item.type === 'video' ? (
-                  <Video
-                    source={{ uri: item.file.uri }}
-                    rate={1.0}
-                    volume={1.0}
-                    isMuted={false}
-                    resizeMode="contain"
-                    useNativeControls
-                    style={styles.mediaPreview}
-                  />
-                ) : (
-                <Text>{item.file.name}</Text>   
-           
+        {item.type === 'notify' ? (
+          <View style={styles.notifyContainer}>
+            <Text style={styles.notifyText}>{item.text}</Text>
+          </View>
+        ) : (
+          <>
+            <View style={[
+              styles.senderInfo,
+              item.sender === 'me' ? styles.rowReverse : styles.rowNormal
+            ]}>
+              <Image source={{ uri: item.avatar }} style={styles.avatarSmall} />
+              <Text style={styles.senderName}>{item.senderName}</Text>
+            </View>
+  
+            <View style={[
+              item.type === 'deleted' ? styles.deletedMessage : styles.messageBubble,
+              item.sender === 'me' ? styles.myMessage : styles.theirMessage
+            ]}>
+              {item.file && item.type !== 'deleted' && (
+                <TouchableOpacity onPress={() => {
+                  if (item.type === 'image') {
+                    setSelectedImage(item.file.uri);
+                    setImagePreviewVisible(true);
+                  }
+                  if (item.type === 'video') {
+                    setSelectedVideo(item.file.uri);
+                    setVideoPreviewVisible(true);
+                  }
+                }}>
+                  {item.type === 'image' ? (
+                    <Image source={{ uri: item.file.uri }} style={styles.mediaPreview} />
+                  ) : item.type === 'video' ? (
+                    <Video
+                      source={{ uri: item.file.uri }}
+                      rate={1.0}
+                      volume={1.0}
+                      isMuted={false}
+                      resizeMode="contain"
+                      useNativeControls
+                      style={styles.mediaPreview}
+                    />
+                  ) : (
+                    <Text>{item.file.name}</Text>
+                  )}
+                </TouchableOpacity>
               )}
-            </TouchableOpacity>
-          )}
-          <Text style={styles.messageText}>{item.text}</Text>
-          <Text style={styles.messageTime}>
-            {item.time} {item.status === 'pending' ? '🕓' : item.status === 'sent' ? '✅' : '❌'}
-          </Text>
-        </View>
+              <Text style={styles.messageText}>{item.text}</Text>
+              <Text style={styles.messageTime}>
+                {item.time} {item.status === 'pending' ? '🕓' : item.status === 'sent' ? '✅' : '❌'}
+              </Text>
+            </View>
+          </>
+        )}
       </View>
     </TouchableOpacity>
   );
+  
 
   return (
     <SafeAreaView style={styles.container}>
