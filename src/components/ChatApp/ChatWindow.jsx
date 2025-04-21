@@ -235,7 +235,7 @@ const ChatWindow = ({
   };
   const sendMessage = (
     fileData = null,
-    notify = true,
+    notify = false,
     messageNotify = "Đã được phân quyền "
   ) => {
     if (
