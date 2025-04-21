@@ -227,6 +227,8 @@ MessageController.sendPrivateMessage = async (socket, data) => {
         members: [socket.user.id, data.receiver_id],
       });
 
+      await redisClient.sadd(`group:${conversation.id}`, socket.user.id);
+      await redisClient.sadd(`group:${conversation.id}`, data.receiver_id);
     }
 
     const fileMessage = {
@@ -329,84 +331,6 @@ MessageController.updateMessage = async (socket, data) => {
     socket.emit("error", { message: "Lỗi khi cập nhật tin nhắn" });
   }
 };
-//   if (!data.receiver_id) {
-//     socket.emit("error", { message: "Thiếu receiver_id" });
-//     return;
-//   }
-
-//   if (!data.message) {
-//     socket.emit("error", { message: "Thiếu message" });
-//     return;
-//   }
-
-//   try {
-//     let conversation = await ConversationModel.findPrivateConversation(
-//       socket.user.id,
-//       data.receiver_id
-//     );
-//     if (!conversation) {
-//       conversation = await ConversationModel.createConversation({
-//         created_by: socket.user.id,
-//         type: "private",
-//         members: [socket.user.id, data.receiver_id],
-//       });
-
-//       await redisClient.sadd(`group:${conversation.id}`, socket.user.id);
-//       await redisClient.sadd(`group:${conversation.id}`, data.receiver_id);
-//     }
-
-//     data.conversation_id = conversation.id;
-//     data.sender_id = socket.user.id;
-
-//     const message = await MessageModel.sendMessage(data);
-
-//     const sender = await UserCacheService.getUserProfile(message.sender_id);
-
-//     message.sender_name = sender.fullname;
-//     message.sender_avatar = sender.avt;
-
-//     await ConversationModel.updateLastMessage(
-//       conversation.id,
-//       message.message_id,
-//     )
-
-//     const timestamp = Date.now();
-
-//     await redisClient.zadd(
-//       `chatlist:${socket.user.id}`,
-//       timestamp,
-//       conversation.id
-//     )
-
-//     await redisClient.zadd(
-//       `chatlist:${data.receiver_id}`,
-//       timestamp,
-//       conversation.id
-//     )
-
-//     const receiverSockets = await redisClient.smembers(`sockets:${data.receiver_id}`);
-//     const senderSockets = await redisClient.smembers(`sockets:${socket.user.id}`);
-
-//     receiverSockets.forEach((socketId) => {
-//       if (socketId !== socket.id) {
-//         socket.to(socketId).emit("new_message", { ...message });
-//       }
-//     });
-
-//     socket.emit("message_sent", {
-//       ...message
-//     });
-
-//     senderSockets.forEach((socketId) => {
-//       if (socketId !== socket.id) {
-//         socket.to(socketId).emit("new_message", { ...message });
-//       }
-//     });
-//   } catch (error) {
-//     console.error("Lỗi khi gửi tin nhắn:", error);
-//     socket.emit("error", { message: "Lỗi khi gửi tin nhắn" });
-//   }
-// };
 
 MessageController.getConversationMessages = async (socket, data) => {
   const conversation_id = data.conversation_id;
