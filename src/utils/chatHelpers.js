@@ -4,14 +4,6 @@ export const markAsRead = (socket, conversationId, userId, setChats) => {
     conversation_id: conversationId,
     user_id: userId,
   });
-
-  setChats((prevChats) =>
-    prevChats.map((chat) =>
-      chat.conversation_id === conversationId
-        ? { ...chat, is_unread: false, unread_count: 0 }
-        : chat
-    )
-  );
 };
 
 // Hàm xử lý thêm emoji vào input
@@ -44,10 +36,7 @@ export const handleNewMessage = (
   const currentChat = selectedChatRef.current;
 
   if (currentChat?.conversation_id === msg.conversation_id) {
-    // Nếu cuộc trò chuyện hiện tại đang mở, đánh dấu là đã đọc
     markAsRead(msg.conversation_id);
-
-    // Thêm tin nhắn mới vào danh sách tin nhắn
     setMessages((prev) => [
       ...prev,
       {
@@ -67,25 +56,26 @@ export const handleNewMessage = (
         file_name: msg.file_name || null,
       },
     ]);
-  } else {
-    // Nếu không phải cuộc trò chuyện hiện tại, tăng unread_count
-    setChats((prevChats) =>
-      prevChats.map((chat) =>
-        chat.conversation_id === msg.conversation_id
-          ? {
-              ...chat,
-              unread_count: (chat.unread_count || 0) + 1,
-              last_message: {
-                ...chat.last_message,
-                message: msg.message,
-                created_at: msg.created_at,
-                type: msg.type,
-              },
-            }
-          : chat
-      )
-    );
   }
+  setChats((prevChats) =>
+    prevChats.map((chat) =>
+      chat.conversation_id === msg.conversation_id
+        ? {
+            ...chat,
+            unread_count:
+              currentChat?.conversation_id === msg.conversation_id
+                ? chat.unread_count // Không tăng nếu đang ở trong cuộc trò chuyện
+                : (chat.unread_count || 0) + 1,
+            last_message: {
+              ...chat.last_message,
+              message: msg.message,
+              created_at: msg.created_at,
+              type: msg.type,
+            },
+          }
+        : chat
+    )
+  );
 };
 
 export const copyMessage = (text) => {
@@ -150,7 +140,7 @@ export const handleImageChange = (e, setPreviewImage, setSelectedImage) => {
     };
     reader.readAsDataURL(file); // Đọc file dưới dạng Base64
   }
-  e.target.value = ""
+  e.target.value = "";
 };
 
 // Hàm xử lý thay đổi tệp

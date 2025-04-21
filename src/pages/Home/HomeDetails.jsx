@@ -31,7 +31,9 @@ const HomeDetails = () => {
     socket.emit("get_conversations", { user_id: user.id });
     socket.on("conversations", (response) => {
       if (response.status === "success") {
-        setChats(response.conversations);
+        console.log("response.conversations", response.conversations);
+        
+        setChats(response.conversations.slice(0,2));
       } else {
         console.error("Lỗi khi lấy danh sách hội thoại:", response.message);
       }
@@ -204,7 +206,7 @@ const HomeDetails = () => {
     // Đăng ký sự kiện
     socket.on("group_created", handleGroupCreated);
     socket.on("new_group", handleNewGroup);
-    socket.on("removed_member", handleRemovedMember);
+    socket.on("user_left_group", handleRemovedMember);
     socket.on("error", handleError);
     socket.on("add_member", handleAddMember);
     socket.on("group_deleted", handleGroupRemoved);
@@ -215,7 +217,7 @@ const HomeDetails = () => {
     return () => {
       socket.off("group_created", handleGroupCreated);
       socket.off("new_group", handleNewGroup);
-      socket.off("removed_member", handleRemovedMember);
+      socket.off("user_left_group", handleRemovedMember);
       socket.off("error", handleError);
       socket.off("add_member", handleAddMember);
       socket.off("delete_group", handleGroupRemoved);

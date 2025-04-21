@@ -240,17 +240,10 @@ const ChatWindow = ({
     revokeMessage(socket, userMain.id, id, setMessages);
   };
   const sendMessage = (fileData = null) => {
-    console.log("check fileData:", fileData);
-    console.log("selectedImage:", selectedImage);
-    console.log("selectedFile:", selectedFile);
-    console.log("selectedVideo:", selectedVideo);
-    console.log("previewImage:", previewImage);
-    console.log("input:", input);
-    
     if (!input.trim() && !previewImage && !selectedFile && !selectedImage&& !selectedVideo && !fileData) {
       toast.error("Vui lòng nhập nội dung tin nhắn hoặc chọn tệp để gửi.");
-      return; // Không gửi nếu không có nội dung
-    }; // Không gửi nếu không có nội dung
+      return; 
+    }; 
     const tempId = `msg-${Date.now()}`;
     const isGroup = selectedChat?.list_user_id?.length > 2;
   
