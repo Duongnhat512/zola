@@ -65,7 +65,7 @@ export default function GroupSettingsScreen({ navigation  }) {
     const member = conversation.list_user_id.find(
       (item) => item.user_id === user.id
     );
-    console.log(member.permissions);
+    console.log(member.permission);
     return member ? member.permission : null;
   };
   const handleNameUpdate = (data) => {
@@ -86,8 +86,24 @@ export default function GroupSettingsScreen({ navigation  }) {
     socket.on("update_name_group", handleNameUpdate);
     socket.on("update_avt_group",handleAvatarUpdate)
     socket.on("delete_group",()=>{console.log("delete group thanh cong!");
-      navigation.navigate("Main");
-    })
+    navigation.navigate("Main");
+    });
+    socket.on("remove_member", ({ user_id }) => {
+      console.log("delete member thanh cong!", user_id);
+    
+      // Cập nhật danh sách member để xoá user bị đá
+      setMemberDetails(prev => prev.filter(m => m.user_id !== user_id));
+    
+      // Nếu chính mình bị đá thì rời khỏi màn hình
+      if (user_id === user.id) {
+        Alert.alert("Thông báo", "Bạn đã bị xoá khỏi nhóm.");
+        navigation.navigate("Main");
+      }
+    });     
+    socket.on("user_removed", ({ removed_user_id }) => {
+      console.log("Ai đó bị kick:", removed_user_id);
+      setMemberDetails(prev => prev.filter(m => m.user_id !== removed_user_id));
+    });
     socket.on("error", (err) => {
         console.log("❌ Lỗi socket:", err.message);
         Alert.alert("Lỗi", err.message);
@@ -118,6 +134,8 @@ export default function GroupSettingsScreen({ navigation  }) {
         socket.off("update_name_group");
         socket.off("update_avt_group");
         socket.off("delete_group");
+        socket.off("user_removed");
+
       };
   }, []);
   const getMimeType = (filename) => {
@@ -179,6 +197,28 @@ export default function GroupSettingsScreen({ navigation  }) {
   {
 
   }
+  const handleKickMember = (userId) => {
+    console.log(userId);
+    socket.emit("remove_member", {
+      conversation_id: conversation.conversation_id,
+      user_id: userId,
+    });
+    Alert.alert(
+      "Xác nhận",
+      "Bạn có chắc muốn xoá thành viên này khỏi nhóm?",
+      [
+        { text: "Huỷ" },
+        {
+          text: "Xoá",
+          style: "destructive",
+          onPress: () => {
+          
+          },
+        },
+      ]
+    );
+  };
+  
   const fetchMemberDetails = async () => {
     if (!conversation?.list_user_id) return;
   
@@ -247,29 +287,37 @@ export default function GroupSettingsScreen({ navigation  }) {
         <View style={{ marginTop: 20 }}>
   <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 10 }}>Thành viên nhóm</Text>
   <FlatList
-    data={memberDetails}
-    keyExtractor={(item) => item.user_id}
-    renderItem={({ item }) => (
+  data={memberDetails}
+  keyExtractor={(item) => item.user_id}
+  renderItem={({ item }) => (
     <View style={styles.memberRow}>
       <Image
-        source={
-          item.avatar ? { uri: item.avatar } : require('../assets/icon.png')
-        }
+        source={item.avatar ? { uri: item.avatar } : require('../assets/icon.png')}
         style={styles.friendAvatar}
       />
       <Text style={{ flex: 1 }}>{item.fullname}</Text>
       <Text style={[styles.permissionTag, styles[item.permission]]}>
-     {item.permission === 'owner'
-      ? 'Trưởng nhóm'
-      : item.permission === 'member'
-      ? 'Thành viên'
-      : item.permission === 'moderator'
-      ? 'Quản trị viên'
-      : item.permission}
+        {item.permission === 'owner'
+          ? 'Trưởng nhóm'
+          : item.permission === 'member'
+          ? 'Thành viên'
+          : item.permission === 'moderator'
+          ? 'Quản trị viên'
+          : item.permission}
       </Text>
+
+      {/* Nút xoá chỉ hiện nếu là owner và không tự xoá chính mình */}
+      {permissions === 'owner' && item.user_id !== user.id && (
+        <TouchableOpacity
+          onPress={() => handleKickMember(item.user_id)}
+          style={{ padding: 6 }}
+        >
+          <Text style={{ color: 'red' }}>Xoá</Text>
+        </TouchableOpacity>
+      )}
     </View>
-    )}
-    />
+  )}
+/>
   
 
   {permissions === 'owner' && (

@@ -17,7 +17,7 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
-
+import { showMessage } from "react-native-flash-message";
 
 const MessagesScreen = () => {
   const navigation = useNavigation();
@@ -49,9 +49,59 @@ const MessagesScreen = () => {
   
     const initSocket = async () => {
       try {
+ 
+        
         socketInstance = await setupSocket();
         setSocket(socketInstance);
   
+        socketInstance.on("new_group", (data) => {
+          showMessage({
+            message: " Bạn đã được thêm vào nhóm mới!",
+            description: data.group_name,
+            type: "success",
+          });
+          navigation.navigate("Main");
+        });
+        
+        socketInstance.on("new_member", (data) => {
+          showMessage({
+            message: " Thành viên mới đã được thêm vào nhóm!",
+            type: "info",
+          });
+          navigation.navigate("Main");
+        });
+        
+        socketInstance.on("group_deleted", (data) => {
+          showMessage({
+            message: "Nhóm đã bị giải tán",
+            type: "danger",
+          });
+          navigation.navigate("Main");
+        });
+        
+        socketInstance.on("removed_member", (data) => {
+          showMessage({
+            message: "❌ Bạn đã bị xoá khỏi nhóm",
+            type: "danger",
+          });
+          navigation.navigate("Main");
+        });
+        
+        socketInstance.on("update_permissions", (data) => {
+          showMessage({
+            message: "⚙️ Quyền trong nhóm đã được cập nhật",
+            type: "default",
+          });
+          navigation.navigate("Main");
+        });
+        
+        socketInstance.on("user_left_group", (data) => {
+          showMessage({
+            message: "🏃 Ai đó đã rời nhóm",
+            description: data.user_id,
+            type: "warning",
+          });
+        });
         socketInstance.on("connect", () => {
           console.log("✅ Socket connected:", socketInstance.id);
         });
@@ -77,6 +127,16 @@ const MessagesScreen = () => {
     initSocket();
   
     return () => {
+      if (socketInstance) {
+        socketInstance.off("conversations");
+        socketInstance.off("new_group");
+        socketInstance.off("new_member");
+        socketInstance.off("removed_member");
+        socketInstance.off("group_deleted");
+        socketInstance.off("user_left_group");
+        socketInstance.off("update_permissions");
+        socketInstance.disconnect();
+      }
       if (socketInstance) {
         socketInstance.off("conversations");
         socketInstance.disconnect();
