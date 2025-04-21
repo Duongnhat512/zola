@@ -265,9 +265,7 @@ const ChatWindow = ({
     const msg = {
       conversation_id: selectedChat?.conversation_id || null,
       receiver_id:
-        selectedChat?.list_user_id?.find(
-          (user) => user.user_id !== userMain.id
-        ) || null,
+      selectedChat?.list_user_id?.find((user) => user.user_id !== userMain.id).user_id || null,
       message: input || null,
       file_name:
         selectedVideo?.file_name ||
