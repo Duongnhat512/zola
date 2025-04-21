@@ -418,7 +418,7 @@ ConversationController.addMember = async (socket, data) => {
     );
 
     socket.emit("add_member", {
-      message: "Thêm thành viên thành công",
+      message: "Thành viên mới vừa được thêm",
       user_id: user_id,
       conversation_id: conversation_id
     });
@@ -490,11 +490,10 @@ ConversationController.removeMember = async (socket, data) => {
     await redisClient.srem(`group:${conversation_id}`, user_id);
     await redisClient.zrem(`chatlist:${user_id}`, conversation_id);
     await UserCacheService.removePermissions(user_id, conversation_id);
-
     socket.emit("remove_member", {
-      message: "Xóa thành viên thành công",
+      message: `Thành viên đã bị xóa khỏi nhóm`,
       user_id: user_id,
-      conversation_id: conversation_id
+      conversation_id: conversation_id,
     });
 
     // Thông báo cho tất cả thành viên trong nhóm
