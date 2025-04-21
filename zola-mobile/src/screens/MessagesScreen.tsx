@@ -37,7 +37,6 @@ const MessagesScreen = () => {
   useFocusEffect(
     useCallback(() => {
       if (socket && user?.id) {
-        console.log("🔄 Trang A được focus, gọi lại get_conversations");
         socket.emit("get_conversations", { user_id: user.id });
       }
     }, [socket, user])
