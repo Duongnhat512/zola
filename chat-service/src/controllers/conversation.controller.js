@@ -417,6 +417,12 @@ ConversationController.addMember = async (socket, data) => {
       conversation_id
     );
 
+    socket.emit("add_member", {
+      message: "Thêm thành viên thành công",
+      user_id: user_id,
+      conversation_id: conversation_id
+    });
+
     const timestamp = Date.now();
     await redisClient.zadd(`chatlist:${user_id}`, timestamp, conversation_id);
 
@@ -431,12 +437,22 @@ ConversationController.addMember = async (socket, data) => {
         user_id: user_id,
       });
     });
+    
+    members = await redisClient.smembers(`group:${conversation_id}`);
 
-    socket.emit("add_member", {
-      message: "Thêm thành viên thành công",
-      result,
-      user_id: user_id,
+    members = members.filter(member => member !== user_id);    
+    for (const member of members) {
+        const socketIds = await redisClient.smembers(`sockets:${member}`);
+        for (const socketId of socketIds) {
+          socket.to(socketId).emit("add_member", {
+          conversation_id: conversation_id,
+          user_id: user_id,
+          message: "Có thành viên mới",
     });
+  }
+}
+
+    
 
   } catch (error) {
     console.error("Có lỗi khi thêm thành viên:", error);
@@ -483,13 +499,13 @@ ConversationController.removeMember = async (socket, data) => {
     // Thông báo cho tất cả thành viên trong nhóm
     const members = await redisClient.smembers(`group:${conversation_id}`);
 
-console.log("members", members);
-
+console.log("REMOVED MEMBER", members);
+    members.push(user_id);
 for (const member of members) {
   const socketIds = await redisClient.smembers(`sockets:${member}`);
   console.log(socketIds, "socketIds");
   for (const socketId of socketIds) {
-    socket.to(socketId).emit("user_left_group", {
+    socket.to(socketId).emit("removed_member", {
       conversation_id: conversation_id,
       user_id: user_id,
       message: "Người dùng đã bị xóa khỏi nhóm",
