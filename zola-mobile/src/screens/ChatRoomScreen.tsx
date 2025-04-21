@@ -59,6 +59,8 @@ const ChatRoomScreen = ({ route, navigation }) => {
     fetchEmojis();
   }, []);
 
+
+
   useEffect(() => {
     const initSocket = async () => {
       try {
@@ -103,11 +105,28 @@ const ChatRoomScreen = ({ route, navigation }) => {
           );
         });
 
+        socketInstance.on('new_message', (data) => {
+          const isMe = data.sender_id === currentUser.id;
+          const newMessage = {
+            id: data.id,
+            sender: isMe ? 'me' : 'other',
+            senderName: isMe ? currentUser.fullname : data.sender_name,
+            text: data.is_deleted ? 'Tin nhắn đã thu hồi' : data.message,
+            avatar: isMe ? currentUser.avt : data.sender_avatar,
+            time: dayjs(data.created_at).fromNow(),
+            type: data.is_deleted ? 'deleted' : data.type,
+            file: data.media ? { uri: data.media, name: data.media.split('/').pop() } : undefined,
+            status: 'sent',
+          };
+          setMessages((prev) => [...prev, newMessage]);
+        });
+
         return () => {
           socketInstance.off('connect');
           socketInstance.off('list_messages');
           socketInstance.off('hidden_message');
           socketInstance.off('message_deleted');
+          socketInstance.off('new_message');
         };
       } catch (error) {
         console.error('Socket init error:', error);
@@ -117,6 +136,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
 
     initSocket();
   }, [chats.conversation_id]);
+
   useEffect(() => {
     if (socket && chats.conversation_id) {
       const timeout = setTimeout(() => {
@@ -126,6 +146,8 @@ const ChatRoomScreen = ({ route, navigation }) => {
       return () => clearTimeout(timeout);
     }
   }, [socket, chats.conversation_id]);
+ 
+
   const pickFile = async () => {
     const result = await DocumentPicker.getDocumentAsync({
       type: ['image/*', 'video/*', '*/*'], // Hỗ trợ ảnh, video, và mọi loại file
@@ -147,8 +169,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
     const tempId = `msg-${Date.now()}`;
     const now = new Date();
     const isGroup = chats.list_user_id?.length > 2;
-    console.log('inputText', isGroup);
-    // Thêm tin nhắn tạm thời vào danh sách
+   
     setMessages((prev) => [
       ...prev,
       {
@@ -188,27 +209,23 @@ const ChatRoomScreen = ({ route, navigation }) => {
           };
 
           const event = isGroup ? 'send_group_message' : 'send_private_message';
-          socket.emit(event, msg, (response) => {
-            if (response.status === 'success') {
+          socket.emit(event, msg,() => {});
+          socket.on("message_sent", (msg) => {
+              socket.emit("get_messages", { conversation_id: chats.conversation_id });
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === tempId
-                    ? { ...m, status: 'sent', time: response.time || m.time }
+                    ? { ...m, status: 'sent', time: msg.time || m.time }
                     : m
                 )
               );
-            } else {
-              setMessages((prev) =>
-                prev.map((m) => (m.id === tempId ? { ...m, status: 'failed' } : m))
-              );
-            }
+           
           });
         };
         reader.onerror = (error) => {
           console.error('Lỗi đọc tệp:', error);
         };
         reader.readAsDataURL(blob);
-        socket.emit("get_messages", { conversation_id: chats.conversation_id });
         setInputText('');
         setFile(null);
 
@@ -225,24 +242,18 @@ const ChatRoomScreen = ({ route, navigation }) => {
         status: 'pending',
         created_at: now.toISOString(),
       };
-      console.log('msg', msg);
       const event = isGroup ? 'send_group_message' : 'send_private_message';
-      socket.emit(event, msg, (response) => {
-        if (response.status === 'success') {
+      socket.emit(event, msg,() => {});
+      socket.on("message_sent", (msg) => {
+        socket.emit("get_messages", { conversation_id: chats.conversation_id });
           setMessages((prev) =>
             prev.map((m) =>
               m.id === tempId
-                ? { ...m, status: 'sent', time: response.time || m.time }
+                ? { ...m, status: 'sent', time: msg.time || m.time }
                 : m
             )
           );
-        } else {
-          setMessages((prev) =>
-            prev.map((m) => (m.id === tempId ? { ...m, status: 'failed' } : m))
-          );
-        }
       });
-      socket.emit("get_messages", { conversation_id: chats.conversation_id });
       setInputText('');
 
     }
