@@ -129,20 +129,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     position: 'relative',
   },
+
   
-  squareImageWrapper: {
-    width: 300,
-    height: 300,
-    backgroundColor: '#ccc',
-    borderRadius: 16,
-    overflow: 'hidden',
+  modalVideoContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   
-  squareImage: {
+  previewVideoContainer: {
+    width: '90%',
+    maxHeight: '90%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+  previewImage: {
     width: '100%',
-    height: '100%',
+    aspectRatio: 1, // để ảnh hiển thị hình vuông
+    borderRadius: 10,
   },
   
   closeOverlay: {
@@ -321,42 +327,31 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     textAlign: 'center',
   },
-  previewContainer: {
-    alignItems: 'center',
-    marginBottom: 10,
-  },
+
   previewFileName: {
     marginBottom: 5,
     fontSize: 14,
     color: '#555',
   },
 
-  cancelPreviewButton: {
-    marginTop: 5,
-  },
-  cancelPreviewText: {
-    color: 'red',
-    fontSize: 14,
-  },
-  modalVideoContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  previewContainer: {
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',  // Màu nền tối khi mở modal
+    justifyContent: 'center',
+    marginVertical: 10,
+    backgroundColor: '#ccc',
   },
   
-  previewVideoContainer: {
-    width: '90%',  // Đảm bảo video không chiếm quá 90% chiều rộng màn hình
-    backgroundColor: '#000',
-    borderRadius: 10,
-    overflow: 'hidden',
+
+  cancelPreviewButton: {
+    backgroundColor: 'red',  
+    padding: 10,
+    borderRadius: 5,
   },
   
-  previewImage: {
-    width: '100%',  // Chiều rộng video 100% của container
-    height: undefined,  // Tự động điều chỉnh chiều cao dựa trên tỉ lệ khung hình của video
-    aspectRatio: 16 / 9,  // Đặt tỉ lệ khung hình cho video (bạn có thể điều chỉnh nếu cần)
-  },
+  cancelPreviewText: {
+    color: 'white',
+    fontSize: 14,
+  }
   
   
 });

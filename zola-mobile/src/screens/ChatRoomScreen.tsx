@@ -12,7 +12,6 @@ import {
   Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as FileSystem from 'expo-file-system';
 import { StatusBar } from 'expo-status-bar';
 import * as DocumentPicker from 'expo-document-picker';
 import styles from '../styles/ChatRoomScreen.styles';
@@ -27,37 +26,19 @@ dayjs.locale('vi');
 
 const ChatRoomScreen = ({ route, navigation }) => {
   const { chats } = route.params;
-
   const currentUser = useSelector((state) => state.user.user);
   const flatListRef = useRef(null);
-
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [file, setFile] = useState(null);
   const [socket, setSocket] = useState(null);
-  const [loading, setLoading] = useState(true);
-
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [imagePreviewVisible, setImagePreviewVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [videoPreviewVisible, setVideoPreviewVisible] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState(null);
-  const [emojiModalVisible, setEmojiModalVisible] = useState(false);
-  const [emojiList, setEmojiList] = useState([]);
-
-  useEffect(() => {
-    const fetchEmojis = async () => {
-      try {
-        const res = await fetch('https://api.github.com/emojis');
-        const data = await res.json();
-        setEmojiList(data);
-      } catch (err) {
-        console.error('Lỗi tải emoji:', err);
-      }
-    };
-    fetchEmojis();
-  }, []);
+  
 
 
 
@@ -88,7 +69,6 @@ const ChatRoomScreen = ({ route, navigation }) => {
             };
           });
           setMessages(formatted);
-          setLoading(false);
         });
 
         socketInstance.on('hidden_message', (data) => {
@@ -130,12 +110,12 @@ const ChatRoomScreen = ({ route, navigation }) => {
         };
       } catch (error) {
         console.error('Socket init error:', error);
-        setLoading(false);
       }
     };
 
     initSocket();
   }, [chats.conversation_id]);
+
 
   useEffect(() => {
     if (socket && chats.conversation_id) {
@@ -150,7 +130,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
 
   const pickFile = async () => {
     const result = await DocumentPicker.getDocumentAsync({
-      type: ['image/*', 'video/*', '*/*'], // Hỗ trợ ảnh, video, và mọi loại file
+      type: ['image/*', 'video/*', '*/*'], 
       copyToCacheDirectory: true,
       multiple: false,
     });
@@ -211,15 +191,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
           const event = isGroup ? 'send_group_message' : 'send_private_message';
           socket.emit(event, msg,() => {});
           socket.on("message_sent", (msg) => {
-              socket.emit("get_messages", { conversation_id: chats.conversation_id });
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === tempId
-                    ? { ...m, status: 'sent', time: msg.time || m.time }
-                    : m
-                )
-              );
-           
+            socket.emit("get_messages", { conversation_id: chats.conversation_id });
           });
         };
         reader.onerror = (error) => {
@@ -245,20 +217,12 @@ const ChatRoomScreen = ({ route, navigation }) => {
       const event = isGroup ? 'send_group_message' : 'send_private_message';
       socket.emit(event, msg,() => {});
       socket.on("message_sent", (msg) => {
-        socket.emit("get_messages", { conversation_id: chats.conversation_id });
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === tempId
-                ? { ...m, status: 'sent', time: msg.time || m.time }
-                : m
-            )
-          );
+        socket.emit("get_messages", { conversation_id: chats.conversation_id });      
       });
       setInputText('');
 
     }
   };
-
 
   const deleteMessage = (id) => {
     socket.emit('set_hidden_message', { user_id: currentUser.id, message_id: id });
@@ -363,42 +327,42 @@ const ChatRoomScreen = ({ route, navigation }) => {
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
         />
 
-{file?.mimeType?.startsWith('image') && file.uri && (
-  <View style={styles.previewContainer}>
-    <Image
-      source={{ uri: file.uri }}
-      style={styles.previewImage}
-    />
-    <TouchableOpacity onPress={() => setFile(null)} style={styles.cancelPreviewButton}>
-      <Text style={styles.cancelPreviewText}>Hủy chọn ảnh</Text>
-    </TouchableOpacity>
-  </View>
-)}
+          {file?.mimeType?.startsWith('image') && file.uri && (
+            <View style={styles.previewContainer}>
+              <Image
+                source={{ uri: file.uri }}
+                style={styles.previewImage}
+              />
+              <TouchableOpacity onPress={() => setFile(null)} style={styles.cancelPreviewButton}>
+                <Text style={styles.cancelPreviewText}>Hủy chọn ảnh</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
-{file?.mimeType?.startsWith('video') && file.uri && (
-  <View style={styles.previewContainer}>
-    <Video
-      source={{ uri: file.uri }}
-      rate={1.0}
-      volume={1.0}
-      isMuted={false}
-      resizeMode="contain"
-      useNativeControls
-      style={styles.previewImage}
-    />
-    <TouchableOpacity onPress={() => setFile(null)} style={styles.cancelPreviewButton}>
-      <Text style={styles.cancelPreviewText}>Hủy chọn video</Text>
-    </TouchableOpacity>
-  </View>
-)}
+          {file?.mimeType?.startsWith('video') && file.uri && (
+            <View style={styles.previewContainer}>
+              <Video
+                source={{ uri: file.uri }}
+                rate={1.0}
+                volume={1.0}
+                isMuted={false}
+                resizeMode="contain"
+                useNativeControls
+                style={styles.previewImage}
+              />
+              <TouchableOpacity onPress={() => setFile(null)} style={styles.cancelPreviewButton}>
+                <Text style={styles.cancelPreviewText}>Hủy chọn video</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
         <View style={styles.footerWrapper}>
           <TouchableOpacity onPress={pickFile} style={styles.fileButton}>
             <Text style={{ fontSize: 22 }}>📎</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setEmojiModalVisible(true)} style={styles.emojiButton}>
+          {/* <TouchableOpacity onPress={() => setEmojiModalVisible(true)} style={styles.emojiButton}>
             <Text style={styles.emojiButtonText}>🙂</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
           <View style={styles.footerContainer}>
             <TextInput
               style={styles.input}
@@ -415,31 +379,42 @@ const ChatRoomScreen = ({ route, navigation }) => {
 
       {/* Modal: Ảnh */}
       <Modal visible={imagePreviewVisible} transparent animationType="fade">
-        <TouchableOpacity onPress={() => setImagePreviewVisible(false)} style={styles.modalContainer}>
-          <Image source={{ uri: selectedImage }} style={styles.squareImage} resizeMode="contain" />
-        </TouchableOpacity>
-      </Modal>
+      {/* Nhấn vùng ngoài ảnh sẽ đóng modal */}
+          <TouchableOpacity onPress={() => setImagePreviewVisible(false)} style={styles.modalVideoContainer}>
+            <View style={styles.previewVideoContainer}>
+              {/* Nhấn vào ảnh không bị đóng modal */}
+              <TouchableOpacity activeOpacity={1}>
+                <Image
+                  source={{ uri: selectedImage }}
+                  style={styles.previewImage}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+
         
         {/* Modal: Video */}
         <Modal visible={videoPreviewVisible} transparent animationType="fade">
-  {/* Chỉ đóng modal khi nhấn vào vùng ngoài video */}
-  <TouchableOpacity onPress={() => setVideoPreviewVisible(false)} style={styles.modalVideoContainer}>
-    <View style={styles.previewVideoContainer}>
-      {/* Video không đóng modal khi nhấn vào nó */}
-      <TouchableOpacity activeOpacity={1}>
-        <Video
-          source={{ uri: selectedVideo }}
-          rate={1.0}
-          volume={1.0}
-          isMuted={false}
-          resizeMode="contain"
-          useNativeControls
-          style={styles.previewImage}
-        />
-      </TouchableOpacity>
-    </View>
-  </TouchableOpacity>
-</Modal>
+        {/* Chỉ đóng modal khi nhấn vào vùng ngoài video */}
+          <TouchableOpacity onPress={() => setVideoPreviewVisible(false)} style={styles.modalVideoContainer}>
+            <View style={styles.previewVideoContainer}>
+              {/* Video không đóng modal khi nhấn vào nó */}
+              <TouchableOpacity activeOpacity={1}>
+                <Video
+                  source={{ uri: selectedVideo }}
+                  rate={1.0}
+                  volume={1.0}
+                  isMuted={false}
+                  resizeMode="contain"
+                  useNativeControls
+                  style={styles.previewImage}
+                />
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
 
 
 

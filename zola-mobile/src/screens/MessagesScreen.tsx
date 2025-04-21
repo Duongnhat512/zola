@@ -15,7 +15,8 @@ import setupSocket from '../services/Socket';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
-
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback } from "react";
 
 const MessagesScreen = () => {
   const navigation = useNavigation();
@@ -31,6 +32,23 @@ const MessagesScreen = () => {
     if (!timestamp) return '';
     return dayjs(timestamp).fromNow(); // ví dụ: "5 phút trước"
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      if (socket && user?.id) {
+        socket.emit("get_conversations", { user_id: user.id });
+      }
+    }, [socket, user])
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      if (socket && user?.id) {
+        console.log("🔄 Trang A được focus, gọi lại get_conversations");
+        socket.emit("get_conversations", { user_id: user.id });
+      }
+    }, [socket, user])
+  );
   useEffect(() => {
     let socketInstance;
   
@@ -49,7 +67,6 @@ const MessagesScreen = () => {
   
         socketInstance.on("conversations", (response) => {
           if (response.status === "success") {
-            console.log("📥 Conversations:", response.conversations);
             setChats(response.conversations);
             console.log("🗨️ Danh sách hội thoại:", response.conversations);
           } else {
@@ -102,7 +119,13 @@ const MessagesScreen = () => {
               numberOfLines={1}
               ellipsizeMode="tail"
             >
-              {item.last_message?.message || 'Chưa có tin nhắn'}
+              {item.last_message?.type === 'text'
+                ? item.last_message?.message
+                : item.last_message?.type === 'image'
+                ? 'Đã gửi một ảnh'
+                : item.last_message?.type === 'video'
+                ? 'Đã gửi một video'
+                : 'Chưa có tin nhắn'}
             </Text>
             <Text style={styles.chatTime}>
               {formatRelativeTime(item.last_message?.created_at)}
