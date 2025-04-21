@@ -787,7 +787,8 @@ ConversationController.outGroup = async (socket, data) => {
     socket.emit("out_group", {
       status: "success",
       message: "Đã rời nhóm",
-      result,
+      conversation_id: conversation_id,
+      user_id: socket.user.id,
     });
 
     // Thông báo cho tất cả thành viên trong nhóm
