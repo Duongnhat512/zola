@@ -494,14 +494,13 @@ ConversationController.removeMember = async (socket, data) => {
     socket.emit("remove_member", {
       message: "Xóa thành viên thành công",
       user_id: user_id,
+      conversation_id: conversation_id
     });
 
     // Thông báo cho tất cả thành viên trong nhóm
     const members = await redisClient.smembers(`group:${conversation_id}`);
-
-console.log("REMOVED MEMBER", members);
     members.push(user_id);
-for (const member of members) {
+    for (const member of members) {
   const socketIds = await redisClient.smembers(`sockets:${member}`);
   console.log(socketIds, "socketIds");
   for (const socketId of socketIds) {
@@ -594,6 +593,7 @@ ConversationController.getConversations = async (socket, data) => {
             list_user_id,
             is_unread: isUnread,
             unread_count: unreadCount,
+            type: conversation.type,
           };
         } catch (err) {
           console.error(`Lỗi khi xử lý hội thoại ${conversationId}:`, err);
@@ -713,9 +713,10 @@ ConversationController.muteMember = async (socket, data) => {
 // Giải tán nhóm
 ConversationController.deleteConversation = async (socket, data) => {
   const { conversation_id } = data;
+  
 
   const permissions = await UserCacheService.getConversationPermissions(socket.user.id, conversation_id);
-
+  
   if (permissions !== 'owner') {
     return socket.emit("error", { message: "Bạn không có quyền giải tán nhóm" });
   }
