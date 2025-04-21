@@ -21,12 +21,13 @@ import { useSelector } from 'react-redux';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
-
+import { Video } from 'expo-av';
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
 
 const ChatRoomScreen = ({ route, navigation }) => {
   const { chats } = route.params;
+
   const currentUser = useSelector((state) => state.user.user);
   const flatListRef = useRef(null);
 
@@ -40,7 +41,8 @@ const ChatRoomScreen = ({ route, navigation }) => {
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [imagePreviewVisible, setImagePreviewVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [videoPreviewVisible, setVideoPreviewVisible] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState(null);
   const [emojiModalVisible, setEmojiModalVisible] = useState(false);
   const [emojiList, setEmojiList] = useState([]);
 
@@ -68,10 +70,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
         });
 
         socketInstance.on('list_messages', (data) => {
-          console.log('Nhận tin nhắn:', data);
           const sortedData = data.sort((a, b) => a.created_at.localeCompare(b.created_at));
-          const fileddata = sortedData.filter((msg) => msg.message === "hahahahahaha");
-          console.log('fileddata', fileddata);
           const formatted = sortedData.map((msg) => {
             const isMe = msg.sender_id === currentUser.id;
             return {
@@ -128,12 +127,16 @@ const ChatRoomScreen = ({ route, navigation }) => {
     }
   }, [socket, chats.conversation_id]);
   const pickFile = async () => {
-    const result = await DocumentPicker.getDocumentAsync({ type: '*/*' });
+    const result = await DocumentPicker.getDocumentAsync({
+      type: ['image/*', 'video/*', '*/*'], // Hỗ trợ ảnh, video, và mọi loại file
+      copyToCacheDirectory: true,
+      multiple: false,
+    });
+  
     if (!result.canceled && result.assets?.length > 0) {
       setFile(result.assets[0]);
     }
   };
-
 
   const sendMessage = async () => {
     if (!inputText.trim() && !file) {
@@ -143,8 +146,8 @@ const ChatRoomScreen = ({ route, navigation }) => {
 
     const tempId = `msg-${Date.now()}`;
     const now = new Date();
-    const isGroup = chats.list_user_id?.length > 1;
-
+    const isGroup = chats.list_user_id?.length > 2;
+    console.log('inputText', isGroup);
     // Thêm tin nhắn tạm thời vào danh sách
     setMessages((prev) => [
       ...prev,
@@ -174,7 +177,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
           const msg = {
             conversation_id: chats.conversation_id,
             sender_id: currentUser.id,
-            receiver_id: isGroup ? null : chats.list_user_id[0],
+            receiver_id: isGroup ? null : chats.list_user_id.filter(user => user.user_id !== currentUser.id)[0]?.user_id,
             message: inputText,
             file_name: file.name,
             file_type: file.mimeType,
@@ -213,15 +216,16 @@ const ChatRoomScreen = ({ route, navigation }) => {
         console.error('Lỗi tải tệp:', error);
       }
     } else {
+     
       const msg = {
         conversation_id: chats.conversation_id,
         sender_id: currentUser.id,
-        receiver_id: isGroup ? null : chats.list_user_id[0],
+        receiver_id: isGroup ? null : chats.list_user_id.filter(user => user.user_id !== currentUser.id)[0]?.user_id,
         message: inputText,
         status: 'pending',
         created_at: now.toISOString(),
       };
-
+      console.log('msg', msg);
       const event = isGroup ? 'send_group_message' : 'send_private_message';
       socket.emit(event, msg, (response) => {
         if (response.status === 'success') {
@@ -282,11 +286,28 @@ const ChatRoomScreen = ({ route, navigation }) => {
                 setSelectedImage(item.file.uri);
                 setImagePreviewVisible(true);
               }
+              if (item.type === 'video') {
+                setSelectedVideo(item.file.uri);
+                setVideoPreviewVisible(true);
+              }
+
             }}>
               {item.type === 'image' ? (
                 <Image source={{ uri: item.file.uri }} style={styles.mediaPreview} />
-              ) : (
-                <Text>{item.file.name}</Text>
+              ) : 
+                item.type === 'video' ? (
+                  <Video
+                    source={{ uri: item.file.uri }}
+                    rate={1.0}
+                    volume={1.0}
+                    isMuted={false}
+                    resizeMode="contain"
+                    useNativeControls
+                    style={styles.mediaPreview}
+                  />
+                ) : (
+                <Text>{item.file.name}</Text>   
+           
               )}
             </TouchableOpacity>
           )}
@@ -331,17 +352,34 @@ const ChatRoomScreen = ({ route, navigation }) => {
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
         />
 
-        {file?.mimeType?.startsWith('image') && file.uri && (
-          <View style={styles.previewContainer}>
-            <Image
-              source={{ uri: file.uri }}
-              style={styles.previewImage}
-            />
-            <TouchableOpacity onPress={() => setFile(null)} style={styles.cancelPreviewButton}>
-              <Text style={styles.cancelPreviewText}>Hủy chọn ảnh</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+{file?.mimeType?.startsWith('image') && file.uri && (
+  <View style={styles.previewContainer}>
+    <Image
+      source={{ uri: file.uri }}
+      style={styles.previewImage}
+    />
+    <TouchableOpacity onPress={() => setFile(null)} style={styles.cancelPreviewButton}>
+      <Text style={styles.cancelPreviewText}>Hủy chọn ảnh</Text>
+    </TouchableOpacity>
+  </View>
+)}
+
+{file?.mimeType?.startsWith('video') && file.uri && (
+  <View style={styles.previewContainer}>
+    <Video
+      source={{ uri: file.uri }}
+      rate={1.0}
+      volume={1.0}
+      isMuted={false}
+      resizeMode="contain"
+      useNativeControls
+      style={styles.previewImage}
+    />
+    <TouchableOpacity onPress={() => setFile(null)} style={styles.cancelPreviewButton}>
+      <Text style={styles.cancelPreviewText}>Hủy chọn video</Text>
+    </TouchableOpacity>
+  </View>
+)}
 
         <View style={styles.footerWrapper}>
           <TouchableOpacity onPress={pickFile} style={styles.fileButton}>
@@ -370,6 +408,29 @@ const ChatRoomScreen = ({ route, navigation }) => {
           <Image source={{ uri: selectedImage }} style={styles.squareImage} resizeMode="contain" />
         </TouchableOpacity>
       </Modal>
+        
+        {/* Modal: Video */}
+        <Modal visible={videoPreviewVisible} transparent animationType="fade">
+  {/* Chỉ đóng modal khi nhấn vào vùng ngoài video */}
+  <TouchableOpacity onPress={() => setVideoPreviewVisible(false)} style={styles.modalVideoContainer}>
+    <View style={styles.previewVideoContainer}>
+      {/* Video không đóng modal khi nhấn vào nó */}
+      <TouchableOpacity activeOpacity={1}>
+        <Video
+          source={{ uri: selectedVideo }}
+          rate={1.0}
+          volume={1.0}
+          isMuted={false}
+          resizeMode="contain"
+          useNativeControls
+          style={styles.previewImage}
+        />
+      </TouchableOpacity>
+    </View>
+  </TouchableOpacity>
+</Modal>
+
+
 
       {/* Modal: Thu hồi/Xóa */}
       <Modal visible={modalVisible} transparent animationType="fade">

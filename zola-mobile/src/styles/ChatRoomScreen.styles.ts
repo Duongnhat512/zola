@@ -330,12 +330,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#555',
   },
-  previewImage: {
-    width: 200,
-    height: 200,
-    borderRadius: 8,
-    resizeMode: 'contain',
-  },
+
   cancelPreviewButton: {
     marginTop: 5,
   },
@@ -343,6 +338,26 @@ const styles = StyleSheet.create({
     color: 'red',
     fontSize: 14,
   },
+  modalVideoContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',  // Màu nền tối khi mở modal
+  },
+  
+  previewVideoContainer: {
+    width: '90%',  // Đảm bảo video không chiếm quá 90% chiều rộng màn hình
+    backgroundColor: '#000',
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  
+  previewImage: {
+    width: '100%',  // Chiều rộng video 100% của container
+    height: undefined,  // Tự động điều chỉnh chiều cao dựa trên tỉ lệ khung hình của video
+    aspectRatio: 16 / 9,  // Đặt tỉ lệ khung hình cho video (bạn có thể điều chỉnh nếu cần)
+  },
+  
   
 });
 

@@ -51,6 +51,7 @@ const MessagesScreen = () => {
           if (response.status === "success") {
             console.log("📥 Conversations:", response.conversations);
             setChats(response.conversations);
+            console.log("🗨️ Danh sách hội thoại:", response.conversations);
           } else {
             console.error("Lỗi khi lấy danh sách hội thoại:", response.message);
           }
