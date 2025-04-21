@@ -357,11 +357,12 @@ ConversationController.findPrivateConversation = async (req, res) => {
     }
     
 
-    const list_user_id_raw = await redisClient.smembers()
+    const list_user_id_raw = redisClient.smembers(`group:${conversation.id}`);
 
-    const last_message_id = await ConversationModel.getLastMessage(
+    const last_message_id = ConversationModel.getLastMessage(
       conversation.id
     );
+
 
     let last_message = {};
 
