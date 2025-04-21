@@ -44,7 +44,7 @@ const ChatWindow = ({
   setIsInfoGroupVisible,
   infoPermissions,
   isModalAddMemberVisible,
-  setIsModalAddMemberVisible
+  setIsModalAddMemberVisible,
 }) => {
   const selectedChatRef = useRef();
   const [emojiList, setEmojiList] = useState({});
@@ -75,6 +75,8 @@ const ChatWindow = ({
     });
 
     socket.on("list_messages", (data) => {
+      console.log("List messages event received:", data);
+      
       const dataSort = data.sort(
         (a, b) => new Date(a.created_at) - new Date(b.created_at)
       );
@@ -231,8 +233,13 @@ const ChatWindow = ({
   const handleRevokeMessage = (id) => {
     revokeMessage(socket, userMain.id, id, setMessages);
   };
-  const sendMessage = (fileData = null) => {
+  const sendMessage = (
+    fileData = null,
+    notify = true,
+    messageNotify = "Đã được phân quyền "
+  ) => {
     if (
+      !notify &&
       !input.trim() &&
       !previewImage &&
       !selectedFile &&
@@ -250,25 +257,29 @@ const ChatWindow = ({
       ...prev,
       {
         id: tempId,
-        sender: "me",
-        avatar: userMain.avatar || "/default-avatar.jpg",
-        text: input || null,
-        media: previewImage || null,
-        file_name: selectedFile?.file_name || fileData?.file_name || null,
+        sender: notify ? "system" : "me", // Nếu là notify, sender là "system"
+        avatar: notify ? null : userMain.avatar || "/default-avatar.jpg",
+        text: notify ? messageNotify : input || null,
+        media: notify ? null : previewImage || null,
+        file_name: notify
+          ? null
+          : selectedFile?.file_name || fileData?.file_name || null,
         time: new Date().toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
         }),
-        status: "pending",
-        uploadProgress: 0, // Bắt đầu từ 0%
+        type: notify ? "notify" : "text", // Gán type là "notify" nếu là thông báo
+        status: notify ? "sent" : "pending", // Notify không cần trạng thái pending
+        uploadProgress: notify ? null : 0, // Notify không cần uploadProgress
       },
     ]);
 
     const msg = {
       conversation_id: selectedChat?.conversation_id || null,
       receiver_id:
-      selectedChat?.list_user_id?.find((user) => user.user_id !== userMain.id).user_id || null,
-      message: input || null,
+        selectedChat?.list_user_id?.find((user) => user.user_id !== userMain.id)
+          .user_id || null,
+      message: notify ? messageNotify : input || null,
       file_name:
         selectedVideo?.file_name ||
         selectedImage?.file_name ||
@@ -293,11 +304,14 @@ const ChatWindow = ({
         selectedFile?.file_data ||
         fileData?.file_data ||
         null,
+      is_notify: notify,
     };
 
     const event = isGroup ? "send_group_message" : "send_private_message";
     socket.emit(event, msg, () => {});
     socket.on("message_sent", (msg) => {
+      console.log(msg);
+
       setMessages((prev) =>
         prev.map((m) =>
           m.id === tempId
@@ -307,7 +321,7 @@ const ChatWindow = ({
                 text: msg.message || null,
                 media: msg.media || null,
                 file_name: msg.file_name || null,
-                type: msg.type || "text",
+                type: notify ? "notify" : msg.type || "text",
                 time: new Date(msg.created_at).toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit",
@@ -325,7 +339,7 @@ const ChatWindow = ({
     setSelectedFile(null);
     setSelectedImage(null);
     setSelectedVideo(null);
-    simulateUpload(tempId);
+    if (!notify) simulateUpload(tempId);
   };
   const simulateUpload = (tempId) => {
     const interval = setInterval(() => {
@@ -383,18 +397,18 @@ const ChatWindow = ({
         isLoading={isLoading}
         hasMoreMessages={hasMoreMessages}
       />
-      {isModalVisible  && (
+      {isModalVisible && (
         <AddMember
           selectedChat={selectedChat}
           visible={isModalVisible}
           onClose={handleClose}
         />
       )}
-      {isModalAddMemberVisible  && (
+      {isModalAddMemberVisible && (
         <AddMember
           selectedChat={selectedChat}
           visible={isModalAddMemberVisible}
-          onClose={()=> setIsModalAddMemberVisible(false)}
+          onClose={() => setIsModalAddMemberVisible(false)}
         />
       )}
       <div className="p-4 bg-white border-t">
