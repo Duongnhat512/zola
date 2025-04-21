@@ -325,22 +325,14 @@ ConversationController.findPrivateConversation = async (req, res) => {
   if (!user_id || !friend_id) {
     return res.status(400).json({ message: "Thiếu thông tin" });
   }
-
- 
-
   try {
     const conversation = await ConversationModel.findPrivateConversation(
       user_id,
       friend_id
     );
-    console.log('====================================');
-    console.log(conversation);
-    console.log('====================================');
-    if (conversation === undefined) {
+
+    if (!conversation) {
       const user_friend = await UserCacheService.getUserProfile(friend_id, req.headers.authorization);
-      console.log('====================================');
-      console.log(user_friend);
-      console.log('====================================');
       const newConversation = await ConversationModel.createConversation({
         created_by: user_id,
         type: "private",
@@ -496,8 +488,12 @@ ConversationController.removeMember = async (socket, data) => {
 
     // Thông báo cho tất cả thành viên trong nhóm
     const members = await redisClient.smembers(`group:${conversation_id}`);
+
+    console.log("members", members);
+    
     members.forEach(async (member) => {
       const socketIds = await redisClient.smembers(`sockets:${member}`);
+      console.log(socketIds, "socketIds");
       socketIds.forEach((socketId) => {
         socket.to(socketId).emit("user_left_group", {
           conversation_id: conversation_id,
