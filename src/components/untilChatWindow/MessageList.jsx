@@ -1,5 +1,5 @@
 import React from "react";
-import { Avatar, Image, Dropdown, Spin } from "antd";
+import { Avatar, Image, Dropdown, Spin, Progress } from "antd";
 import MessageOptions from "./MessageOptions";
 
 const MessageList = ({
@@ -32,7 +32,7 @@ const MessageList = ({
       {messages
         .filter(
           (msg) =>
-            msg.text === "Tin nhắn đã thu hồi" || 
+            msg.text === "Tin nhắn đã thu hồi" ||
             (msg.type === "text" && msg.text) ||
             msg.media ||
             msg.file_name
@@ -65,25 +65,47 @@ const MessageList = ({
               >
                 <div
                   style={{
-                    padding: msg.type === "text" || msg.text==="Tin nhắn đã thu hồi" ? "8px 12px" : "0",
+                    padding:
+                      msg.type === "text" ||
+                      msg.type === "document" ||
+                      msg.text === "Tin nhắn đã thu hồi"
+                        ? "8px 12px"
+                        : "0",
                     borderRadius: "12px",
                     maxWidth: "300px",
                     backgroundColor:
                       msg.sender === "me" ? "#d1e7ff" : "#ffffff",
                     boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                    textAlign: "center",
                   }}
                 >
                   {msg.status === "pending" ? (
-                    <Spin
-                      size="large"
+                    <div
                       style={{
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        height: "50px",
-                        width: "50px",
+                        flexDirection: "column",
+                        height: "100px",
+                        width: "100px",
                       }}
-                    />
+                    >
+                      <Progress
+                        type="circle"
+                        percent={msg.uploadProgress || 0} // Hiển thị phần trăm tải lên
+                        width={50}
+                        strokeColor="#007bff"
+                      />
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          color: "#888",
+                          marginTop: "8px",
+                        }}
+                      >
+                        Đang tải...
+                      </p>
+                    </div>
                   ) : (
                     <>
                       {msg.type === "image" && msg.media && (
@@ -92,9 +114,7 @@ const MessageList = ({
                           alt="Đã gửi ảnh"
                           style={{
                             maxWidth: "100%",
-                            height: "auto",
                             borderRadius: "8px",
-                            marginTop: msg.text ? "8px" : "0",
                           }}
                         />
                       )}
