@@ -79,8 +79,10 @@ export const handleNewMessage = (
       )
       .sort(
         (a, b) =>
-          new Date(b.last_message.created_at) -
-          new Date(a.last_message.created_at)
+          // new Date(b.last_message.created_at) -
+          console.log("AAAAAAAAAA" +a,b)
+          
+          // new Date(a.last_message.created_at)
       ); // Sắp xếp giảm dần theo created_at
 
     console.log("Updated Chats:", updatedChats); // Log để kiểm tra danh sách đã sắp xếp

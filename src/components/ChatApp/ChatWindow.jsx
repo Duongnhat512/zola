@@ -45,12 +45,15 @@ const ChatWindow = ({
   infoPermissions,
   isModalAddMemberVisible,
   setIsModalAddMemberVisible,
+  messages,
+  setMessages
+
 }) => {
   const selectedChatRef = useRef();
   const [emojiList, setEmojiList] = useState({});
   const [isEmojiPickerVisible, setIsEmojiPickerVisible] = useState(false);
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState([]);
+  // const [messages, setMessages] = useState([]);
   const [previewImage, setPreviewImage] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -108,15 +111,15 @@ const ChatWindow = ({
   useEffect(() => {
     socket.on("new_message", (msg) => {
       console.log("New message event received:", msg);
-      handleNewMessage(
-        msg,
-        selectedChatRef,
-        userMain,
-        setMessages,
-        setChats,
-        (conversationId) =>
-          markAsRead(socket, conversationId, userMain.id, setChats)
-      );
+      // handleNewMessage(
+      //   msg,
+      //   selectedChatRef,
+      //   userMain,
+      //   setMessages,
+      //   setChats,
+      //   (conversationId) =>
+      //     markAsRead(socket, conversationId, userMain.id, setChats)
+      // );
     });
 
     return () => {
@@ -450,13 +453,7 @@ const ChatWindow = ({
           <label htmlFor="file-upload" className="cursor-pointer">
             <PaperClipOutlined style={{ fontSize: "20px" }} />
           </label>
-          <div
-            style={{ position: "relative", top: -60, right: "-40%" }}
-            className="flex items-center gap-2  p-2 rounded-md"
-          >
-            {/* <InfoCircleOutlined style={{ fontSize: "16px" }} /> */}
-            <span>{infoPermissions?.message}</span>
-          </div>
+          
 
           <Dropdown
             overlay={

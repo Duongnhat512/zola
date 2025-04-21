@@ -29,7 +29,7 @@ import GroupSettingsModal from "../../components/ChatApp/GroupSettingsModal";
 import { useSelector } from "react-redux";
 import Swal from "sweetalert2";
 
-const InfoGroup = ({ selectedChat, onClose, isGroupSettingsVisible,setIsGroupSettingsVisible,setIsModalAddMemberVisible }) => {
+const InfoGroup = ({sendMessage,getProfile,userProfile, selectedChat, onClose, isGroupSettingsVisible,setIsGroupSettingsVisible,setIsModalAddMemberVisible }) => {
   const [isMemberModalVisible, setIsMemberModalVisible] = useState(false);
   const [members, setMembers] = useState([]);
   const [userOwner, setUserOwner] = useState(null);
@@ -259,7 +259,7 @@ const InfoGroup = ({ selectedChat, onClose, isGroupSettingsVisible,setIsGroupSet
     });
     if(permission === "owner"){
       console.log("phân quyền owner nè");
-      
+
       socket.emit("set_permissions",{
         conversation_id: selectedChat.conversation_id,
         user_id: userMain.id,
@@ -268,10 +268,25 @@ const InfoGroup = ({ selectedChat, onClose, isGroupSettingsVisible,setIsGroupSet
     }  
   }
   useEffect(() => {
-    const eventPermission = (data) => {
+    const eventPermission = async (data) => {
       const { permissions, user_id } = data;
   
       console.log("Phân quyền:", permissions);
+      const permissionName =
+      data.permissions === "owner"
+        ? "Trưởng nhóm"
+        : data.permissions === "moderator"
+        ? "Phó nhóm"
+        : "Thành viên";
+      const userToAdd = data.user_id;
+      const profile = await getProfile(userToAdd); // chờ lấy profile
+      console.log(profile);
+
+      if (profile) {
+        sendMessage(null, true, `${userProfile?.fullname} đã trở thành ${permissionName}`);
+        
+      }
+      
   
       // Nếu user hiện tại bị phân quyền
       if (user_id === userMain.id) {
