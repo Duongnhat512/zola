@@ -15,8 +15,9 @@ import setupSocket from '../services/Socket';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
-import { useFocusEffect } from "@react-navigation/native";
-import { useCallback } from "react";
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
+
 
 const MessagesScreen = () => {
   const navigation = useNavigation();
@@ -36,19 +37,13 @@ const MessagesScreen = () => {
   useFocusEffect(
     useCallback(() => {
       if (socket && user?.id) {
-        socket.emit("get_conversations", { user_id: user.id });
-      }
-    }, [socket, user])
-  );
-
-  useFocusEffect(
-    useCallback(() => {
-      if (socket && user?.id) {
         console.log("🔄 Trang A được focus, gọi lại get_conversations");
         socket.emit("get_conversations", { user_id: user.id });
       }
     }, [socket, user])
   );
+
+  
   useEffect(() => {
     let socketInstance;
   
