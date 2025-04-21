@@ -482,19 +482,19 @@ ConversationController.removeMember = async (socket, data) => {
     // Thông báo cho tất cả thành viên trong nhóm
     const members = await redisClient.smembers(`group:${conversation_id}`);
 
-    console.log("members", members);
-    
-    members.forEach(async (member) => {
-      const socketIds = await redisClient.smembers(`sockets:${member}`);
-      console.log(socketIds, "socketIds");
-      socketIds.forEach((socketId) => {
-        socket.to(socketId).emit("user_left_group", {
-          conversation_id: conversation_id,
-          user_id: user_id,
-          message: "Người dùng đã bị xóa khỏi nhóm",
-        });
-      });
+console.log("members", members);
+
+for (const member of members) {
+  const socketIds = await redisClient.smembers(`sockets:${member}`);
+  console.log(socketIds, "socketIds");
+  for (const socketId of socketIds) {
+    socket.to(socketId).emit("user_left_group", {
+      conversation_id: conversation_id,
+      user_id: user_id,
+      message: "Người dùng đã bị xóa khỏi nhóm",
     });
+  }
+}
 
   } catch (error) {
     console.error("Có lỗi khi xóa thành viên:", error);
@@ -781,16 +781,16 @@ ConversationController.outGroup = async (socket, data) => {
 
     // Thông báo cho tất cả thành viên trong nhóm
     const members = await redisClient.smembers(`group:${conversation_id}`);
-    members.forEach(async (member) => {
-      const socketIds = await redisClient.smembers(`sockets:${member}`);
-      socketIds.forEach((socketId) => {
-        socket.to(socketId).emit("user_left_group", {
-          conversation_id: conversation_id,
-          user_id: socket.user.id,
-          message: "Người dùng đã rời nhóm",
-        });
-      });
+for (const member of members) {
+  const socketIds = await redisClient.smembers(`sockets:${member}`);
+  for (const socketId of socketIds) {
+    socket.to(socketId).emit("user_left_group", {
+      conversation_id: conversation_id,
+      user_id: socket.user.id,
+      message: "Người dùng đã rời nhóm",
     });
+  }
+}
 
   } catch (error) {
     console.error("Có lỗi khi rời nhóm:", error);
