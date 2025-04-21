@@ -134,6 +134,21 @@ const HomeDetails = () => {
     setIsInfoGroupVisible(false);
   };
 
+  const handleOutGroupMember = (data) => {
+    toast.info(data.message, {
+      autoClose: 2000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+    });
+
+    setChats((prev) =>
+      prev.filter((chat) => String(chat.conversation_id) !== String(data.conversation_id))
+    );
+    
+  }
+
+
   const handleError = (data) => {
     toast.info(data.message, {
       autoClose: 2000,
@@ -183,11 +198,18 @@ const HomeDetails = () => {
       pauseOnHover: true,
     });
 
-    setChats((prev) =>
-      prev.filter((chat) => String(chat.conversation_id) !== String(data.conversation_id))
+    setChats((prevChats) =>
+      prevChats.map((chat) =>
+        chat.conversation_id === data.conversation_id
+          ? {
+              ...chat,
+              list_user_id: chat.list_user_id.filter(
+                (member) => member.user_id !== data.user_id
+              ),
+            }
+          : chat
+      )
     );
-    setIsInfoGroupVisible(false);
-    setSelectedChat(null);
   };
 
   const handleUpdatePermissions = (data) => {

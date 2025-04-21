@@ -487,7 +487,7 @@ const InfoGroup = ({ selectedChat, onClose, isGroupSettingsVisible,setIsGroupSet
                 if (result.isConfirmed) {
                   socket.emit("out_group", {
                     conversation_id: selectedChat.conversation_id,
-                    user_id: userMain.id,
+                    user_id: user?.id,
                   });
                   onClose();
                 }
