@@ -350,21 +350,7 @@ ConversationController.findPrivateConversation = async (req, res) => {
     }
     
 
-    const members = await ConversationModel.getAllUserInConversation(
-      conversation.id
-    );
-
-    console.log("====================================");
-    console.log(members);
-    console.log("====================================");
-
-    list_user_id = [];
-
-    for (const member of members) {
-      if (member.user_id !== user_id) {
-        list_user_id.push(member.user_id);
-      }
-    }
+    const list_user_id_raw = await redisClient.smembers()
 
     const last_message_id = await ConversationModel.getLastMessage(
       conversation.id
@@ -566,6 +552,8 @@ ConversationController.getConversations = async (socket, data) => {
             friendPromise,
             lastMessagePromise
           ]);
+
+          console.log("friend", friend);
 
           if (friend) {
             name = friend?.fullname || "";
