@@ -26,7 +26,8 @@ const ChatSidebar = ({ chats, openChat, isModalGroupVisible,setIsModalGroupVisib
     setIsModalGroupVisible(false);
   };
   
-
+  console.log("chats", chats);
+  
   return (
     <div
       className="w-1/4 border-r border-gray-300 flex flex-col bg-white shadow-lg "
@@ -92,11 +93,11 @@ const ChatSidebar = ({ chats, openChat, isModalGroupVisible,setIsModalGroupVisib
                     {chat?.name || "Người dùng"}
                   </div>
                   <div className="text-xs text-gray-500 truncate">
-                    {chat?.last_message?.type === "image" && chat?.last_message?.media ? (
+                    {chat?.last_message?.type === "image"  ? (
                       <span className="text-gray-400">Đã gửi một ảnh</span>
-                    ) : chat?.last_message?.type === "document" && chat?.last_message?.media ? (
+                    ) : chat?.last_message?.type === "document" ? (
                       <span className="text-gray-400">Đã gửi một tệp</span>
-                    ) : chat?.last_message?.type === "video" && chat?.last_message?.media ? (
+                    ) : chat?.last_message?.type === "video"  ? (
                       <span className="text-gray-400">Đã gửi một video</span>
                     ) : 
                       <span className="text-gray-400">{chat.last_message.message ? "Đã gửi một tin nhắn":"Không có tin nhắn"}</span>}

@@ -42,7 +42,7 @@ const ChatWindow = ({
   setChats,
   fetchConversations,
   setIsInfoGroupVisible,
-  infoPermissions
+  infoPermissions,
 }) => {
   const selectedChatRef = useRef();
   const [emojiList, setEmojiList] = useState({});
@@ -102,18 +102,6 @@ const ChatWindow = ({
   }, [selectedChat?.conversation_id, selectedChat?.user_id, userMain.id]);
 
   useEffect(() => {
-    if (!socket.connected) {
-      socket.connect();
-    }
-
-    socket.on("connect", () => {
-      console.log("Socket connected");
-    });
-
-    socket.on("disconnect", () => {
-      console.log("Socket disconnected");
-    });
-
     socket.on("new_message", (msg) => {
       console.log("New message event received:", msg);
       handleNewMessage(
@@ -201,8 +189,8 @@ const ChatWindow = ({
     copyMessage(text);
   };
   const loadMoreMessages = () => {
-    if (isLoading || !hasMoreMessages) return; 
-    setIsLoading(true); 
+    if (isLoading || !hasMoreMessages) return;
+    setIsLoading(true);
 
     const container = document.querySelector(".message-list-container");
     const currentScrollTop = container.scrollTop;
@@ -216,13 +204,14 @@ const ChatWindow = ({
       if (moreMessages.length === visibleMessages.length) {
         setHasMoreMessages(false);
       } else {
-        setVisibleMessages(moreMessages); 
-        setPage(nextPage); 
+        setVisibleMessages(moreMessages);
+        setPage(nextPage);
       }
-      setIsLoading(false); 
+      setIsLoading(false);
       setTimeout(() => {
-        const newScrollHeight = container.scrollHeight; 
-        container.scrollTop = newScrollHeight - currentScrollHeight + currentScrollTop;
+        const newScrollHeight = container.scrollHeight;
+        container.scrollTop =
+          newScrollHeight - currentScrollHeight + currentScrollTop;
       }, 100);
     }, 1000);
   };
@@ -241,13 +230,20 @@ const ChatWindow = ({
     revokeMessage(socket, userMain.id, id, setMessages);
   };
   const sendMessage = (fileData = null) => {
-    if (!input.trim() && !previewImage && !selectedFile && !selectedImage&& !selectedVideo && !fileData) {
+    if (
+      !input.trim() &&
+      !previewImage &&
+      !selectedFile &&
+      !selectedImage &&
+      !selectedVideo &&
+      !fileData
+    ) {
       toast.error("Vui lòng nhập nội dung tin nhắn hoặc chọn tệp để gửi.");
-      return; 
-    }; 
+      return;
+    }
     const tempId = `msg-${Date.now()}`;
     const isGroup = selectedChat?.list_user_id?.length > 2;
-  
+
     setMessages((prev) => [
       ...prev,
       {
@@ -262,20 +258,43 @@ const ChatWindow = ({
           minute: "2-digit",
         }),
         status: "pending",
+        uploadProgress: 0, // Bắt đầu từ 0%
       },
     ]);
-  
+
     const msg = {
       conversation_id: selectedChat?.conversation_id || null,
       receiver_id:
-        selectedChat?.list_user_id?.find((user) => user.user_id !== userMain.id) || null,
+        selectedChat?.list_user_id?.find(
+          (user) => user.user_id !== userMain.id
+        ) || null,
       message: input || null,
-      file_name: selectedVideo?.file_name ||selectedImage?.file_name || selectedFile?.file_name || fileData?.file_name || null,
-      file_type: selectedVideo?.file_name ||selectedImage?.file_type || selectedFile?.file_type || fileData?.file_type || null,
-      file_size: selectedVideo?.file_name ||selectedImage?.file_size || selectedFile?.file_size || fileData?.file_size || null,
-      file_data: selectedVideo?.file_name ||selectedImage?.file_data || selectedFile?.file_data || fileData?.file_data || null,
+      file_name:
+        selectedVideo?.file_name ||
+        selectedImage?.file_name ||
+        selectedFile?.file_name ||
+        fileData?.file_name ||
+        null,
+      file_type:
+        selectedVideo?.file_name ||
+        selectedImage?.file_type ||
+        selectedFile?.file_type ||
+        fileData?.file_type ||
+        null,
+      file_size:
+        selectedVideo?.file_name ||
+        selectedImage?.file_size ||
+        selectedFile?.file_size ||
+        fileData?.file_size ||
+        null,
+      file_data:
+        selectedVideo?.file_name ||
+        selectedImage?.file_data ||
+        selectedFile?.file_data ||
+        fileData?.file_data ||
+        null,
     };
-  
+
     const event = isGroup ? "send_group_message" : "send_private_message";
     socket.emit(event, msg, () => {});
     socket.on("message_sent", (msg) => {
@@ -300,16 +319,39 @@ const ChatWindow = ({
       );
       fetchConversations();
     });
-  
+
     setInput("");
     setPreviewImage(null);
     setSelectedFile(null);
     setSelectedImage(null);
     setSelectedVideo(null);
-
-    
+    simulateUpload(tempId);
   };
+  const simulateUpload = (tempId) => {
+    const interval = setInterval(() => {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === tempId
+            ? {
+                ...msg,
+                uploadProgress: Math.min((msg.uploadProgress || 0) + 10, 100),
+              }
+            : msg
+        )
+      );
+    }, 300);
 
+    setTimeout(() => {
+      clearInterval(interval);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === tempId
+            ? { ...msg, status: "done", uploadProgress: 100 }
+            : msg
+        )
+      );
+    }, 3000); // Giả lập tải lên hoàn tất sau 3 giây
+  };
   if (!selectedChat) {
     return (
       <div className="flex items-center justify-center flex-col text-center flex-1">
@@ -380,20 +422,21 @@ const ChatWindow = ({
           <input
             type="file"
             accept=".pdf,.docx,.doc"
-            onChange={(e) =>
-              handleFileChange(e, setSelectedFile, sendMessage)
-            }
+            onChange={(e) => handleFileChange(e, setSelectedFile, sendMessage)}
             style={{ display: "none" }}
             id="file-upload"
           />
           <label htmlFor="file-upload" className="cursor-pointer">
             <PaperClipOutlined style={{ fontSize: "20px" }} />
           </label>
-          <div style={{position: "relative", top:-60, right: "-40%" }} className="flex items-center gap-2  p-2 rounded-md">
+          <div
+            style={{ position: "relative", top: -60, right: "-40%" }}
+            className="flex items-center gap-2  p-2 rounded-md"
+          >
             {/* <InfoCircleOutlined style={{ fontSize: "16px" }} /> */}
             <span>{infoPermissions?.message}</span>
           </div>
-          
+
           <Dropdown
             overlay={
               <EmojiDropdown
@@ -428,12 +471,12 @@ const ChatWindow = ({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Nhập tin nhắn"
-            onPressEnter={()=>sendMessage()}
+            onPressEnter={() => sendMessage()}
             className="rounded-full py-2 px-4 flex-1 mr-2"
           />
           <Button
             icon={<SendOutlined />}
-            onClick={()=> sendMessage()}
+            onClick={() => sendMessage()}
             className="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-400"
           />
         </div>

@@ -36,7 +36,7 @@ const HomeDetails = () => {
       if (response.status === "success") {
         console.log("response.conversations", response.conversations);
         
-        setChats(response.conversations.slice(0,2));
+        setChats(response.conversations);
       } else {
         console.error("Lỗi khi lấy danh sách hội thoại:", response.message);
       }
