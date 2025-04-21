@@ -43,6 +43,8 @@ const ChatWindow = ({
   fetchConversations,
   setIsInfoGroupVisible,
   infoPermissions,
+  isModalAddMemberVisible,
+  setIsModalAddMemberVisible
 }) => {
   const selectedChatRef = useRef();
   const [emojiList, setEmojiList] = useState({});
@@ -381,11 +383,18 @@ const ChatWindow = ({
         isLoading={isLoading}
         hasMoreMessages={hasMoreMessages}
       />
-      {isModalVisible && (
+      {isModalVisible  && (
         <AddMember
           selectedChat={selectedChat}
           visible={isModalVisible}
           onClose={handleClose}
+        />
+      )}
+      {isModalAddMemberVisible  && (
+        <AddMember
+          selectedChat={selectedChat}
+          visible={isModalAddMemberVisible}
+          onClose={()=> setIsModalAddMemberVisible(false)}
         />
       )}
       <div className="p-4 bg-white border-t">

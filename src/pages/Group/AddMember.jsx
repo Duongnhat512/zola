@@ -85,6 +85,7 @@ const AddMember = ({ visible = true, onClose, selectedChat }) => {
           console.error("No members selected.");
           return;
         }
+        
         selectedContacts.forEach((memberId) => {
           socket.emit("add_member", {
             conversation_id: selectedChat.conversation_id,

@@ -29,7 +29,7 @@ import GroupSettingsModal from "../../components/ChatApp/GroupSettingsModal";
 import { useSelector } from "react-redux";
 import Swal from "sweetalert2";
 
-const InfoGroup = ({ selectedChat, onClose, isGroupSettingsVisible,setIsGroupSettingsVisible }) => {
+const InfoGroup = ({ selectedChat, onClose, isGroupSettingsVisible,setIsGroupSettingsVisible,setIsModalAddMemberVisible }) => {
   const [isMemberModalVisible, setIsMemberModalVisible] = useState(false);
   const [members, setMembers] = useState([]);
   const [userOwner, setUserOwner] = useState(null);
@@ -37,6 +37,12 @@ const InfoGroup = ({ selectedChat, onClose, isGroupSettingsVisible,setIsGroupSet
   const [userMain,setUserMain] = useState(null);
   const [disabledModalGroup,setDisabledModalGroup] = useState(false);
 
+  const [isTyped, setIsTyped] = useState(selectedChat?.type === "group" ? true : false);
+
+  const handleOpenAddMember = () => {
+    setIsModalAddMemberVisible(true);
+  }
+  
   const [groupSettings, setGroupSettings] = useState({
     leaders: [],
     members: [],
@@ -176,26 +182,74 @@ const InfoGroup = ({ selectedChat, onClose, isGroupSettingsVisible,setIsGroupSet
     console.log("Updated group settings:", updatedSettings);
   };
 
+  const out_group = async () => {
+    const confirmLeave = await Swal.fire({
+      title: "Bạn có chắc chắn muốn rời nhóm?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Rời nhóm",
+      cancelButtonText: "Hủy",
+    });
   
+    if (!confirmLeave.isConfirmed) return;
+  
+    // Nếu là owner, yêu cầu chuyển quyền trước
+    if (userMain?.permission === "owner") {
+      const transferResult = await Swal.fire({
+        title: "Chuyển quyền trưởng nhóm cho ai?",
+        input: "select",
+        inputOptions: members.reduce((acc, member) => {
+          if (member.id !== userMain.id) {
+            acc[member.id] = member.fullname;
+          }
+          return acc;
+        }, {}),
+        inputPlaceholder: "Chọn người",
+        showCancelButton: true,
+        inputValidator: (value) => {
+          return !value ? "Bạn cần chọn một người!" : null;
+        },
+        confirmButtonText: "Chuyển quyền",
+        cancelButtonText: "Hủy",
+      });
+  
+      if (!transferResult.isConfirmed) return;
+  
+      const selectedUserId = transferResult.value;
+      const selectedUser = members.find((m) => m.id === selectedUserId);
+  
+      if (selectedUser) {
+        // ✅ CHỜ phân quyền hoàn tất
+        await grantPermission(selectedUser, "owner");
+      } else {
+        return Swal.fire("Không tìm thấy người dùng được chọn!", "", "error");
+      }
+    }
+  
+    // ✅ Sau khi chuyển quyền, mới thực hiện out_group
+    setTimeout(() => {
+      socket.emit("out_group", {
+        conversation_id: selectedChat.conversation_id,
+        user_id: user?.id,
+      });
+    },1000);
+    onClose();
+  };
   const removeMember = (friend) => {
     socket.emit("remove_member", {
       conversation_id: selectedChat.conversation_id,
       user_id: friend.id,
     });
     handleClose();
-
-    if(members.length === 2){
+    if(members.length === 2 && friend.permission === "owner"){
       socket.emit("delete_conversation", {
         conversation_id: selectedChat.conversation_id,
       });
       handleClose();
     }
-
-    
-
   };
 
-  const grantPermission = (friend,permission) => {
+  const grantPermission = (friend, permission) => {
     console.log(permission);
     
     socket.emit("set_permissions", {
@@ -232,6 +286,8 @@ const InfoGroup = ({ selectedChat, onClose, isGroupSettingsVisible,setIsGroupSet
   
         // Cập nhật quyền trong userMain
         setUserMain((prev) => ({ ...prev, permission: permissions }));
+
+        setIsGroupSettingsVisible(false);
         return;
       }
   
@@ -308,20 +364,42 @@ const InfoGroup = ({ selectedChat, onClose, isGroupSettingsVisible,setIsGroupSet
   }, [socket, members, userMain?.id]);
   
   
-  const menu = (friend) => (
-    <Menu>
-      <Menu.Item key="info" onClick={() => removeMember(friend)}>
-        Rời nhóm
-      </Menu.Item>
-      <Menu.Item key="permission" onClick={() => grantPermission(friend,"moderator")}>
-        Thêm phó nhóm
-      </Menu.Item>
-    </Menu>
-  );
-  return (
+  const menu = (friend) => {
+    if (friend.permission === "owner") {
+      return (
+        <Menu>
+          <Menu.Item key="remove" danger onClick={out_group}>
+            Rời nhóm
+          </Menu.Item>
+        </Menu>
+      )
+    }
+  
+    return (
+      <Menu>
+        {friend.permission === "member" && (
+          <Menu.Item key="promote" onClick={() => grantPermission(friend, "moderator")}>
+            Thêm phó nhóm
+          </Menu.Item>
+        )}
+  
+        {friend.permission === "moderator" && (
+          <Menu.Item key="demote" onClick={() => grantPermission(friend, "member")}>
+            Hủy phó nhóm
+          </Menu.Item>
+        )}
+  
+        <Menu.Item key="remove" danger onClick={() => removeMember(friend)}>
+          Rời nhóm
+        </Menu.Item>
+      </Menu>
+    );
+  };
+
+  return isTyped ? (
     <div
-    className="w-1/4 border-r border-gray-300 flex flex-col bg-white shadow-lg "
-    style={{ zIndex: 1000 }}
+      className="w-1/4 border-r border-gray-300 flex flex-col bg-white shadow-lg "
+       style={{ zIndex: 1000 }}
     >
       {/* Header */}
       <div className="flex flex-col items-center py-6 bg-gradient-to-r from-blue-100 to-blue-50">
@@ -374,7 +452,7 @@ const InfoGroup = ({ selectedChat, onClose, isGroupSettingsVisible,setIsGroupSet
           type="ghost"
           className="flex flex-col items-center justify-center"
           size="large"
-          onClick={handleOpen}
+          onClick={handleOpenAddMember}
             >
           <span className="text-xs mt-1">Thêm</span>
             </Button>
@@ -476,23 +554,7 @@ const InfoGroup = ({ selectedChat, onClose, isGroupSettingsVisible,setIsGroupSet
             type="ghost"
             className="flex flex-col items-center justify-center bg-red-500 my-2 text-white"
             size="large"
-            onClick={() => {
-              Swal.fire({
-                title: "Bạn có chắc chắn muốn rời nhóm?",
-                icon: "warning",
-                showCancelButton: true,
-                confirmButtonText: "Rời nhóm",
-                cancelButtonText: "Hủy",
-              }).then((result) => {
-                if (result.isConfirmed) {
-                  socket.emit("out_group", {
-                    conversation_id: selectedChat.conversation_id,
-                    user_id: user?.id,
-                  });
-                  onClose();
-                }
-              });
-            }}
+            onClick={out_group}
           >
             <span className="text-sm mt-1">Rời nhóm</span>
           </Button>
@@ -534,6 +596,145 @@ const InfoGroup = ({ selectedChat, onClose, isGroupSettingsVisible,setIsGroupSet
           )}
         />
       </Modal>
+      
+    </div>
+  ) : (
+    <div
+      className="w-1/4 border-r border-gray-300 flex flex-col bg-white shadow-lg "
+       style={{ zIndex: 1000 }}
+    >
+      {/* Header */}
+      <div className="flex flex-col items-center py-6 bg-gradient-to-r from-blue-100 to-blue-50">
+        <Avatar.Group
+          maxCount={3}
+          size={64}
+          maxStyle={{ color: "#fff", backgroundColor: "#1890ff" }}
+        >
+          <Avatar src={selectedChat.avatar}></Avatar>
+        </Avatar.Group>
+        <h2 className="text-xl font-semibold mt-4 flex items-center gap-2 text-center">
+          {selectedChat.name}
+        </h2>
+        <Button
+          type="text"
+          className="absolute top-2 right-2 text-gray-500 hover:text-gray-800"
+          onClick={onClose}
+        >
+          Đóng
+        </Button>
+      </div>
+
+      <Divider className="my-4" />
+
+    
+      <div className="mt-3 flex justify-between px-6 mb-6 text-center">
+  <Tooltip title="Tắt thông báo">
+    <Button
+      icon={<BellOutlined />}
+      type="ghost"
+      className="flex flex-col items-center justify-center py-4"
+      size="large"
+    >
+      <span className="text-xs mt-2">Tắt thông <br></br> báo</span>
+    </Button>
+  </Tooltip>
+
+  <Tooltip title="Ghim hội thoại">
+    <Button
+      icon={<PushpinOutlined />}
+      type="ghost"
+      className="flex flex-col items-center justify-center py-4"
+      size="large"
+    >
+      <span className="text-xs mt-2">Ghim hội <br></br> thoại </span>
+    </Button>
+  </Tooltip>
+
+  <Tooltip title="Quản lý nhóm">
+    <Button
+      icon={<SettingOutlined />}
+      type="ghost"
+      className="flex flex-col items-center justify-center py-4"
+      size="large"
+      onClick={handleOpenModelSetting}
+    >
+      <span className="text-xs mt-2">Tạo nhóm <br></br> trò chuyện</span>
+    </Button>
+  </Tooltip>
+</div>
+
+
+        <Divider className="my-4" />
+      <div className="space-y-6 px-6 text-sm flex-1 overflow-y-auto">
+        <div
+          onClick={handleOpen}
+          className="flex items-start gap-3 hover:bg-gray-50 p-2 rounded-lg transition-colors cursor-pointer"
+        >
+          <TeamOutlined className="text-blue-500 text-lg" />
+          <div>
+            <h3 className="font-semibold text-gray-800"> 30 Nhóm chung</h3>
+          </div>
+        </div>
+
+        <div className="flex items-start gap-3 p-2">
+          <CalendarOutlined className="text-green-500 text-lg mt-1" />
+          <div>
+            <h3 className="font-semibold text-gray-800">Danh sách nhắc hẹn</h3>
+            <a
+              href={selectedChat.inviteLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 hover:underline break-all"
+            >
+              {selectedChat.inviteLink}
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <Divider className="my-4" />
+
+      {/* Extra Features */}
+      <div className="px-6 pb-6">
+        <Collapse ghost className="text-sm">
+          <Collapse.Panel
+            header={
+              <span className="flex items-center gap-2">
+                <HomeOutlined /> Bảng tin
+              </span>
+            }
+            key="1"
+          >
+            <ul className="list-disc list-inside space-y-1 text-gray-700">
+              <li>Danh sách nhắc hẹn</li>
+            </ul>
+          </Collapse.Panel>
+          <Collapse.Panel
+            header={
+              <span className="flex items-center gap-2">
+                <CalendarOutlined /> Ảnh / Video
+              </span>
+            }
+            key="2"
+          >
+            <p className="text-gray-500 italic">
+              Chưa có ảnh/video được chia sẻ trong hội thoại này.
+            </p>
+          </Collapse.Panel>
+        </Collapse>
+        
+      </div>
+      <Tooltip title="Rời nhóm">
+          <Button
+            type="ghost"
+            className="flex flex-col items-center justify-center bg-red-500 my-2 text-white"
+            size="large"
+          >
+            <span className="text-sm mt-1">Xóa lịch sử trò chuyện</span>
+          </Button>
+        </Tooltip>
+
+      
       
     </div>
   );
