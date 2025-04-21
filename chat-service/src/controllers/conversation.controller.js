@@ -531,60 +531,78 @@ ConversationController.getConversations = async (socket, data) => {
     }
 
     const unreadConversations = await redisClient.smembers(`unread:${user_id}`);
+    
+    const conversations = await Promise.all(
+      conversationIds.map(async (conversationId) => {
+        try {
+          const [conversation, unreadCount] = await Promise.all([
+            ConversationModel.getConversationById(conversationId),
+            ConversationController.getUnreadCount(user_id, conversationId)
+          ]);
 
-    // lấy thông tin conversation
-    let conversations = []
+          if (!conversation) return null;
 
-    for (const conversationId of conversationIds) {
-      const conversation = await ConversationModel.getConversationById(conversationId);
-      if (conversation) {
+          const list_user_id_raw = await redisClient.smembers(`group:${conversationId}`);
+          
+          const list_user_id = await Promise.all(
+            list_user_id_raw.map(async (id) => {
+              const permission = await UserCacheService.getConversationPermissions(id, conversationId);
+              return { user_id: id, permission: permission };
+            })
+          );
 
-        let list_user_id = await redisClient.smembers(`group:${conversationId}`);
-        list_user_id = await Promise.all(
-          list_user_id.map(async (id) => {
-            const permission = await UserCacheService.getConversationPermissions(id, conversationId);
-            return { user_id: id, permission: permission };
-          })
-        );
-        // list_user_id = list_user_id.filter((id) => id !== user_id);
+          let name = conversation.name || "";
+          let avt = conversation.avatar || "";
 
-        let name = conversation.name || "";
-        let avt = conversation.avatar || "";
+          let friendPromise = Promise.resolve(null);
+          if (conversation.type === "private") {
+            const receiver = list_user_id.find((id) => id.user_id !== user_id);
+            if (receiver) {
+              friendPromise = UserCacheService.getUserProfile(
+                receiver.user_id, 
+                socket.handshake.headers.authorization
+              );
+            }
+          }
 
-        if (conversation.type === "private") {
-          const receiver = list_user_id.find((id) => id.user_id !== user_id);
+          let lastMessagePromise = conversation.last_message_id
+            ? MessageModel.getMessageById(conversation.last_message_id)
+            : Promise.resolve("");
 
-          if (receiver) {
-            const friend = await UserCacheService.getUserProfile(receiver.user_id, socket.handshake.headers.authorization);
+          const [friend, last_message] = await Promise.all([
+            friendPromise,
+            lastMessagePromise
+          ]);
 
-            console.log("friend", friend);
+          if (friend) {
             name = friend?.fullname || "";
             avt = friend?.avt || "";
           }
+
+          const isUnread = unreadConversations.includes(conversationId);
+
+          return {
+            conversation_id: conversationId,
+            name,
+            avatar: avt,
+            last_message,
+            list_user_id,
+            is_unread: isUnread,
+            unread_count: unreadCount,
+          };
+        } catch (err) {
+          console.error(`Lỗi khi xử lý hội thoại ${conversationId}:`, err);
+          return null;
         }
+      })
+    );
 
-        const last_message_id = conversation.last_message_id
-        const last_message = last_message_id ? await MessageModel.getMessageById(last_message_id) : "";
-
-        const isUnread = unreadConversations.includes(conversationId);
-        const unreadCount = await ConversationController.getUnreadCount(user_id, conversationId);
-
-        conversations.push({
-          conversation_id: conversationId,
-          name: name,
-          avatar: avt,
-          last_message: last_message,
-          list_user_id,
-          is_unread: isUnread,
-          unread_count: unreadCount,
-        });
-      }
-    }
+    const validConversations = conversations.filter(conv => conv !== null);
 
     socket.emit("conversations", {
       status: "success",
       message: "Lấy danh sách hội thoại thành công",
-      conversations,
+      conversations: validConversations,
     });
 
   } catch (error) {
@@ -827,17 +845,18 @@ ConversationController.getUnreadCount = async (user_id, conversation_id) => {
 ConversationController.increaseUnreadCount = async (conversation_id, exceptUserId = null) => {
   try {
     const members = await redisClient.smembers(`group:${conversation_id}`);
-
-    for (const member of members) {
+    
+    await Promise.all(members.map(async (member) => {
       if (member === exceptUserId) {
-        continue;
+        return; 
       }
-
+      
       const key = `unread_count:${member}:${conversation_id}`;
-      await redisClient.incr(key);
-      const newCount = await redisClient.get(key);
-      await redisClient.sadd(`unread:${member}`, conversation_id);
-    }
+      await Promise.all([
+        redisClient.incr(key),
+        redisClient.sadd(`unread:${member}`, conversation_id)
+      ]);
+    }));
   } catch (error) {
     console.error("Có lỗi khi tăng số lượng hội thoại chưa đọc:", error);
   }
@@ -846,8 +865,10 @@ ConversationController.increaseUnreadCount = async (conversation_id, exceptUserI
 ConversationController.resetUnreadCount = async (user_id, conversation_id) => {
   try {
     const key = `unread_count:${user_id}:${conversation_id}`;
-    await redisClient.set(key, 0);
-    await redisClient.srem(`unread:${user_id}`, conversation_id);
+    await Promise.all([
+      redisClient.set(key, 0),
+      redisClient.srem(`unread:${user_id}`, conversation_id)
+    ]);
   } catch (error) {
     console.error("Có lỗi khi đặt lại số tin nhắn chưa đọc:", error);
   }
