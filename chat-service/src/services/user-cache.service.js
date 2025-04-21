@@ -12,26 +12,16 @@ const UserCacheService = {
         const key = `user:${userId}`;
         let user = await redis.get(key);
 
-        console.log('====================================');
-        console.log('User from Redis:', user);
-        console.log('====================================');
         if (!user) {
-            console.log('====================================');
-            console.log(token);
-            console.log('====================================');
             try {
                 const response = await axios.get(
                     `${process.env.BASE_URL}/auth-service/me/get-user?id=${userId}`,
                     {
                         headers: {
-                            Authorization: `${token}`,
+                            Authorization: `Bearer ${token}`,
                         },
                     }
                 );
-
-                console.log('====================================');
-                console.log("aaaaaa" +response);
-                console.log('====================================');
                 
                 if (response.data && response.data.user) {
                     user = JSON.stringify(response.data.user);
