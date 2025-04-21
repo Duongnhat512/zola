@@ -96,12 +96,18 @@ const FriendList = () => {
       console.log("Private conversation response:", response);
       if (response.status === "success") {
         // Handle successful conversation retrieval
-        console.log("Conversation data:", response.conversation);
-        if (response.conversation === null) {
+        if (response.newConversation) {
+          console.log("newConversation  : "+ response.newConversation);
+
           setSelectedChat({
-            conversation_id: null,
-            list_user_id: [friendId],
+            conversation_id: response.newConversation.id,
+            list_user_id: response.newConversation.members,
             list_message: [],
+            avatar: response.newConversation.avatar,
+            name: response.newConversation.name,
+            created_by: response.newConversation.created_by,
+            unread_count: 0,
+            is_unread: false,
           });
           setChats((prevChats) =>
             prevChats.map((c) =>
@@ -111,7 +117,10 @@ const FriendList = () => {
             )
           );
         } else {
+          console.log("Conversation : "+ response.conversation);
+          
           setSelectedChat(response.conversation);
+
           setChats((prevChats) =>
             prevChats.map((c) =>
               c.conversation_id === response.conversation.conversation_id

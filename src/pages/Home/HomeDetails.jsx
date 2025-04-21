@@ -215,6 +215,19 @@ const HomeDetails = () => {
       message: data.message,
     }));
   };
+  const handleOutGroup = (data) => {
+    toast.info(data.message, {
+      autoClose: 2000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+    });
+    setChats((prev) =>
+      prev.filter((chat) => String(chat.conversation_id) !== String(data.conversation_id))
+    );
+    setIsInfoGroupVisible(false);
+    setSelectedChat(null);
+  }
 
   // === Đăng ký ===
   socket.on("group_created", handleGroupCreated);
@@ -225,6 +238,7 @@ const HomeDetails = () => {
   socket.on("group_deleted", handleGroupRemoved);
   socket.on("delete_group", handleGroupRemoved);
   socket.on("update_permissions", handleUpdatePermissions);
+  socket.on("out_group", handleOutGroup);
 
   // === Khi reconnect, đăng ký lại ===
   socket.on("connect", () => {
@@ -237,6 +251,8 @@ const HomeDetails = () => {
     socket.on("group_deleted", handleGroupRemoved);
     socket.on("delete_group", handleGroupRemoved);
     socket.on("update_permissions", handleUpdatePermissions);
+    socket.on("out_group", handleOutGroup);
+
   });
 
   return () => {
@@ -248,6 +264,8 @@ const HomeDetails = () => {
     socket.off("group_deleted", handleGroupRemoved);
     socket.off("delete_group", handleGroupRemoved);
     socket.off("update_permissions", handleUpdatePermissions);
+    socket.off("out_group", handleOutGroup);
+
     socket.off("connect");
   };
 }, [socket, selectedChat]);
