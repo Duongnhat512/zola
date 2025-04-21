@@ -57,25 +57,35 @@ export const handleNewMessage = (
       },
     ]);
   }
-  setChats((prevChats) =>
-    prevChats.map((chat) =>
-      chat.conversation_id === msg.conversation_id
-        ? {
-            ...chat,
-            unread_count:
-              currentChat?.conversation_id === msg.conversation_id
-                ? chat.unread_count // Không tăng nếu đang ở trong cuộc trò chuyện
-                : (chat.unread_count || 0) + 1,
-            last_message: {
-              ...chat.last_message,
-              message: msg.message,
-              created_at: msg.created_at,
-              type: msg.type,
-            },
-          }
-        : chat
-    )
-  );
+  console.log("Created At:", msg.created_at, new Date(msg.created_at));
+  setChats((prevChats) => {
+    const updatedChats = [...prevChats]
+      .map((chat) =>
+        chat.conversation_id === msg.conversation_id
+          ? {
+              ...chat,
+              unread_count:
+                currentChat?.conversation_id === msg.conversation_id
+                  ? chat.unread_count // Không tăng nếu đang ở trong cuộc trò chuyện
+                  : (chat.unread_count || 0) + 1,
+              last_message: {
+                ...chat.last_message,
+                message: msg.message,
+                created_at: msg.created_at,
+                type: msg.type,
+              },
+            }
+          : chat
+      )
+      .sort(
+        (a, b) =>
+          new Date(b.last_message.created_at) -
+          new Date(a.last_message.created_at)
+      ); // Sắp xếp giảm dần theo created_at
+
+    console.log("Updated Chats:", updatedChats); // Log để kiểm tra danh sách đã sắp xếp
+    return updatedChats; // Trả về danh sách đã sắp xếp
+  });
 };
 
 export const copyMessage = (text) => {
