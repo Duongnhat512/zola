@@ -12,6 +12,11 @@ const UserCacheService = {
         const key = `user:${userId}`;
         let user = await redis.get(key);
 
+        const splitToken = token.split(" ")
+        if (token.length > 1) {
+            token = token[1];
+        }
+
         if (!user) {
             try {
                 const response = await axios.get(
