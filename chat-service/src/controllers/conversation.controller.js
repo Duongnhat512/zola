@@ -331,8 +331,11 @@ ConversationController.findPrivateConversation = async (req, res) => {
       friend_id
     );
 
+    const token = req.headers.authorization.split(" ")[1];
+
+    const user_friend = await UserCacheService.getUserProfile(friend_id, token);
+
     if (!conversation) {
-      const user_friend = await UserCacheService.getUserProfile(friend_id, req.headers.authorization);
       const newConversation = await ConversationModel.createConversation({
         created_by: user_id,
         type: "private",
@@ -357,20 +360,22 @@ ConversationController.findPrivateConversation = async (req, res) => {
     }
     
 
-    const list_user_id_raw = redisClient.smembers(`group:${conversation.id}`);
+    const list_user_id_raw = await redisClient.smembers(`group:${conversation.id}`);
+    
+    const list_user_id = await Promise.all(
+      list_user_id_raw.map(async (id) => {
+        const permission = await UserCacheService.getConversationPermissions(id, conversation.id);
+        return { user_id: id, permission: permission };
+      })
+    );
 
-    const last_message_id = ConversationModel.getLastMessage(
+    const last_message_id = await ConversationModel.getLastMessage(
       conversation.id
     );
 
-
     let last_message = {};
 
-    if (!last_message_id) {
-      conversation.last_message = last_message;
-      conversation.list_user_id = list_user_id;
-      conversation.conversation_id = conversation.id;
-    } else {
+    if (last_message_id) {
       console.log("last_message_id", last_message_id);
       last_message = await MessageModel.getMessageById(last_message_id);
     }
@@ -378,6 +383,8 @@ ConversationController.findPrivateConversation = async (req, res) => {
     conversation.last_message = last_message;
     conversation.list_user_id = list_user_id;
     conversation.conversation_id = conversation.id;
+    conversation.name = user_friend.fullname;
+    conversation.avatar = user_friend.avt;
 
     return res.status(200).json({
       status: "success",
