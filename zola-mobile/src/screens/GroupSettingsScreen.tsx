@@ -7,6 +7,8 @@ import { useRoute } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import { sendFriendRequest, getFriendRequests, getSentFriendRequests, getListFriends,acceptFriendRequest,rejectFriendRequest} from '../services/FriendService';
 import {GetUserById} from '../services/UserService';
+import * as ImageManipulator from 'expo-image-manipulator';
+
 export default function GroupSettingsScreen({ navigation  }) {
     const route = useRoute();
     const user = useSelector((state: any) => state.user.user);
@@ -155,7 +157,11 @@ export default function GroupSettingsScreen({ navigation  }) {
     }
   };
   const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({ base64: true });
+    const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          quality: 1,
+        });
   
     if (!result.canceled) {
       const image = result.assets[0];
@@ -172,8 +178,13 @@ export default function GroupSettingsScreen({ navigation  }) {
       console.log(conversation.conversation_id);
      // console.log(image.base64);
       console.log(image.fileSize);
-      console.log(image.uri);
-      const cleanBase64 = image.base64.replace(/^data:image\/\w+;base64,/, "");
+      const manipulated = await ImageManipulator.manipulateAsync(
+        image.uri,
+        [], // không cần resize nếu bạn giữ nguyên kích thước
+        { base64: true }
+      );
+      const cleanBase64 = manipulated.base64;
+       console.log(cleanBase64);
       socket.emit("update_group_avt", {
         conversation_id: conversation.conversation_id, // truyền đúng ID nhóm nha
         file_name: fileName,
@@ -270,7 +281,15 @@ export default function GroupSettingsScreen({ navigation  }) {
 </View>
 
       <TouchableOpacity onPress={pickImage}>
-        <Image source={avatar? { uri: avatar } : require('../assets/icon.png')} style={styles.avatar} />
+      <Image
+  source={{
+    uri:
+      typeof avatar === 'string'
+        ? avatar
+        : avatar?.uri || conversation?.avatar || '',
+  }}
+  style={styles.avatar}
+/>
       </TouchableOpacity>
 
       <TextInput
