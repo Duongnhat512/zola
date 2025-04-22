@@ -213,7 +213,7 @@ const FriendList = () => {
   const handleRemoveFriend = (friend) => {
     Modal.confirm({
       title: "Xác nhận xóa bạn",
-      content: `Bạn có chắc chắn muốn xóa ${friend.fullname} khỏi danh sách bạn bè không?`,
+      content: `Bạn có muốn xóa ${friend.fullname} khỏi danh sách bạn bè không?`,
       okText: "Xóa",
       cancelText: "Hủy",
       onOk: async () => {

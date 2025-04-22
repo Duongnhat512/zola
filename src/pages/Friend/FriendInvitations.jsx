@@ -205,7 +205,7 @@ const FriendInvitations = () => {
                   type="primary"
                   className="w-full"
                 >
-                  Chấp nhận
+                  Đồng ý
                 </Button>
                 <Button
                   onClick={() => handleReject(invitation.id)}
