@@ -405,7 +405,7 @@ const InfoGroup = ({sendMessage,getProfile,userProfile, selectedChat, onClose, i
         )}
   
         <Menu.Item key="remove" danger onClick={() => removeMember(friend)}>
-          Rời nhóm
+          Xóa khỏi nhóm
         </Menu.Item>
       </Menu>
     );

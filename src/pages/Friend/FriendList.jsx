@@ -191,25 +191,50 @@ const FriendList = () => {
     setOpenModalFriend(true); // nếu bạn đang dùng modal
   };
   
-  const handleRemoveFriend = async (friend) => {
-  try {
-    const response = await deleteFriend(user.id, friend.id);
-    console.log('Xóa bạn:', response);
+  // const handleRemoveFriend = async (friend) => {
+  // try {
+  //   const response = await deleteFriend(user.id, friend.id);
+  //   console.log('Xóa bạn:', response);
 
-    if (response.code === 200) {
-      message.success('Đã xóa bạn thành công');
+  //   if (response.code === 200) {
+  //     message.success('Đã xóa bạn thành công');
 
-      // Cập nhật lại danh sách bạn bè sau khi xóa
-      setFriends((prevFriends) =>
-        prevFriends.filter((f) => f.id !== friend.id)
-      );
-    } else {
-      message.error('Xóa bạn không thành công');
-    }
-  } catch (error) {
-    console.error('Lỗi khi xóa bạn:', error);
-    message.error('Đã xảy ra lỗi khi xóa bạn');
-  }
+  //     // Cập nhật lại danh sách bạn bè sau khi xóa
+  //     setFriends((prevFriends) =>
+  //       prevFriends.filter((f) => f.id !== friend.id)
+  //     );
+  //   } else {
+  //     message.error('Xóa bạn không thành công');
+  //   }
+  // } catch (error) {
+  //   console.error('Lỗi khi xóa bạn:', error);
+  //   message.error('Đã xảy ra lỗi khi xóa bạn');
+  // }
+  const handleRemoveFriend = (friend) => {
+    Modal.confirm({
+      title: "Xác nhận xóa bạn",
+      content: `Bạn có chắc chắn muốn xóa ${friend.fullname} khỏi danh sách bạn bè không?`,
+      okText: "Xóa",
+      cancelText: "Hủy",
+      onOk: async () => {
+        try {
+          const response = await deleteFriend(user.id, friend.id);
+          if (response.code === 200) {
+            message.success("Đã xóa bạn thành công");
+            setFriends((prevFriends) =>
+              prevFriends.filter((f) => f.id !== friend.id)
+            );
+          } else {
+            message.error("Xóa bạn không thành công");
+          }
+        } catch (error) {
+          console.error("Lỗi khi xóa bạn:", error);
+          message.error("Đã xảy ra lỗi khi xóa bạn");
+        }
+      },
+    });
+  };
+  handleRemoveFriend();
   };
   
   return (
