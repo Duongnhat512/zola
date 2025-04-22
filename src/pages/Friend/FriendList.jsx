@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Input, Avatar, List, Divider, Select, Button, Menu, Dropdown, message } from "antd";
+import { Input, Avatar, List, Divider, Select, Button, Menu, Dropdown, message, Modal } from "antd";
 import { MoreOutlined, UserOutlined } from "@ant-design/icons";
 import { deleteFriend, getListFriend } from "../../services/FriendService";
 import { useDispatch, useSelector } from "react-redux";
@@ -8,6 +8,7 @@ import { setLoading } from "../../redux/UserSlice";
 import { getPrivateConversation } from "../../services/Conversation";
 import ChatWindow from "../../components/ChatApp/ChatWindow";
 import InfoFriend from "../../components/ChatApp/InfoFriend";
+import Swal from "sweetalert2";
 
 const FriendList = () => {
   const [friends, setFriends] = useState([]);
@@ -210,29 +211,34 @@ const FriendList = () => {
   //   console.error('Lỗi khi xóa bạn:', error);
   //   message.error('Đã xảy ra lỗi khi xóa bạn');
   // }
-  const handleRemoveFriend = (friend) => {
-    Modal.confirm({
-      title: "Xác nhận xóa bạn",
-      content: `Bạn có muốn xóa ${friend.fullname} khỏi danh sách bạn bè không?`,
-      okText: "Xóa",
-      cancelText: "Hủy",
-      onOk: async () => {
-        try {
-          const response = await deleteFriend(user.id, friend.id);
-          if (response.code === 200) {
-            message.success("Đã xóa bạn thành công");
-            setFriends((prevFriends) =>
-              prevFriends.filter((f) => f.id !== friend.id)
-            );
-          } else {
-            message.error("Xóa bạn không thành công");
-          }
-        } catch (error) {
-          console.error("Lỗi khi xóa bạn:", error);
-          message.error("Đã xảy ra lỗi khi xóa bạn");
-        }
-      },
+  const handleDeleteFriend = async (friend) => {
+    const result = await Swal.fire({
+      title: 'Xác nhận xóa bạn',
+      text: `Bạn có muốn xóa ${friend.fullname} khỏi danh sách bạn bè không?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Xóa',
+      cancelButtonText: 'Hủy',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
     });
+  
+    if (result.isConfirmed) {
+      try {
+        const response = await deleteFriend(user.id, friend.id);
+        if (response.code === 200) {
+          Swal.fire('Đã xóa!', 'Bạn đã xóa bạn thành công.', 'success');
+          setFriends((prevFriends) =>
+            prevFriends.filter((f) => f.id !== friend.id)
+          );
+        } else {
+          Swal.fire('Thất bại', 'Xóa bạn không thành công.', 'error');
+        }
+      } catch (error) {
+        console.error('Lỗi khi xóa bạn:', error);
+        Swal.fire('Lỗi', 'Đã xảy ra lỗi khi xóa bạn.', 'error');
+      }
+    }
   };
   
   return (
@@ -272,7 +278,7 @@ const FriendList = () => {
         <Menu.Item key="info" onClick={() => handleViewInfo(friend)}>
           Xem thông tin
         </Menu.Item>
-        <Menu.Item key="remove" onClick={() => handleRemoveFriend(friend)}>
+        <Menu.Item key="remove" onClick={() => handleDeleteFriend(friend)}>
           Xóa bạn
         </Menu.Item>
       </Menu>
