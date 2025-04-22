@@ -25,6 +25,22 @@ const HomeDetails = () => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [userProfile, setUserProfile] = useState(null); 
+  const [members, setMembers] = useState([]);
+  const [userMain,setUserMain] = useState(null);
+  const [disabledModalGroup,setDisabledModalGroup] = useState(false);
+  const [groupSettings, setGroupSettings] = useState({
+      leaders: [],
+      members: [],
+      changeGroupInfo: true,
+      pinMessages: false,
+      createReminders: true,
+      createPolls: true,
+      sendMessages: true,
+      approveNewMembers: false,
+      markLeaderMessages: false,
+      allowNewMembersRead: true,
+      allowJoinLink: true,
+    });
 
   const openChat = (chat) => {
     setIsInfoGroupVisible(false);
@@ -193,6 +209,83 @@ const HomeDetails = () => {
       return null;
     }
   }
+
+  const processPermissionUpdate = async (data, isSocketEvent = false) => {
+    const { permissions, user_id, conversation_id } = data;
+  
+    const permissionName =
+  permissions === "owner"
+    ? "Trưởng nhóm"
+    : permissions === "moderator"
+    ? "Phó nhóm"
+    : "Thành viên";
+
+  const profile = await getProfile(user_id);
+
+  if (profile) {
+  const displayName = profile.fullname || "Người dùng";
+  sendMessage(null, true, `${displayName} đã trở thành ${permissionName}`);
+  }
+  
+    // Cập nhật quyền trong danh sách chat hiện tại
+    if (!isSocketEvent && selectedChat?.conversation_id === conversation_id) {
+      setSelectedChat((prev) => {
+        const updatedList = prev.list_user_id?.map((member) =>
+          member.user_id === user_id ? { ...member, permission: permissions } : member
+        );
+        return { ...prev, list_user_id: updatedList };
+      });
+    }
+  
+    // Cập nhật quyền nếu là chính mình
+    if (user_id === userMain.id) {
+      setMembers((prev) =>
+        prev.map((member) =>
+          member.id === user_id ? { ...member, permission: permissions } : member
+        )
+      );
+      setUserMain((prev) => ({ ...prev, permission: permissions }));
+      setIsGroupSettingsVisible(false);
+      return;
+    }
+  
+    // Cập nhật trong groupSettings và members
+    setGroupSettings((prev) => {
+      const updatedMembers = prev.members.map((member) =>
+        member.id === user_id ? { ...member, permission: permissions } : member
+      );
+  
+      let updatedLeaders = prev.leaders;
+      if (permissions === "owner" || permissions === "moderator") {
+        const isAlreadyLeader = prev.leaders.some((leader) => leader.id === user_id);
+        if (!isAlreadyLeader) {
+          const memberData = updatedMembers.find((m) => m.id === user_id);
+          if (memberData) {
+            const newLeader = { ...memberData, permissions };
+            updatedLeaders = [...prev.leaders, newLeader];
+          }
+        }
+      } else if (permissions === "member") {
+        updatedLeaders = prev.leaders.filter((leader) => leader.id !== user_id);
+      }
+  
+      return {
+        ...prev,
+        members: updatedMembers,
+        leaders: updatedLeaders,
+      };
+    });
+  
+    setMembers((prev) =>
+      prev.map((member) =>
+        member.id === user_id ? { ...member, permission: permissions } : member
+      )
+    );
+  
+    if (permissions === "owner") {
+      setDisabledModalGroup(true);
+    }
+  };
   
   
   useEffect(() => {
@@ -264,6 +357,8 @@ const HomeDetails = () => {
         ];
       });
     };
+
+    
   
     const handleRemovedMember =  async(data) => {
      
@@ -399,45 +494,19 @@ if (profile) {
     };
   
     const handleUpdatePermissions = async (data) => {
-      if (selectedChat === null || selectedChat.conversation_id !== data.conversation_id) {
+      if (!selectedChat || selectedChat.conversation_id !== data.conversation_id) {
         fetchConversations();
         return;
       }
-      const permissionName =
-      data.permissions === "owner"
-        ? "Trưởng nhóm"
-        : data.permissions === "moderator"
-        ? "Phó nhóm"
-        : "Thành viên";
-      const userToAdd = data.user_id;
-      const profile = await getProfile(userToAdd); // chờ lấy profile
-      console.log(profile);
-      
-      if (profile) {
-        sendMessage(null,true,`${userProfile?.fullname} đã trở thành ${permissionName}`);
-      }
-
-  
-      setSelectedChat((prev) => {
-        const updatedList = prev.list_user_id?.map((member) => {
-          if (member.user_id === data.user_id) {
-            return { ...member, permission: data.permissions };
-          }
-          return member;
-        });
-  
-        return {
-          ...prev,
-          list_user_id: updatedList,
-        };
-      });
-  
+    
+      await processPermissionUpdate(data);
       setIsGroupSettingsVisible(false);
       setInfoPermissions((prev) => ({
         ...prev,
         message: data.message,
       }));
     };
+    
   
     const handleOutGroup = async (data) => {
       if (selectedChat === null || selectedChat.conversation_id !== data.conversation_id) {
@@ -543,6 +612,7 @@ if (profile) {
         messages={messages}
         setMessages={setMessages}
         
+        
       />
       {isInfoGroupVisible && (
         <InfoGroup
@@ -554,6 +624,15 @@ if (profile) {
           sendMessage={sendMessage}
           getProfile={getProfile}
           userProfile={userProfile}
+          userMain={userMain}
+          setUserMain={setUserMain}
+          disabledModalGroup={disabledModalGroup}
+          setDisabledModalGroup={setDisabledModalGroup}
+          members={members}
+          setMembers={setMembers}
+          groupSettings={groupSettings}
+          setGroupSettings={setGroupSettings}
+          processPermissionUpdate={processPermissionUpdate}
 
         />
       )}

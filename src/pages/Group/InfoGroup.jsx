@@ -28,14 +28,17 @@ import socket from "../../services/Socket";
 import GroupSettingsModal from "../../components/ChatApp/GroupSettingsModal";
 import { useSelector } from "react-redux";
 import Swal from "sweetalert2";
+import { setSelectedChat } from "../../redux/UserChatSlice";
 
-const InfoGroup = ({sendMessage,getProfile,userProfile, selectedChat, onClose, isGroupSettingsVisible,setIsGroupSettingsVisible,setIsModalAddMemberVisible }) => {
+const InfoGroup = ({sendMessage,getProfile,userProfile, selectedChat, 
+  onClose, isGroupSettingsVisible,setIsGroupSettingsVisible,
+  setIsModalAddMemberVisible,userMain,setUserMain,groupSettings,setGroupSettings,
+  members,setMembers,disabledModalGroup,setDisabledModalGroup,processPermissionUpdate
+}) => {
   const [isMemberModalVisible, setIsMemberModalVisible] = useState(false);
-  const [members, setMembers] = useState([]);
   const [userOwner, setUserOwner] = useState(null);
   const user = useSelector((state) => state.user.user);
-  const [userMain,setUserMain] = useState(null);
-  const [disabledModalGroup,setDisabledModalGroup] = useState(false);
+  // const [disabledModalGroup,setDisabledModalGroup] = useState(false);
 
   const [isTyped, setIsTyped] = useState(selectedChat?.type === "group" ? true : false);
 
@@ -43,19 +46,19 @@ const InfoGroup = ({sendMessage,getProfile,userProfile, selectedChat, onClose, i
     setIsModalAddMemberVisible(true);
   }
   
-  const [groupSettings, setGroupSettings] = useState({
-    leaders: [],
-    members: [],
-    changeGroupInfo: true,
-    pinMessages: false,
-    createReminders: true,
-    createPolls: true,
-    sendMessages: true,
-    approveNewMembers: false,
-    markLeaderMessages: false,
-    allowNewMembersRead: true,
-    allowJoinLink: true,
-  });
+  // const [groupSettings, setGroupSettings] = useState({
+  //   leaders: [],
+  //   members: [],
+  //   changeGroupInfo: true,
+  //   pinMessages: false,
+  //   createReminders: true,
+  //   createPolls: true,
+  //   sendMessages: true,
+  //   approveNewMembers: false,
+  //   markLeaderMessages: false,
+  //   allowNewMembersRead: true,
+  //   allowJoinLink: true,
+  // });
 
   const handleOpenModelSetting = () => {
      if(userMain?.permission === "member"){
@@ -251,132 +254,49 @@ const InfoGroup = ({sendMessage,getProfile,userProfile, selectedChat, onClose, i
 
   const grantPermission = (friend, permission) => {
     console.log(permission);
-    
+  
+    // Gửi phân quyền cho người được chọn
     socket.emit("set_permissions", {
       conversation_id: selectedChat.conversation_id,
       user_id: friend.id,
       permissions: permission
     });
-    if(permission === "owner"){
-      console.log("phân quyền owner nè");
-
-      socket.emit("set_permissions",{
-        conversation_id: selectedChat.conversation_id,
-        user_id: userMain.id,
-        permissions: "member"
-      })
-    }  
-  }
-  useEffect(() => {
-    const eventPermission = async (data) => {
-      const { permissions, user_id } = data;
+    
   
-      console.log("Phân quyền:", permissions);
-      const permissionName =
-      data.permissions === "owner"
-        ? "Trưởng nhóm"
-        : data.permissions === "moderator"
-        ? "Phó nhóm"
-        : "Thành viên";
-      const userToAdd = data.user_id;
-      const profile = await getProfile(userToAdd); // chờ lấy profile
-      console.log(profile);
-
-      if (profile) {
-        sendMessage(null, true, `${userProfile?.fullname} đã trở thành ${permissionName}`);
-        
-      }
-      
+    // Nếu là phân quyền owner thì đổi quyền user hiện tại về member sau 300ms
+    if (permission === "owner") {
+      console.log("Phân quyền owner, sẽ hạ quyền người hiện tại sau 300ms");
   
-      // Nếu user hiện tại bị phân quyền
-      if (user_id === userMain.id) {
-        console.log("Cập nhật quyền cho chính user hiện tại");
-  
-        // Cập nhật danh sách members
-        setMembers((prev) =>
-          prev.map((member) =>
-            member.id === userMain.id ? { ...member, permission: permissions } : member
-          )
-        );
-  
-        // Cập nhật quyền trong userMain
-        setUserMain((prev) => ({ ...prev, permission: permissions }));
-
-        setIsGroupSettingsVisible(false);
-        return;
-      }
-  
-      // Cập nhật quyền cho user trong groupSettings.members
-      setGroupSettings((prev) => {
-        const updatedMembers = prev.members.map((member) =>
-          member.id === user_id ? { ...member, permission: permissions } : member
-        );
-        return { ...prev, members: updatedMembers };
-      });
-  
-      // Cập nhật quyền trong danh sách members chung
-      setMembers((prev) =>
-        prev.map((member) =>
-          member.id === user_id ? { ...member, permission: permissions } : member
-        )
-      );
-  
-      if (permissions === "owner") {
-        console.log("-> Owner");
-  
-        // Thêm vào leaders nếu chưa có
-        setGroupSettings((prev) => {
-          const isAlreadyLeader = prev.leaders.some((leader) => leader.id === user_id);
-          if (!isAlreadyLeader) {
-            const memberData = prev.members.find((m) => m.id === user_id);
-            if (memberData) {
-              const newLeader = { ...memberData, permission: "owner" };
-              return {
-                ...prev,
-                leaders: [...prev.leaders, newLeader],
-              };
-            }
-          }
-          return prev;
+      setTimeout(() => {
+        socket.emit("set_permissions", {
+          conversation_id: selectedChat.conversation_id,
+          user_id: userMain.id,
+          permissions: "member"
         });
+      }, 300); // chờ 300ms để tránh xung đột
+    }
+  };
   
-        setDisabledModalGroup(true);
-      } else if (permissions === "moderator") {
-        console.log("-> Moderator");
+  // Hàm chung để xử lý logic phân quyền và đồng bộ state
   
-        setGroupSettings((prev) => {
-          const isAlreadyLeader = prev.leaders.some((leader) => leader.id === user_id);
-          if (!isAlreadyLeader) {
-            const memberData = prev.members.find((m) => m.id === user_id);
-            if (memberData) {
-              const newLeader = { ...memberData, permission: "moderator" };
-              return {
-                ...prev,
-                leaders: [...prev.leaders, newLeader],
-              };
-            }
-          }
-          return prev;
-        });
-      } else if (permissions === "member") {
-        console.log("-> Member");
-  
-        // Xoá khỏi danh sách leaders nếu có
-        setGroupSettings((prev) => ({
-          ...prev,
-          leaders: prev.leaders.filter((leader) => leader.id !== user_id),
-        }));
-      } else {
-        console.warn("Loại quyền không xác định:", permissions);
-      }
-    };
-  
-    socket.on("set_permissions", eventPermission);
-  
-    return () => {
-      socket.off("set_permissions", eventPermission);
-    };
-  }, [socket, members, userMain?.id]);
+
+useEffect(() => {
+  const eventPermission = async (data) => {
+    // Gọi hàm xử lý chung đã viết ở trên
+    await processPermissionUpdate(data, true);
+  };
+
+  // Đăng ký lắng nghe sự kiện phân quyền từ server
+  socket.on("set_permissions", eventPermission);
+
+  // Hủy đăng ký khi unmount
+  return () => {
+    socket.off("set_permissions", eventPermission);
+  };
+}, [socket, members, userMain?.id]);
+
+
+
   
   
   const menu = (friend) => {
