@@ -234,8 +234,6 @@ const FriendList = () => {
       },
     });
   };
-  handleRemoveFriend();
-  };
   
   return (
     <div className="flex h-screen">
