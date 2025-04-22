@@ -148,7 +148,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
 
     const tempId = `msg-${Date.now()}`;
     const now = new Date();
-    const isGroup = chats.list_user_id?.length > 2;
+    const isGroup = chats.type === 'group';
    
     setMessages((prev) => [
       ...prev,
