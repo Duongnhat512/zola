@@ -8,7 +8,7 @@ const UserCacheService = require("../services/user-cache.service");
 function setupSocket(server) {
   const io = new Server(server, {
     cors: {
-      origin: "*",
+      origin: ["http://localhost:5173", "http://localhost:8888"],
       methods: ["GET", "POST", "OPTIONS"],
       credentials: true,
       allowedHeaders: ["Authorization", "Content-Type"],

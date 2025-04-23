@@ -4,6 +4,7 @@ const MessageModel = require("../models/message.model");
 const { uploadFile } = require("../services/file.service");
 const axios = require("axios");
 const UserCacheService = require("../services/user-cache.service");
+const { getUnreadCount, resetUnreadCount } = require("../services/conversation.service");
 const ConversationController = {};
 
 ConversationController.joinRoom = async (socket, data) => {
@@ -340,7 +341,7 @@ ConversationController.findPrivateConversation = async (req, res) => {
         created_by: user_id,
         type: "private",
         members: [
-          user_id,friend_id
+          user_id, friend_id
         ]
       });
 
@@ -349,19 +350,19 @@ ConversationController.findPrivateConversation = async (req, res) => {
 
       newConversation.name = user_friend.fullname;
       newConversation.avatar = user_friend.avt;
-      
 
-      
+
+
       return res.status(200).json({
         status: "success",
         message: "Lấy cuộc hội thoại thành công",
         newConversation,
       });
     }
-    
+
 
     const list_user_id_raw = await redisClient.smembers(`group:${conversation.id}`);
-    
+
     const list_user_id = await Promise.all(
       list_user_id_raw.map(async (id) => {
         const permission = await UserCacheService.getConversationPermissions(id, conversation.id);
@@ -424,6 +425,12 @@ ConversationController.addMember = async (socket, data) => {
       conversation_id
     );
 
+    socket.emit("add_member", {
+      message: "Thành viên mới vừa được thêm",
+      user_id: user_id,
+      conversation_id: conversation_id
+    });
+
     const timestamp = Date.now();
     await redisClient.zadd(`chatlist:${user_id}`, timestamp, conversation_id);
 
@@ -439,11 +446,21 @@ ConversationController.addMember = async (socket, data) => {
       });
     });
 
-    socket.emit("add_member", {
-      message: "Thêm thành viên thành công",
-      result,
-      user_id: user_id,
-    });
+    members = await redisClient.smembers(`group:${conversation_id}`);
+
+    members = members.filter(member => member !== user_id);
+    for (const member of members) {
+      const socketIds = await redisClient.smembers(`sockets:${member}`);
+      for (const socketId of socketIds) {
+        socket.to(socketId).emit("add_member", {
+          conversation_id: conversation_id,
+          user_id: user_id,
+          message: "Có thành viên mới",
+        });
+      }
+    }
+
+
 
   } catch (error) {
     console.error("Có lỗi khi thêm thành viên:", error);
@@ -478,31 +495,34 @@ ConversationController.removeMember = async (socket, data) => {
       conversation_id
     );
 
-    await redisClient.srem(`group:${conversation_id}`, user_id);
-    await redisClient.zrem(`chatlist:${user_id}`, conversation_id);
-    await UserCacheService.removePermissions(user_id, conversation_id);
+    await Promise.all([
+      redisClient.srem(`group:${conversation_id}`, user_id),
+      redisClient.zrem(`chatlist:${user_id}`, conversation_id),
+      redisClient.srem(`unread:${user_id}`, conversation_id),
+      redisClient.del(`unread_count:${user_id}:${conversation_id}`),
+      UserCacheService.removePermissions(user_id, conversation_id),
+    ]);
 
     socket.emit("remove_member", {
-      message: "Xóa thành viên thành công",
+      message: `Thành viên đã bị xóa khỏi nhóm`,
       user_id: user_id,
+      conversation_id: conversation_id,
     });
 
     // Thông báo cho tất cả thành viên trong nhóm
     const members = await redisClient.smembers(`group:${conversation_id}`);
-
-    console.log("members", members);
-    
-    members.forEach(async (member) => {
+    members.push(user_id);
+    for (const member of members) {
       const socketIds = await redisClient.smembers(`sockets:${member}`);
       console.log(socketIds, "socketIds");
-      socketIds.forEach((socketId) => {
-        socket.to(socketId).emit("user_left_group", {
+      for (const socketId of socketIds) {
+        socket.to(socketId).emit("removed_member", {
           conversation_id: conversation_id,
           user_id: user_id,
           message: "Người dùng đã bị xóa khỏi nhóm",
         });
-      });
-    });
+      }
+    }
 
   } catch (error) {
     console.error("Có lỗi khi xóa thành viên:", error);
@@ -525,19 +545,19 @@ ConversationController.getConversations = async (socket, data) => {
     }
 
     const unreadConversations = await redisClient.smembers(`unread:${user_id}`);
-    
+
     const conversations = await Promise.all(
       conversationIds.map(async (conversationId) => {
         try {
           const [conversation, unreadCount] = await Promise.all([
             ConversationModel.getConversationById(conversationId),
-            ConversationController.getUnreadCount(user_id, conversationId)
+            getUnreadCount(user_id, conversationId),
           ]);
 
           if (!conversation) return null;
 
           const list_user_id_raw = await redisClient.smembers(`group:${conversationId}`);
-          
+
           const list_user_id = await Promise.all(
             list_user_id_raw.map(async (id) => {
               const permission = await UserCacheService.getConversationPermissions(id, conversationId);
@@ -553,8 +573,8 @@ ConversationController.getConversations = async (socket, data) => {
             const receiver = list_user_id.find((id) => id.user_id !== user_id);
             if (receiver) {
               friendPromise = UserCacheService.getUserProfile(
-                receiver.user_id, 
-                socket.handshake.headers.authorization
+                receiver.user_id,
+                socket.handshake.auth.token || socket.handshake.headers.authorization
               );
             }
           }
@@ -585,6 +605,7 @@ ConversationController.getConversations = async (socket, data) => {
             list_user_id,
             is_unread: isUnread,
             unread_count: unreadCount,
+            type: conversation.type,
           };
         } catch (err) {
           console.error(`Lỗi khi xử lý hội thoại ${conversationId}:`, err);
@@ -703,57 +724,88 @@ ConversationController.muteMember = async (socket, data) => {
 
 // Giải tán nhóm
 ConversationController.deleteConversation = async (socket, data) => {
-  const { conversation_id } = data;
-
-  const permissions = await UserCacheService.getConversationPermissions(socket.user.id, conversation_id);
-
-  if (permissions !== 'owner') {
-    return socket.emit("error", { message: "Bạn không có quyền giải tán nhóm" });
-  }
-
-  if (!permissions) {
-    return socket.emit("error", { message: "Thiếu quyền truy cập" });
-  }
-
-  if (!conversation_id) {
-    return socket.emit("error", { message: "Thiếu conversation_id" });
-  }
-
   try {
-    const members = await redisClient.smembers(`group:${conversation_id}`);
+    const { conversation_id } = data;
+    const user_id = socket.user.id;
 
-    const result = await ConversationModel.deleteConversation(conversation_id);
-
-    for (const member of members) {
-      await redisClient.zrem(`chatlist:${member}`, conversation_id);
-      await UserCacheService.removePermissions(member, conversation_id);
+    // Kiểm tra đầu vào
+    if (!conversation_id) {
+      return socket.emit("error", { message: "Thiếu conversation_id" });
     }
 
-    await redisClient.del(`group:${conversation_id}`);
+    // Kiểm tra quyền
+    const permissions = await UserCacheService.getConversationPermissions(user_id, conversation_id);
+    if (!permissions) {
+      return socket.emit("error", { message: "Không tìm thấy quyền truy cập cho nhóm này" });
+    }
 
+    if (permissions !== 'owner') {
+      return socket.emit("error", { message: "Bạn không có quyền giải tán nhóm" });
+    }
+
+    // Lấy danh sách thành viên trước khi xóa
+    const members = await redisClient.smembers(`group:${conversation_id}`);
+    if (!members || members.length === 0) {
+      return socket.emit("error", { message: "Không tìm thấy thành viên trong nhóm" });
+    }
+
+    // Xóa cuộc trò chuyện từ database
+    const result = await ConversationModel.deleteConversation(conversation_id);
+
+    // Xóa dữ liệu Redis - thực hiện song song thay vì tuần tự
+    const cleanupPromises = [];
+
+    // 1. Xóa khỏi chat list của tất cả thành viên
+    members.forEach(member => {
+      cleanupPromises.push(redisClient.zrem(`chatlist:${member}`, conversation_id));
+      cleanupPromises.push(UserCacheService.removePermissions(member, conversation_id));
+      cleanupPromises.push(redisClient.srem(`unread:${member}`, conversation_id));
+      cleanupPromises.push(redisClient.del(`unread_count:${member}:${conversation_id}`));
+    });
+
+    // 2. Xóa group key
+    cleanupPromises.push(redisClient.del(`group:${conversation_id}`));
+
+    // Chờ tất cả các thao tác Redis hoàn thành
+    await Promise.all(cleanupPromises);
+
+    // Thông báo cho người gửi yêu cầu
     socket.emit("delete_group", {
       status: "success",
-      message: "Đã giải tán nhóm",
-      result,
+      message: "Đã giải tán nhóm thành công",
       conversation_id
     });
 
-    // Thông báo cho tất cả thành viên trong nhóm
-    members.forEach(async (member) => {
+    // Thông báo cho tất cả thành viên (sử dụng Promise.all để xử lý hiệu quả)
+    const notifyPromises = members.map(async (member) => {
+      // Bỏ qua người gửi yêu cầu vì đã nhận thông báo trên
+      if (member === user_id) return;
+
       const socketIds = await redisClient.smembers(`sockets:${member}`);
-      socketIds.forEach((socketId) => {
+      socketIds.forEach(socketId => {
         socket.to(socketId).emit("group_deleted", {
-          conversation_id: conversation_id,
-          message: `Nhóm đã bị giải tán`,
+          conversation_id,
+          message: "Nhóm đã bị giải tán bởi quản trị viên",
+          deleted_by: user_id,
+          timestamp: Date.now()
         });
       });
     });
 
+    await Promise.all(notifyPromises);
+
+    console.log(`Đã giải tán nhóm ${conversation_id} bởi người dùng ${user_id}`);
+    return true;
+
   } catch (error) {
-    console.error("Có lỗi khi giải tán nhóm:", error);
-    socket.emit("error", { message: "Có lỗi khi giải tán nhóm" });
+    console.error("Lỗi khi giải tán nhóm:", error.message, error.stack);
+    socket.emit("error", {
+      message: "Có lỗi khi giải tán nhóm",
+      details: error.message
+    });
+    return false;
   }
-}
+};
 
 // Out nhóm
 ConversationController.outGroup = async (socket, data) => {
@@ -776,9 +828,17 @@ ConversationController.outGroup = async (socket, data) => {
   try {
     const result = await ConversationModel.outGroup(socket.user.id, conversation_id);
 
-    await redisClient.srem(`group:${conversation_id}`, socket.user.id);
-    await redisClient.zrem(`chatlist:${socket.user.id}`, conversation_id);
-    await UserCacheService.removePermissions(socket.user.id, conversation_id);
+    if (!result) {
+      return socket.emit("error", { message: "Không tìm thấy nhóm" });
+    }
+
+    await Promise.all([
+      redisClient.srem(`group:${conversation_id}`, socket.user.id),
+      redisClient.zrem(`chatlist:${socket.user.id}`, conversation_id),
+      redisClient.srem(`unread:${socket.user.id}`, conversation_id),
+      redisClient.del(`unread_count:${socket.user.id}:${conversation_id}`),
+      UserCacheService.removePermissions(socket.user.id, conversation_id),
+    ])
 
     socket.emit("out_group", {
       status: "success",
@@ -789,16 +849,16 @@ ConversationController.outGroup = async (socket, data) => {
 
     // Thông báo cho tất cả thành viên trong nhóm
     const members = await redisClient.smembers(`group:${conversation_id}`);
-    members.forEach(async (member) => {
+    for (const member of members) {
       const socketIds = await redisClient.smembers(`sockets:${member}`);
-      socketIds.forEach((socketId) => {
+      for (const socketId of socketIds) {
         socket.to(socketId).emit("user_left_group", {
           conversation_id: conversation_id,
           user_id: socket.user.id,
           message: "Người dùng đã rời nhóm",
         });
-      });
-    });
+      }
+    }
 
   } catch (error) {
     console.error("Có lỗi khi rời nhóm:", error);
@@ -811,64 +871,21 @@ ConversationController.markAsRead = async (socket, data) => {
   const user_id = socket.user.id;
 
   if (!conversation_id) {
-    return socket.emit("error", { message: "Thiếu conversation_id" });
+      return socket.emit("error", { message: "Thiếu conversation_id" });
   }
 
   try {
-    await ConversationController.resetUnreadCount(user_id, conversation_id);
+      await resetUnreadCount(user_id, conversation_id);
 
-    socket.emit("mark_as_read", {
-      status: "success",
-      message: "Đánh dấu hội thoại là đã đọc",
-    });
+      socket.emit("mark_as_read", {
+          status: "success",
+          message: "Đánh dấu hội thoại là đã đọc",
+      });
   } catch (error) {
-    console.error("Có lỗi khi đánh dấu hội thoại là đã đọc:", error);
-    socket.emit("error", { message: "Có lỗi khi đánh dấu hội thoại là đã đọc" });
+      console.error("Có lỗi khi đánh dấu hội thoại là đã đọc:", error);
+      socket.emit("error", { message: "Có lỗi khi đánh dấu hội thoại là đã đọc" });
   }
 }
 
-ConversationController.getUnreadCount = async (user_id, conversation_id) => {
-  try {
-    const key = `unread_count:${user_id}:${conversation_id}`;
-    const count = await redisClient.get(key)
-
-    return count ? parseInt(count) : 0;
-  } catch (error) {
-    console.error("Có lỗi khi lấy số lượng hội thoại chưa đọc:", error);
-    return 0;
-  }
-}
-
-ConversationController.increaseUnreadCount = async (conversation_id, exceptUserId = null) => {
-  try {
-    const members = await redisClient.smembers(`group:${conversation_id}`);
-    
-    await Promise.all(members.map(async (member) => {
-      if (member === exceptUserId) {
-        return; 
-      }
-      
-      const key = `unread_count:${member}:${conversation_id}`;
-      await Promise.all([
-        redisClient.incr(key),
-        redisClient.sadd(`unread:${member}`, conversation_id)
-      ]);
-    }));
-  } catch (error) {
-    console.error("Có lỗi khi tăng số lượng hội thoại chưa đọc:", error);
-  }
-}
-
-ConversationController.resetUnreadCount = async (user_id, conversation_id) => {
-  try {
-    const key = `unread_count:${user_id}:${conversation_id}`;
-    await Promise.all([
-      redisClient.set(key, 0),
-      redisClient.srem(`unread:${user_id}`, conversation_id)
-    ]);
-  } catch (error) {
-    console.error("Có lỗi khi đặt lại số tin nhắn chưa đọc:", error);
-  }
-}
 
 module.exports = ConversationController;

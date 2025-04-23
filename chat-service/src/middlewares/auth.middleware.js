@@ -3,7 +3,8 @@ const axios = require("axios");
 const BASE_URL = process.env.BASE_URL;
 
 exports.isAuth = async (socket, next) => {
-  const token = socket.handshake.headers.authorization;
+  const token = socket.handshake.auth.token || socket.handshake.headers.authorization;
+  console.log("token", token);
 
   if (!token) {
     console.error("Socket Auth Error: Token missing");

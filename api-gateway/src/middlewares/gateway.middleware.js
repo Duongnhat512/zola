@@ -41,6 +41,15 @@ module.exports.setupWebSocketProxy = (server, path, targetUrl) => {
         proxyReq.setHeader('Authorization', req.headers.authorization);
       }
     },
+    // Thêm xử lý cho WebSocket handshake
+    onProxyReqWs: (proxyReq, req, socket, options, head) => {
+      if (req.headers.origin) {
+        proxyReq.setHeader('Origin', req.headers.origin);
+      }
+      if (req.headers.authorization) {
+        proxyReq.setHeader('Authorization', req.headers.authorization);
+      }
+    },
     onError: (err, req, res) => {
       console.error('WebSocket Proxy Error:', err);
       if (res && res.writeHead) {

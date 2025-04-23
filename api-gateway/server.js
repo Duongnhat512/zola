@@ -59,7 +59,7 @@ app.use(
 );
 
 const socketProxy = setupWebSocketProxy(server, '/socket.io', services.chatService);
-app.use('/socket.io', socketProxy);
+// app.use('/socket.io', socketProxy);
 
 // Health check
 app.get("/", (req, res) => res.send("API Gateway is running..."));

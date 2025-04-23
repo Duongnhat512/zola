@@ -1,5 +1,6 @@
 require("dotenv").config();
 const { s3 } = require("../utils/aws.helper");
+const { getFileCategory } = require("../utils/file.helper");
 
 const randomString = numberCharacter => {
     return `${Math.random()
@@ -57,6 +58,33 @@ const uploadFile = async (file) => {
     }
 }
 
+const processFileUploadMessage = async (fileData, fileName, fileType, fileSize) => {
+    if (!fileData) return { fileUrl: "", fileType: "text" };
+
+    try {
+      const fileBuffer = Buffer.from(
+        fileData.split('base64,')[1] || fileData,
+        'base64'
+      );
+
+      const file = {
+        originalname: fileName,
+        mimetype: fileType || getMimeTypeFromFileName(fileName),
+        buffer: fileBuffer,
+        size: fileSize || fileBuffer.length
+      };
+
+      const fileCategory = getFileCategory(file.mimetype);
+      const fileUrl = await uploadFile(file);
+
+      return { fileUrl, fileType: fileCategory };
+    } catch (error) {
+      console.error("Lỗi xử lý file:", error);
+      return { fileUrl: "", fileType: "text" };
+    }
+}
+
 module.exports = {
-    uploadFile
+    uploadFile,
+    processFileUploadMessage,
 }

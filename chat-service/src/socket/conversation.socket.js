@@ -137,6 +137,16 @@ const conversationSocket = (io, socket) => {
         }
     });
 
+    socket.on("clean_redis", async (data) => {
+        console.log("Nhận yêu cầu xóa redis từ client:", data);
+        try {
+            await conversationController.clearUnread(socket, data);
+        } catch (error) {
+            console.error("Lỗi khi xóa redis:", error);
+            socket.emit("error", { message: "Lỗi khi xóa redis" });
+        }
+    });
+
 };
 
 module.exports = conversationSocket;
