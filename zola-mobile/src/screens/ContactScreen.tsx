@@ -29,6 +29,9 @@ const FriendScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const navigation = useNavigation();
   const [selectedUser, setSelectedUser] = useState(null);
+  const [searchText, setSearchText] = useState('');
+      const [modalVisibleFriend, setModalVisibleFriend] = useState(false);
+  
   const user = useSelector((state: any) => state.user.user);
 {/*Nơi tạo biến lưu data và lấy data*/}
     {/*Data bạn bè*/}
@@ -128,6 +131,37 @@ const FriendScreen = () => {
     
           }, []);
     {/*các hàm xử lý thu hồi đồng ý và từ chối*/}
+    {/*Gửi lời mời kết bạn*/}
+    const handleSendFriendRequest = async (friend_user_id) => {
+            try {
+              // user_id = người đang đăng nhập (hardcode ví dụ), bạn có thể lấy từ context hoặc AsyncStorage
+              // console.log(friend_user_id);
+              // friendsList.forEach(friend => {
+              //   console.log(friend.id);
+              // });
+              const isFriend = friendsList.some(friend => friend.friendInfo.id === friend_user_id);
+              console.log(isFriend);
+              if (isFriend) {
+                console.log("Đã là bạn bè");
+                Alert.alert("đã kết bạn với người này");
+                setModalVisible(false);
+              } else {
+                console.log("Chưa kết bạn");
+                const res = await sendFriendRequest(friend_user_id,user.id);      
+                await fetchSendRequestWithDetails();
+                 //alert(res); // hiển thị thông báo thành công
+                 Alert.alert("Gửi lời mời kết bạn thành công!");
+                 setModalVisible(false);
+               } 
+              }
+              catch (err) {
+                console.log(err);
+                alert(err.message || 'Gửi lời mời thất bại');
+              }
+              
+         
+          };
+          
     {/*từ chối nè*/}
     const handleRejectRequest = async (user_friend_id: string) => {
     try {
@@ -162,6 +196,20 @@ const FriendScreen = () => {
               Alert.alert("Lỗi", "Không thể thu hồi lời mời.");
             }
           };
+          {/*quản lý search*/}
+           const handleSearch = async () => {
+                  if (!searchText) {
+                    return;
+                  }
+                  
+                  try {
+                    const response = await GetUserByUserName(searchText);
+                    setModalVisibleFriend(true);
+                    setSelectedUser(response.user);
+                  } catch (err) {
+                      throw err;
+                  }
+                };
   const renderGroupItem = ({ item }) => (
       <View style={styles.groupItem}>
         <Image source={{ uri: item.avatar }} style={styles.groupAvatar} />
@@ -182,17 +230,17 @@ const FriendRequestModal = ({ visible, onClose }) => {
       <Text style={styles.desc}>{item.desc}</Text>
       {activeTab === 'received' && (
         <View style={styles.buttonRow}>
-          <TouchableOpacity style={styles.rejectBtn}>
+          <TouchableOpacity style={styles.rejectBtn} onPress={()=>{handleRejectRequest(item.friendInfo.id)}}>
             <Text style={{ color: '#333' }}>Từ chối</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.acceptBtn}>
-            <Text style={{ color: '#007AFF' }}>Đồng ý</Text>
+            <Text style={{ color: '#007AFF' }}  onPress={()=>{handleAcceptRequest(item.friendInfo.id)}}>Đồng ý</Text>
           </TouchableOpacity>
         </View>
       )}
        {activeTab === 'sent' && (
         <View style={styles.buttonRow}>
-          <TouchableOpacity style={styles.acceptBtn}>
+          <TouchableOpacity style={styles.acceptBtn} onPress={()=>{handleUndoRequest(item.friendInfo.id)}}>
             <Text style={{ color: '#007AFF' }}>Thu hồi lời mời</Text>
           </TouchableOpacity>
         </View>
@@ -259,6 +307,7 @@ const renderFriendItem = ({ item }) => (
     </View>
     </TouchableOpacity>
   );
+{/*ReturnNe*/}
   return (
     <View style={styles.container}>
       {/* PHẦN TRÊN */}
@@ -271,8 +320,13 @@ const renderFriendItem = ({ item }) => (
             placeholder="Tìm bạn bè,tin nhắn...."
             placeholderTextColor="#D6F0FC"
             style={styles.input}
+            onChangeText={setSearchText}
           />
-          <FontAwesome name="user-plus" size={20} color="#5CA6C7" style={styles.iconRight} />
+            <TouchableOpacity onPress={handleSearch}>
+                    {/* <Text style={styles.searchButton}>Tìm</Text> */}
+                    <FontAwesome name="user-plus" size={20} color="#fff" style={styles.iconRight} />
+                  </TouchableOpacity>
+       
         </View>
 
         {/* Tabs */}
@@ -316,6 +370,11 @@ const renderFriendItem = ({ item }) => (
 
       {/* Modal lời mời kết bạn */}
       <FriendRequestModal visible={modalVisible} onClose={() => setModalVisible(false)} />
+      <UserModal
+         visible={modalVisibleFriend}
+        user={selectedUser}
+         onClose={() => setModalVisibleFriend(false)}
+         onSendFriendRequest={handleSendFriendRequest}/>
     </View>
   );
 };
@@ -449,7 +508,7 @@ const styles = StyleSheet.create({
       marginRight: 8,
     },
     searchButton: {
-      color: '#007bff',
+      color: '#fff',
       fontWeight: 'bold',
       paddingVertical: 8,
       paddingHorizontal: 12,
