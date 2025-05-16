@@ -223,6 +223,7 @@ const FriendRequestModal = ({ visible, onClose }) => {
   const [activeTab, setActiveTab] = useState('received');
     {/*Xử lý thu hồi lời mời gửi lời mời từ chối lời mời*/}
   const renderItem = ({ item }) => (
+   
     <View style={styles.requestBox}>
     <Image source={{ uri: item.avatar }} style={styles.groupAvatar} />
       <Text style={styles.name}>{item.name}</Text>
@@ -246,6 +247,7 @@ const FriendRequestModal = ({ visible, onClose }) => {
         </View>
       )}
     </View>
+    
   );
   const data = activeTab === 'received' ? friendRequests :sentRequests;
 
@@ -291,7 +293,7 @@ const FriendRequestModal = ({ visible, onClose }) => {
 };
 {/*render friend item*/}
 const renderFriendItem = ({ item }) => (
-      <TouchableOpacity>
+       <TouchableOpacity onPress={() => navigation.navigate('ChatRoom', { chats:{name: item.friendInfo.fullname,type:"private",avatar:item.friendInfo.avt,friend_id:item.friendInfo.id} })}>
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 15 }}>
       <Image
         source={{ uri: item.friendInfo.avt }}
