@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import EmojiModal from 'react-native-emoji-modal';
+import MessageActionModal from './modal/MessageActionModal';
+import EmojiPickerModal from './modal/EmojiPickerModal';
+import VideoPreviewModal from './modal/VideoPreviewModal';
+import ImagePreviewModal from './modal/ImagePreviewModal';
 import {
   View,
   Text,
@@ -25,6 +28,7 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 import { Video } from 'expo-av';
+
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
 
@@ -360,9 +364,10 @@ const getOriginalFileName = (fileName) => {
       >
         <View style={styles.headerContainer}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Feather name="arrow-left" size={20} color="#ffffff"/>
+            <Feather name="arrow-left" size={30} color="#ffffff"/>
           </TouchableOpacity>
-          <Text style={styles.header}>{chats.name || 'Người khác'}</Text>
+          <Image source={{ uri: chats.avatar }} style={styles.avartarHeader} />
+          <Text style={styles.header}>{chats.name || 'Người dùng không xác định'}</Text>
           <TouchableOpacity
             onPress={() => {
               navigation.navigate('EditGroup', {
@@ -373,7 +378,7 @@ const getOriginalFileName = (fileName) => {
             }}
             style={styles.backButton}
               >
-            <Feather name="settings" size={20} color="#ffffff"/>
+            <Feather name="settings" size={30} color="#ffffff"/>
           </TouchableOpacity>
         </View>
         <View style={styles.bodyContainer}>
@@ -436,10 +441,10 @@ const getOriginalFileName = (fileName) => {
         </View>
         <View style={styles.footerWrapper}>
           <TouchableOpacity onPress={() => setShowEmojiPicker(!showEmojiPicker)}>
-            <Feather name="smile" size={20} color="#000000" style={{paddingRight:10}} />        
+            <Feather name="smile" size={30} color="#000000" style={{paddingRight:10}} />        
           </TouchableOpacity>
           <TouchableOpacity onPress={pickFile} style={styles.fileButton}>
-            <Feather name="paperclip" size={20} color="#000000" style={{paddingRight:10}} />        
+            <Feather name="paperclip" size={30} color="#000000" style={{paddingRight:10}} />        
           </TouchableOpacity>
           
   
@@ -460,96 +465,43 @@ const getOriginalFileName = (fileName) => {
           </View>
         </View>
       
-
-      {/* Modal: Ảnh */}
-      <Modal visible={imagePreviewVisible} transparent animationType="fade">
-      {/* Nhấn vùng ngoài ảnh sẽ đóng modal */}
-          <TouchableOpacity onPress={() => setImagePreviewVisible(false)} style={styles.modalVideoContainer}>
-            <View style={styles.previewVideoContainer}>
-              {/* Nhấn vào ảnh không bị đóng modal */}
-              <TouchableOpacity activeOpacity={1}>
-                <Image
-                  source={{ uri: selectedImage }}
-                  style={styles.previewImage}
-                  resizeMode="contain"
-                />
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        </Modal>
-
-        
-        {/* Modal: Video */}
-        <Modal visible={videoPreviewVisible} transparent animationType="fade">
-        {/* Chỉ đóng modal khi nhấn vào vùng ngoài video */}
-          <TouchableOpacity onPress={() => setVideoPreviewVisible(false)} style={styles.modalVideoContainer}>
-            <View style={styles.previewVideoContainer}>
-              {/* Video không đóng modal khi nhấn vào nó */}
-              <TouchableOpacity activeOpacity={1}>
-                <Video
-                  source={{ uri: selectedVideo }}
-                  rate={1.0}
-                  volume={1.0}
-                  isMuted={false}
-                  resizeMode="contain"
-                  useNativeControls
-                  style={styles.previewImage}
-                />
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        </Modal>
-
-        {/* Modal: Emoji */}
-     <Modal
-  visible={showEmojiPicker}
-  transparent={true}
-  animationType="fade"
-  onRequestClose={() => setShowEmojiPicker(false)}
->
-  <View
-    style={styles.modalEmojiContainer}
-    // Bắt sự kiện nhấn ở bất kỳ đâu ngoài modalEmojiContent
-    onStartShouldSetResponder={() => true}
-    onResponderRelease={() => setShowEmojiPicker(false)}
-  >
-    <View
-      style={styles.modalEmojiContent}
-      // Chặn sự kiện nổi lên khi nhấn vào modalEmojiContent
-      onStartShouldSetResponder={() => true}
-      onResponderRelease={e => e.stopPropagation()}
-    >
-      <EmojiModal
-        visible={true}
-        onClose={() => {
-       
-          setShowEmojiPicker(false);
-        }}
-        onEmojiSelected={handleEmojiSelect}
+      {/* Modal: Xem trước ảnh */}
+      <ImagePreviewModal
+          visible={imagePreviewVisible}
+          imageUri={selectedImage}
+          onClose={() => setImagePreviewVisible(false)}
+          styles={styles}
       />
-    </View>
-  </View>
-</Modal>
+      {/* Modal: Xem trước video */}
+      <VideoPreviewModal
+          visible={videoPreviewVisible}
+          videoUri={selectedVideo}
+          onClose={() => setVideoPreviewVisible(false)}
+          styles={styles}
+      />
+      
 
-
-
-
+      {/* Modal: Emoji */}
+      <EmojiPickerModal
+          visible={showEmojiPicker}
+          onClose={() => setShowEmojiPicker(false)}
+          onEmojiSelected={handleEmojiSelect}
+          styles={styles}
+      />
       {/* Modal: Thu hồi/Xóa */}
-      <Modal visible={modalVisible} transparent animationType="fade">
-        <View style={styles.overlayBackground}>
-          <View style={styles.modalContent}>
-            <TouchableOpacity onPress={() => { revokeMessage(selectedMessage.id); setModalVisible(false); }}>
-              <Text style={styles.modalOptionText}>Thu hồi</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => { deleteMessage(selectedMessage.id); setModalVisible(false); }}>
-              <Text style={styles.modalOptionText}>Xóa ở phía bạn</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setModalVisible(false)}>
-              <Text style={styles.modalOptionText}>Hủy</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      <MessageActionModal
+          visible={modalVisible}
+          onClose={() => setModalVisible(false)}
+          onRevoke={() => {
+            revokeMessage(selectedMessage.id);
+            setModalVisible(false);
+          }}
+          onDelete={() => {
+            deleteMessage(selectedMessage.id);
+            setModalVisible(false);
+          }}
+          styles={styles}
+        />
       </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
     </SafeAreaView>

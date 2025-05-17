@@ -61,10 +61,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    padding: 10,
-    //borderWidth: 1,
     borderColor: '#ccc',
-    // borderRadius: 20,
   },
   sendButton: {
     padding: 10,
@@ -99,6 +96,12 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
+    marginHorizontal: 6,
+  },
+  avartarHeader: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     marginHorizontal: 6,
   },
   

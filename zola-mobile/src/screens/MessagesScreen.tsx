@@ -134,7 +134,7 @@ const MessagesScreen = () => {
       <View style={styles.chatItem}>
         <Image
           source={{
-            uri: item.avatar || 'https://dgyllnary2zyb.cloudfront.net/6sao.png',
+            uri: item.avatar || 'https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg',
           }}
           style={styles.avatar}
         />
