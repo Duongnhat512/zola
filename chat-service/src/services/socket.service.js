@@ -53,8 +53,32 @@ const notifySendMessageError = (socket, message) => {
     }
 }
 
+const notifyToAllMembers = async (socket, members, event, data, excludeId = null) => {
+    try {
+        const notificationPromises = members.map(async (memberId) => {
+            if (memberId === excludeId) return;
+
+            const socketIds = await redisClient.smembers(`sockets:${memberId}`);
+
+            const emitPromises = socketIds.map(socketId => {
+                return new Promise(resolve => {
+                    socket.to(socketId).emit(`${event}`, data);
+                    resolve();
+                });
+            });
+
+            return Promise.all(emitPromises);
+        });
+
+        await Promise.all(notificationPromises);
+    } catch (error) {
+        console.error("Lỗi khi gửi thông báo tin nhắn mới:", error);
+    }
+}
+
 module.exports = {
     notifyNewMessage,
     notifyMessageSent,
-    notifySendMessageError
+    notifySendMessageError,
+    notifyToAllMembers
 }

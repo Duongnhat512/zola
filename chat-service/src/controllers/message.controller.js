@@ -1,17 +1,28 @@
-const MessageModel = require('../models/message.model.js')
-const ConversationModel = require('../models/conversation.model.js')
-const { processFileUploadMessage } = require('../services/file.service.js')
-const redisClient = require('../configs/redis.config.js')
-const UserCacheService = require('../services/user-cache.service.js')
-const { createNewPrivateConversation, updateConversationMetadata, increaseUnreadCount } = require('../services/conversation.service.js')
-const { notifyMessageSent, notifyNewMessage, notifySendMessageError } = require('../services/socket.service.js')
-const MessageController = {}
+const MessageModel = require("../models/message.model.js");
+const ConversationModel = require("../models/conversation.model.js");
+const { processFileUploadMessage } = require("../services/file.service.js");
+const redisClient = require("../configs/redis.config.js");
+const UserCacheService = require("../services/user-cache.service.js");
+const {
+  createNewPrivateConversation,
+  updateConversationMetadata,
+  increaseUnreadCount,
+} = require("../services/conversation.service.js");
+const {
+  notifyMessageSent,
+  notifyNewMessage,
+  notifySendMessageError,
+} = require("../services/socket.service.js");
+const MessageController = {};
 
 MessageController.getMessages = async (socket, data) => {
   try {
-    console.log("user id: ", socket.user.id)
+    console.log("user id: ", socket.user.id);
 
-    const messages = await MessageModel.getMessages(data.conversation_id, socket.user.id);
+    const messages = await MessageModel.getMessages(
+      data.conversation_id,
+      socket.user.id
+    );
 
     const messagesWithSenderInfo = await Promise.all(
       messages.map(async (message) => {
@@ -30,66 +41,9 @@ MessageController.getMessages = async (socket, data) => {
     socket.emit("error", { message: "Lỗi khi nhận tin nhắn" });
   }
 };
-//   data.sender_id = socket.user.id
-//   const permissions = await UserCacheService.getConversationPermissions(socket.user.id, data.conversation_id);
-
-//   if (!data.conversation_id) {
-//     socket.emit("error", { message: "Thiếu conversation_id" });
-//     return;
-//   }
-
-//   if (!data.message) {
-//     socket.emit("error", { message: "Thiếu message" });
-//     return;
-//   }
-
-//   try {
-//     const message = await MessageModel.sendMessage(data);
-
-//     await ConversationModel.updateLastMessage(
-//       data.conversation_id,
-//       message.message_id,
-//     )
-
-//     const sender = await UserCacheService.getUserProfile(message.sender_id);
-
-//     const messagesWithSenderInfo = {
-//       ...message,
-//       sender_name: sender.fullname,
-//       sender_avatar: sender.avt,
-//     };
-
-//     const timestamp = Date.now();
-
-//     const members = await redisClient.smembers(`group:${data.conversation_id}`);
-
-//     members.forEach(async (memberId) => {
-//       await redisClient.zadd(
-//         `chatlist:${memberId}`,
-//         timestamp,
-//         data.conversation_id
-//       )
-
-//       const socketIds = await redisClient.smembers(`sockets:${memberId}`);
-//       socketIds.forEach((socketId) => {
-//         if (socketId !== socket.id) {
-//           socket.to(socketId).emit("new_message", { ...messagesWithSenderInfo });
-//         }
-//       });
-//     });
-
-//     socket.emit("message_sent", {
-//       ...messagesWithSenderInfo
-//     });
-
-//   } catch (error) {
-//     console.error("Lỗi khi gửi tin nhắn:", error);
-//     socket.emit("error", { message: "Lỗi khi gửi tin nhắn" });
-//   }
-// };
 
 MessageController.sendGroupMessage = async (socket, data) => {
-  data.sender_id = socket.user.id
+  data.sender_id = socket.user.id;
 
   if (!data.conversation_id) {
     socket.emit("error", { message: "Thiếu conversation_id" });
@@ -98,10 +52,15 @@ MessageController.sendGroupMessage = async (socket, data) => {
 
   try {
     let fileUrl = "";
-    let fileType = "text"
+    let fileType = "text";
 
     if (data.file_data) {
-      const result = await processFileUploadMessage(data.file_data, data.file_name, data.file_type, data.file_size);
+      const result = await processFileUploadMessage(
+        data.file_data,
+        data.file_name,
+        data.file_type,
+        data.file_size
+      );
       fileUrl = result.fileUrl;
       fileType = result.fileType;
     }
@@ -114,13 +73,12 @@ MessageController.sendGroupMessage = async (socket, data) => {
       message: data.message || null,
       media: fileUrl,
       file_name: data.file_name,
-
     };
 
     const [savedMessage, sender, members] = await Promise.all([
       MessageModel.sendMessage(fileMessage),
       UserCacheService.getUserProfile(socket.user.id),
-      redisClient.smembers(`group:${data.conversation_id}`)
+      redisClient.smembers(`group:${data.conversation_id}`),
     ]);
 
     const message = {
@@ -132,8 +90,12 @@ MessageController.sendGroupMessage = async (socket, data) => {
     await Promise.all([
       notifyMessageSent(socket, message),
       notifyNewMessage(socket, message, members, socket.user.id),
-      updateConversationMetadata(data.conversation_id, savedMessage.message_id, socket.user.id),
-      increaseUnreadCount(data.conversation_id, socket.user.id)
+      updateConversationMetadata(
+        data.conversation_id,
+        savedMessage.message_id,
+        socket.user.id
+      ),
+      increaseUnreadCount(data.conversation_id, socket.user.id),
     ]);
 
     return {
@@ -153,17 +115,28 @@ MessageController.sendPrivateMessage = async (socket, data) => {
 
   try {
     let fileUrl = "";
-    let fileType = "text"
+    let fileType = "text";
 
     if (data.file_data) {
-      const result = await processFileUploadMessage(data.file_data, data.file_name, data.file_type, data.file_size);
+      const result = await processFileUploadMessage(
+        data.file_data,
+        data.file_name,
+        data.file_type,
+        data.file_size
+      );
       fileUrl = result.fileUrl;
       fileType = result.fileType;
     }
 
-    let conversation = await ConversationModel.findPrivateConversation(socket.user.id, data.receiver_id);
+    let conversation = await ConversationModel.findPrivateConversation(
+      socket.user.id,
+      data.receiver_id
+    );
     if (!conversation) {
-      conversation = await createNewPrivateConversation(socket.user.id, data.receiver_id);
+      conversation = await createNewPrivateConversation(
+        socket.user.id,
+        data.receiver_id
+      );
     }
 
     const message = {
@@ -178,7 +151,7 @@ MessageController.sendPrivateMessage = async (socket, data) => {
 
     const [savedMessage, sender] = await Promise.all([
       MessageModel.sendMessage(message),
-      UserCacheService.getUserProfile(socket.user.id)
+      UserCacheService.getUserProfile(socket.user.id),
     ]);
 
     const enhancedMessage = {
@@ -189,19 +162,28 @@ MessageController.sendPrivateMessage = async (socket, data) => {
 
     await Promise.all([
       notifyMessageSent(socket, enhancedMessage),
-      notifyNewMessage(socket, enhancedMessage, [data.receiver_id], socket.user.id),
-      updateConversationMetadata(conversation.id, savedMessage.message_id, socket.user.id),
-      increaseUnreadCount(conversation.id, socket.user.id)
+      notifyNewMessage(
+        socket,
+        enhancedMessage,
+        [data.receiver_id],
+        socket.user.id
+      ),
+      updateConversationMetadata(
+        conversation.id,
+        savedMessage.message_id,
+        socket.user.id
+      ),
+      increaseUnreadCount(conversation.id, socket.user.id),
     ]);
 
     return {
       ...message,
-      file_url: fileUrl
+      file_url: fileUrl,
     };
   } catch (error) {
     notifySendMessageError(socket, error);
   }
-}
+};
 
 MessageController.updateMessage = async (socket, data) => {
   if (!data.message_id) {
@@ -267,17 +249,22 @@ MessageController.deleteMessage = async (socket, data) => {
     }
     socket.emit("message_deleted", { message_id });
 
-    const members = await redisClient.smembers(`group:${result.conversation_id}`);
-    console.log("members: ", members)
+    const members = await redisClient.smembers(
+      `group:${result.conversation_id}`
+    );
+    console.log("members: ", members);
     members.forEach(async (memberId) => {
       const socketIds = await redisClient.smembers(`sockets:${memberId}`);
       socketIds.forEach((socketId) => {
         if (socketId !== socket.id) {
-          socket.to(socketId).emit("message_deleted", { message_id, message: "Tin nhắn đã thu hồi", conversation_id: result.conversation_id });
+          socket.to(socketId).emit("message_deleted", {
+            message_id,
+            message: "Tin nhắn đã thu hồi",
+            conversation_id: result.conversation_id,
+          });
         }
       });
     });
-
   } catch (error) {
     console.error("Lỗi khi xóa tin nhắn:", error);
     socket.emit("error", { message: "Lỗi khi xóa tin nhắn" });

@@ -4,6 +4,7 @@ const MessageModel = require("../models/message.model");
 const { uploadFile } = require("../services/file.service");
 const axios = require("axios");
 const UserCacheService = require("../services/user-cache.service");
+const { getMembersAndPermissions, getLastMessages, getUnreadCounts, getFriendProfiles } = require("../utils/conversation.helper");
 const ConversationController = {};
 
 ConversationController.joinRoom = async (socket, data) => {
@@ -542,10 +543,8 @@ ConversationController.removeMember = async (socket, data) => {
 
 ConversationController.getConversations = async (socket, data) => {
   const user_id = socket.user.id;
-
   try {
     const conversationIds = await redisClient.zrevrange(`chatlist:${user_id}`, 0, 49);
-
     if (conversationIds.length === 0) {
       return socket.emit("conversations", {
         status: "success",
@@ -554,89 +553,50 @@ ConversationController.getConversations = async (socket, data) => {
       });
     }
 
-    const unreadConversations = await redisClient.smembers(`unread:${user_id}`);
-    
-    const conversations = await Promise.all(
-      conversationIds.map(async (conversationId) => {
-        try {
-          const [conversation, unreadCount] = await Promise.all([
-            ConversationModel.getConversationById(conversationId),
-            ConversationController.getUnreadCount(user_id, conversationId)
-          ]);
+    const conversations = await ConversationModel.getConversationsByIds(conversationIds);
 
-          if (!conversation) return null;
+    const [unreadConversations, permissionsList, lastMessages, unreadCounts] = await Promise.all([
+      redisClient.smembers(`unread:${user_id}`),
+      getMembersAndPermissions(conversationIds, redisClient, UserCacheService),
+      getLastMessages(conversations, MessageModel),
+      getUnreadCounts(user_id, conversationIds, redisClient)
+    ]);
 
-          const list_user_id_raw = await redisClient.smembers(`group:${conversationId}`);
-          
-          const list_user_id = await Promise.all(
-            list_user_id_raw.map(async (id) => {
-              const permission = await UserCacheService.getConversationPermissions(id, conversationId);
-              return { user_id: id, permission: permission };
-            })
-          );
-
-          let name = conversation.name || "";
-          let avt = conversation.avatar || "";
-
-          let friendPromise = Promise.resolve(null);
-          if (conversation.type === "private") {
-            const receiver = list_user_id.find((id) => id.user_id !== user_id);
-            if (receiver) {
-              friendPromise = UserCacheService.getUserProfile(
-                receiver.user_id, 
-                socket.handshake.headers.authorization
-              );
-            }
-          }
-
-          let lastMessagePromise = conversation.last_message_id
-            ? MessageModel.getMessageById(conversation.last_message_id)
-            : Promise.resolve("");
-
-          const [friend, last_message] = await Promise.all([
-            friendPromise,
-            lastMessagePromise
-          ]);
-
-          console.log("friend", friend);
-
-          if (friend) {
-            name = friend?.fullname || "";
-            avt = friend?.avt || "";
-          }
-
-          const isUnread = unreadConversations.includes(conversationId);
-
-          return {
-            conversation_id: conversationId,
-            name,
-            avatar: avt,
-            last_message,
-            list_user_id,
-            is_unread: isUnread,
-            unread_count: unreadCount,
-            type: conversation.type,
-          };
-        } catch (err) {
-          console.error(`Lỗi khi xử lý hội thoại ${conversationId}:`, err);
-          return null;
-        }
-      })
+    const finalFriendProfiles = await getFriendProfiles(
+      conversations, permissionsList, user_id, UserCacheService, socket.handshake.headers.authorization
     );
 
-    const validConversations = conversations.filter(conv => conv !== null);
+    const result = conversations.map((conversation, idx) => {
+      let name = conversation.name || "";
+      let avt = conversation.avatar || "";
+      if (conversation.type === "private" && finalFriendProfiles[idx]) {
+        name = finalFriendProfiles[idx]?.fullname || "";
+        avt = finalFriendProfiles[idx]?.avt || "";
+      }
+      const isUnread = unreadConversations.includes(conversation.id);
+      return {
+        conversation_id: conversation.id,
+        name,
+        avatar: avt,
+        last_message: lastMessages[idx],
+        list_user_id: permissionsList[idx],
+        is_unread: isUnread,
+        unread_count: unreadCounts[idx],
+        type: conversation.type,
+      };
+    });
 
     socket.emit("conversations", {
       status: "success",
       message: "Lấy danh sách hội thoại thành công",
-      conversations: validConversations,
+      conversations: result,
     });
 
   } catch (error) {
     console.error("Có lỗi khi lấy danh sách hội thoại:", error);
     socket.emit("error", { message: "Có lỗi khi lấy danh sách hội thoại" });
   }
-}
+};
 
 ConversationController.setPermisstions = async (socket, data) => {
   const { conversation_id, permissions, user_id } = data;
