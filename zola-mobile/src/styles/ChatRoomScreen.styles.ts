@@ -4,6 +4,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    justifyContent: 'space-between',
+  },
+  bodyContainer: {
+    flex: 1,
+    backgroundColor: '#CCCCCC',
+  },
+    footerWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 5,
+    backgroundColor: '#fff',
   },
   headerContainer: {
     flexDirection: 'row',
@@ -27,7 +38,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   messageList: {
-    padding: 10,
   },
  
 
@@ -40,11 +50,7 @@ const styles = StyleSheet.create({
 
 
 
-  footerWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-  },
+
   fileButton: {
     marginRight: 10,
   },
@@ -64,7 +70,7 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: '#007BFF',
     borderRadius: 20,
-    marginLeft: 10,
+    paddingHorizontal: 20,
   },
   sendButtonText: {
     color: '#fff',
@@ -171,13 +177,18 @@ const styles = StyleSheet.create({
   alignRight: {
     alignSelf: 'flex-end',
   },
-  
-
-  messageBubble: {
-    maxWidth: '75%',
+   deletedMessage: {
     padding: 10,
     borderRadius: 10,
-    marginHorizontal: 20,
+    marginHorizontal: 10,
+    borderColor: 'black',
+    borderWidth: 2,
+  },
+
+  messageBubble: {
+    padding: 10,
+    borderRadius: 10,
+    marginHorizontal: 10,
   },
   
   myMessage: {
@@ -237,37 +248,27 @@ const styles = StyleSheet.create({
   },
   modalButtonText: {
     fontSize: 16,
-  },deletedMessage: {
-    borderWidth: 1,
-    borderColor: '#black',
-    backgroundColor: 'black',
-    padding: 8,
-    borderRadius: 12,
-    marginTop: 4,
-    maxWidth: '80%',
   },
+
   
   deletedText: {
     fontStyle: 'italic',
     color: 'gray',
     fontSize: 14,
   },
+
   modalEmojiContainer: {
-    flex: 1,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Màu nền tối mờ để modal nổi bật
+  flex: 1,
+  backgroundColor: 'rgba(0,0,0,0.4)',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+  modalEmojiContent: {
+    backgroundColor: '#fff',
+    maxHeight: '50%',
   },
-  emojiModal: {
-    backgroundColor: 'white', // Nền của modal
-    borderRadius: 10,
-    padding: 20,
-    maxHeight: '80%', // Giới hạn chiều cao modal
-    width: '90%', // Chiếm gần hết chiều rộng màn hình
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+
+
   closeButton: {
     position: 'absolute',
     top: 10,

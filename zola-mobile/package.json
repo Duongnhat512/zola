@@ -26,9 +26,12 @@
     "expo-av": "~15.0.2",
     "expo-document-picker": "~13.0.3",
     "expo-file-system": "^18.0.12",
+    "expo-image-manipulator": "~13.0.6",
     "expo-image-picker": "^16.0.6",
+    "expo-linking": "^7.1.5",
     "expo-status-bar": "~2.0.1",
     "install": "^0.13.0",
+    "linking": "^0.1.0-beta.5",
     "mime-types": "^3.0.1",
     "npm": "^11.2.0",
     "react": "^18.0.0",
@@ -38,6 +41,7 @@
     "react-native-dotenv": "^3.4.11",
     "react-native-dropdown-picker": "^5.4.6",
     "react-native-elements": "^3.4.3",
+    "react-native-emoji-modal": "^0.2.4",
     "react-native-emoji-picker": "^0.2.2",
     "react-native-emoji-selector": "^0.2.0",
     "react-native-flash-message": "^0.4.2",
@@ -53,8 +57,7 @@
     "react-redux": "^9.2.0",
     "redux": "^5.0.1",
     "socket.io-client": "^4.8.1",
-    "use-latest-callback": "^0.2.3",
-    "expo-image-manipulator": "~13.0.6"
+    "use-latest-callback": "^0.2.3"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

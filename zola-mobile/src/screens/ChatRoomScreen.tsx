@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import EmojiModal from 'react-native-emoji-modal';
 import {
   View,
   Text,
@@ -6,6 +7,8 @@ import {
   TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Keyboard,
   Platform,
   Alert,
   Image,
@@ -39,8 +42,9 @@ const ChatRoomScreen = ({ route, navigation }) => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [videoPreviewVisible, setVideoPreviewVisible] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState(null);
-  
-
+  const isValidInput = inputText.trim().length > 0 || file !== null;
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const inputRef = useRef(null);
 
 
   useEffect(() => {
@@ -70,6 +74,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
             };
           });
           setMessages(formatted);
+          console.log('Messages:', formatted);
         });
 
         socketInstance.on('hidden_message', (data) => {
@@ -128,10 +133,27 @@ const ChatRoomScreen = ({ route, navigation }) => {
     }
   }, [socket, chats.conversation_id]);
  
+const handleEmojiSelect = (emoji) => {
+  if (!emoji) return;
+  setInputText((prev) => prev + emoji); // Thêm emoji vào input
+  // KHÔNG đóng modal ở đây!
+  // setShowEmojiPicker(false);
+  inputRef.current?.focus();
+};
 
   const pickFile = async () => {
     const result = await DocumentPicker.getDocumentAsync({
-      type: ['image/*', 'video/*', '*/*'], 
+       type: [
+      'image/*',
+      'video/*',
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/zip',
+      '*/*', // Cho phép tất cả các loại file
+    ],
       copyToCacheDirectory: true,
       multiple: false,
     });
@@ -140,7 +162,18 @@ const ChatRoomScreen = ({ route, navigation }) => {
       setFile(result.assets[0]);
     }
   };
-
+const getOriginalFileName = (fileName) => {
+  if (!fileName) return '';
+  const parts = fileName.split('-');
+  if (parts.length > 2) {
+    // Nếu có nhiều dấu '-', lấy phần sau cùng (tên gốc)
+    return parts.slice(2).join('-');
+  }
+  if (parts.length > 1) {
+    return parts.slice(1).join('-');
+  }
+  return fileName;
+};
   const sendMessage = async () => {
     if (!inputText.trim() && !file) {
       Alert.alert('Thông báo', 'Vui lòng nhập tin nhắn hoặc chọn tệp đính kèm.');
@@ -155,7 +188,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
       ...prev,
       {
         id: tempId,
-        text: inputText,
+        text: inputText.trim(),
         type: file ? file.type : 'text',
         sender: 'me',
         senderName: currentUser.fullname,
@@ -180,7 +213,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
             conversation_id: chats.conversation_id,
             sender_id: currentUser.id,
             receiver_id: isGroup ? null : chats.list_user_id.filter(user => user.user_id !== currentUser.id)[0]?.user_id,
-            message: inputText,
+            message: inputText.trim(),
             file_name: file.name,
             file_type: file.mimeType,
             file_size: file.size,
@@ -211,7 +244,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
         conversation_id: chats.conversation_id,
         sender_id: currentUser.id,
         receiver_id: isGroup ? null : chats.list_user_id.filter(user => user.user_id !== currentUser.id)[0]?.user_id,
-        message: inputText,
+        message: inputText.trim(),
         status: 'pending',
         created_at: now.toISOString(),
       };
@@ -268,35 +301,43 @@ const ChatRoomScreen = ({ route, navigation }) => {
               item.type === 'deleted' ? styles.deletedMessage : styles.messageBubble,
               item.sender === 'me' ? styles.myMessage : styles.theirMessage
             ]}>
-              {item.file && item.type !== 'deleted' && (
-                <TouchableOpacity onPress={() => {
-                  if (item.type === 'image') {
-                    setSelectedImage(item.file.uri);
-                    setImagePreviewVisible(true);
-                  }
-                  if (item.type === 'video') {
-                    setSelectedVideo(item.file.uri);
-                    setVideoPreviewVisible(true);
-                  }
-                }}>
-                  {item.type === 'image' ? (
-                    <Image source={{ uri: item.file.uri }} style={styles.mediaPreview} />
-                  ) : item.type === 'video' ? (
-                    <Video
-                      source={{ uri: item.file.uri }}
-                      rate={1.0}
-                      volume={1.0}
-                      isMuted={false}
-                      resizeMode="contain"
-                      useNativeControls
-                      style={styles.mediaPreview}
-                    />
-                  ) : (
-                    <Text>{item.file.name}</Text>
-                  )}
-                </TouchableOpacity>
-              )}
-              <Text style={styles.messageText}>{item.text}</Text>
+             {item.file && item.type !== 'deleted' && (
+  <TouchableOpacity onPress={() => {
+    // Nếu là ảnh hoặc video thì preview, còn lại thì mở file (nếu muốn)
+    if (item.type === 'image') {
+      setSelectedImage(item.file.uri);
+      setImagePreviewVisible(true);
+    } else if (item.type === 'video') {
+      setSelectedVideo(item.file.uri);
+      setVideoPreviewVisible(true);
+    } else {
+      // Có thể mở file bằng Linking.openURL(item.file.uri) nếu muốn
+      Alert.alert('File', `Tên file: ${item.file.name}`);
+    }
+  }}>
+    {item.type === 'image' ? (
+      <Image source={{ uri: item.file.uri }} style={styles.mediaPreview} />
+    ) : item.type === 'video' ? (
+      <Video
+        source={{ uri: item.file.uri }}
+        rate={1.0}
+        volume={1.0}
+        isMuted={false}
+        resizeMode="contain"
+        useNativeControls
+        style={styles.mediaPreview}
+      />
+    ) : (
+      <View style={{ flexDirection: 'row', alignItems: 'center', padding: 8 }}>
+        <Feather name="file" size={20} color="#007BFF" style={{ marginRight: 6 }} />
+        <Text>{getOriginalFileName(item.file.name)}</Text>
+      </View>
+    )}
+  </TouchableOpacity>
+)}
+              <Text style={[styles.messageText, item.type === 'deleted' && styles.deletedText]}>
+                {item.text}
+              </Text>
               <Text style={styles.messageTime}>
                 {item.time} {item.status === 'pending' ? '🕓' : item.status === 'sent' ? '✅' : '❌'}
               </Text>
@@ -311,10 +352,15 @@ const ChatRoomScreen = ({ route, navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+      >
         <View style={styles.headerContainer}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Text style={styles.backButtonText}>←</Text>
+            <Feather name="arrow-left" size={20} color="#ffffff"/>
           </TouchableOpacity>
           <Text style={styles.header}>{chats.name || 'Người khác'}</Text>
           <TouchableOpacity
@@ -330,13 +376,13 @@ const ChatRoomScreen = ({ route, navigation }) => {
             <Feather name="settings" size={20} color="#ffffff"/>
           </TouchableOpacity>
         </View>
-
+        <View style={styles.bodyContainer}>
         <FlatList
           ref={flatListRef}
           data={messages}
           renderItem={renderMessage}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.messageList}
+   
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
         />
 
@@ -368,17 +414,16 @@ const ChatRoomScreen = ({ route, navigation }) => {
               </TouchableOpacity>
             </View>
           )}
-
+        </View>
         <View style={styles.footerWrapper}>
-          <TouchableOpacity onPress={pickFile} style={styles.fileButton}>
-            <Text style={{ fontSize: 22 }}>📎</Text>
-          </TouchableOpacity>
-          {/* <TouchableOpacity onPress={() => setEmojiModalVisible(true)} style={styles.emojiButton}>
-            <Text style={styles.emojiButtonText}>🙂</Text>
-          </TouchableOpacity> */}
-            <TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowEmojiPicker(!showEmojiPicker)}>
             <Feather name="smile" size={20} color="#000000" style={{paddingRight:10}} />        
           </TouchableOpacity>
+          <TouchableOpacity onPress={pickFile} style={styles.fileButton}>
+            <Feather name="paperclip" size={20} color="#000000" style={{paddingRight:10}} />        
+          </TouchableOpacity>
+          
+  
           <View style={styles.footerContainer}>
             <TextInput
               style={styles.input}
@@ -386,12 +431,16 @@ const ChatRoomScreen = ({ route, navigation }) => {
               value={inputText}
               onChangeText={setInputText}
             />
-            <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
+            <TouchableOpacity
+              onPress={sendMessage}
+              style={[styles.sendButton, { opacity: isValidInput ? 1 : 0.5 }]} // Mờ nút khi không hợp lệ
+              disabled={!isValidInput} // Disable nút khi input không hợp lệ
+            >
               <Text style={styles.sendButtonText}>Gửi</Text>
             </TouchableOpacity>
           </View>
         </View>
-      </KeyboardAvoidingView>
+      
 
       {/* Modal: Ảnh */}
       <Modal visible={imagePreviewVisible} transparent animationType="fade">
@@ -432,6 +481,38 @@ const ChatRoomScreen = ({ route, navigation }) => {
           </TouchableOpacity>
         </Modal>
 
+        {/* Modal: Emoji */}
+     <Modal
+  visible={showEmojiPicker}
+  transparent={true}
+  animationType="fade"
+  onRequestClose={() => setShowEmojiPicker(false)}
+>
+  <View
+    style={styles.modalEmojiContainer}
+    // Bắt sự kiện nhấn ở bất kỳ đâu ngoài modalEmojiContent
+    onStartShouldSetResponder={() => true}
+    onResponderRelease={() => setShowEmojiPicker(false)}
+  >
+    <View
+      style={styles.modalEmojiContent}
+      // Chặn sự kiện nổi lên khi nhấn vào modalEmojiContent
+      onStartShouldSetResponder={() => true}
+      onResponderRelease={e => e.stopPropagation()}
+    >
+      <EmojiModal
+        visible={true}
+        onClose={() => {
+       
+          setShowEmojiPicker(false);
+        }}
+        onEmojiSelected={handleEmojiSelect}
+      />
+    </View>
+  </View>
+</Modal>
+
+
 
 
       {/* Modal: Thu hồi/Xóa */}
@@ -450,6 +531,8 @@ const ChatRoomScreen = ({ route, navigation }) => {
           </View>
         </View>
       </Modal>
+      </KeyboardAvoidingView>
+      </TouchableWithoutFeedback>
     </SafeAreaView>
   );
 };

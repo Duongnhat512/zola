@@ -154,6 +154,8 @@ const MessagesScreen = () => {
                 ? 'Đã gửi một ảnh'
                 : item.last_message?.type === 'video'
                 ? 'Đã gửi một video'
+                : item.last_message?.type === 'document'
+                ? 'Đã gửi một tệp'
                 : 'Chưa có tin nhắn'}
             </Text>
             <Text style={styles.chatTime}>
