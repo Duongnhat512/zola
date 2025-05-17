@@ -24,13 +24,31 @@ const ConversationModel = {
   },
 
   /**
+   * Lấy nhiều hội thoại theo danh sách id (batchGet)
+   * @param {Array} conversationIds
+   * @returns {Array} conversations
+   */
+  getConversationsByIds: async (conversationIds) => {
+    if (!Array.isArray(conversationIds) || conversationIds.length === 0) return [];
+    const params = {
+      RequestItems: {
+        [tableName]: {
+          Keys: conversationIds.map(id => ({ id })),
+        },
+      },
+    };
+    const result = await dynamodb.batchGet(params).promise();
+    return result.Responses[tableName] || [];
+  },
+
+  /**
    * Tạo conversation
    * @param {Object} conversation
    * @returns {Object} conversation
    */
   createConversation: async (conversation) => {
     console.log(conversation);
-    
+
     if (conversation.type === "private") {
       conversation.id = generateConversationId(
         conversation.members[0],
@@ -177,7 +195,7 @@ const ConversationModel = {
       const result = await dynamodb.update(params).promise();
       return result.Attributes;
     } catch (error) {
-      console.error("Có lỗi khi cập nhật hội thoại:"+error, error);
+      console.error("Có lỗi khi cập nhật hội thoại:" + error, error);
       throw new Error("Có lỗi khi cập nhật hội thoại");
     }
   },
@@ -294,7 +312,7 @@ const ConversationModel = {
 
   getLastMessage: async (conversationId) => {
     console.log("conversationId", conversationId);
-    
+
     const params = {
       TableName: tableName,
       Key: {
