@@ -1,6 +1,8 @@
 const e = require("express");
 const { s3, dynamoDB } = require("../utils/aws.helper");
 const UserModel = require("../models/user.model");
+const { uploadFile } = require("../services/file.service");
+const mime = require("mime-types");
 
 const UserController = {};
 
@@ -26,32 +28,59 @@ UserController.updateUser = async (req, res) => {
   });
 };
 
-UserController.updateAvt = async (req, res) => {
-  const username = req.body.username;
-  const file = req.file;
-  const avt = await s3.uploadFile(file);
 
-  if (!avt) {
-    return res.status(400).send({
-      message:
-        "Có lỗi trong quá trình cập nhật ảnh đại diện, vui lòng thử lại.",
+UserController.updateAvt = async (req, res) => {
+  const { username, file } = req.body;
+
+  if (!username || !file) {
+    return res.status(400).json({
+      message: "Thiếu username hoặc file ảnh",
     });
   }
 
-  const user = await UserModel.getUser(username);
-  if (!user) {
-    return res.status(400).send({ message: "Người dùng không tồn tại." });
+  try {
+    // Tách phần "data:image/png;base64,..."
+    const matches = file.match(/^data:(.+);base64,(.+)$/);
+
+    if (!matches || matches.length !== 3) {
+      return res.status(400).json({ message: "File không hợp lệ (base64 sai định dạng)" });
+    }
+
+    const mimetype = matches[1];
+    const buffer = Buffer.from(matches[2], "base64");
+    const extension = mime.extension(mimetype);
+    const originalname = `avatar.${extension}`;
+
+    // Tạo object giả lập file như từ multer
+    const fakeFile = {
+      originalname,
+      buffer,
+      mimetype,
+    };
+
+    // Gọi uploadFile như bạn định nghĩa
+    const avt = await uploadFile(fakeFile);
+
+    // Cập nhật database
+    const user = await UserModel.getUser(username);
+    if (!user) {
+      return res.status(404).json({ message: "Người dùng không tồn tại." });
+    }
+
+    await UserModel.updateAvt(user.id, avt);
+
+    return res.json({
+      status: "success",
+      message: "Cập nhật ảnh đại diện thành công",
+      username,
+      avt,
+    });
+  } catch (error) {
+    console.error("Lỗi cập nhật ảnh đại diện:", error);
+    return res.status(500).json({ message: "Lỗi máy chủ khi cập nhật ảnh đại diện" });
   }
-
-  const data = await UserModel.updateAvt(user.id, avt);
-
-  return res.json({
-    status: "success",
-    message: "Cập nhật ảnh đại diện thành công",
-    username: username,
-    avt: avt,
-  });
 };
+
 
 UserController.getUserById = async (req, res) => {
   const { id } = req.query;

@@ -1,5 +1,5 @@
 require("dotenv").config();
-const { s3 } = require("../config/aws-helper");
+const { s3 } = require("../utils/aws.helper");
 
 const randomString = numberCharacter => {
     return `${Math.random()
@@ -15,6 +15,7 @@ const FILE_TYPE_MATCH = [
 ]
 
 const uploadFile = async file => {
+
     const filePath = `${randomString(4)}-${new Date().getTime()}-${file?.originalname}`;
 
     if (FILE_TYPE_MATCH.indexOf(file.mimetype) === -1) {

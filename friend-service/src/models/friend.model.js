@@ -224,6 +224,8 @@ const FriendModel = {
 
     try {
       const result = await dynamodb.query(params).promise();
+
+
       return result.Items || [];
     } catch (error) {
       console.error("Error getting friends:", error);

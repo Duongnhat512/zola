@@ -19,5 +19,15 @@ router.get(
   isAuthExpress,
   ConversationController.findPrivateConversation
 );
+router.get(
+  "/get-group-conversation",
+  isAuthExpress,
+  ConversationController.getGroupConversationByUserId
+);
+router.get(
+  "/get-conversation-by-id",
+  isAuthExpress,
+  ConversationController.getConversationById
+);
 
 module.exports = router;
