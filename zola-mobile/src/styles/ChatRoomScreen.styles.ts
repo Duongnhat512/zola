@@ -11,17 +11,19 @@ const styles = StyleSheet.create({
     padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
+    backgroundColor:'#50B6F1'
   },
   backButton: {
     marginRight: 10,
   },
   backButtonText: {
     fontSize: 20,
-    color: '#007BFF',
+    color:'#ffffff',
   },
   header: {
     fontSize: 20,
     fontWeight: 'bold',
+    color:'#ffffff',
     flex: 1,
   },
   messageList: {
@@ -54,9 +56,9 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     padding: 10,
-    borderWidth: 1,
+    //borderWidth: 1,
     borderColor: '#ccc',
-    borderRadius: 20,
+    // borderRadius: 20,
   },
   sendButton: {
     padding: 10,

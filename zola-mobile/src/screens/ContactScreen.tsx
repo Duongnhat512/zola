@@ -161,7 +161,11 @@ const FriendScreen = () => {
               
          
           };
-          
+    {/*tạo nhóm nè*/}
+        const handleCreateGroup = () => {
+          Alert.alert('Tạo nhóm', 'Chức năng tạo nhóm sẽ được triển khai sau.');
+          navigation.navigate("GroupCreate",{friendsList});
+        };
     {/*từ chối nè*/}
     const handleRejectRequest = async (user_friend_id: string) => {
     try {
@@ -297,7 +301,7 @@ const renderFriendItem = ({ item }) => (
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 15 }}>
       <Image
         source={{ uri: item.friendInfo.avt }}
-        style={{ width: 48, height: 48, borderRadius: 24, marginRight: 15 }}
+        style={{ width:52, height: 52, borderRadius: 24, marginRight: 15 }}
       />
       <Text style={{ flex: 1 }}>{item.friendInfo.fullname}</Text>
       <TouchableOpacity style={{ marginHorizontal: 10 }}>
@@ -353,9 +357,9 @@ const renderFriendItem = ({ item }) => (
           <Text>Lời mời kết bạn</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.rowButton}>
+        <TouchableOpacity style={styles.rowButton}  onPress={handleCreateGroup}>
           <Feather name="book" size={18} color="#007AFF" style={{ marginRight: 10 }} />
-          <Text>Danh bạ máy</Text>
+          <Text>Tạo nhóm</Text>
         </TouchableOpacity>
       </View>
 
@@ -430,8 +434,9 @@ const styles = StyleSheet.create({
   },
   tabButton: {
     paddingVertical: 6,
-    paddingHorizontal: 150,
+    width: '50%',
     backgroundColor: '#eee',
+ 
   },
   activeTab: {
     backgroundColor: '#50B6F1',
@@ -439,6 +444,7 @@ const styles = StyleSheet.create({
   tabText: {
     color: '#000',
     fontWeight: '500',
+       textAlign:'center'
   },
   groupAvatar: {
     width: 40,

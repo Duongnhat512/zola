@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as DocumentPicker from 'expo-document-picker';
+import Feather from 'react-native-vector-icons/Feather';
 import styles from '../styles/ChatRoomScreen.styles';
 import setupSocket from '../services/Socket';
 import { useSelector } from 'react-redux';
@@ -326,7 +327,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
             }}
             style={styles.backButton}
               >
-            <Text style={styles.backButtonText}>⚙️</Text>
+            <Feather name="settings" size={20} color="#ffffff"/>
           </TouchableOpacity>
         </View>
 
@@ -375,6 +376,9 @@ const ChatRoomScreen = ({ route, navigation }) => {
           {/* <TouchableOpacity onPress={() => setEmojiModalVisible(true)} style={styles.emojiButton}>
             <Text style={styles.emojiButtonText}>🙂</Text>
           </TouchableOpacity> */}
+            <TouchableOpacity>
+            <Feather name="smile" size={20} color="#000000" style={{paddingRight:10}} />        
+          </TouchableOpacity>
           <View style={styles.footerContainer}>
             <TextInput
               style={styles.input}
