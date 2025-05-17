@@ -293,6 +293,8 @@ const ConversationModel = {
   },
 
   getLastMessage: async (conversationId) => {
+    console.log("conversationId", conversationId);
+    
     const params = {
       TableName: tableName,
       Key: {
@@ -450,6 +452,39 @@ const ConversationModel = {
       console.error("Có lỗi khi rời khỏi nhóm:", error);
       throw new Error("Có lỗi khi rời khỏi nhóm");
     }
+  },
+
+  getGroupConversationByUserId: async (userId) => {
+    const params = {
+      TableName: memberTableName,
+      IndexName: "userId-index",
+      KeyConditionExpression: "user_id = :userId",
+      ExpressionAttributeValues: {
+        ":userId": userId,
+      },
+    };
+
+    try {
+      const result = await dynamodb.query(params).promise();
+      const conversationIds = result.Items.map((item) => item.conversation_id);
+      const conversationParams = {
+        RequestItems: {
+          [tableName]: {
+            Keys: conversationIds.map((id) => ({ id })),
+          },
+        },
+      };
+      const conversationResult = await dynamodb.batchGet(conversationParams).promise();
+      const conversations = conversationResult.Responses[tableName] || [];
+      const groupConversations = conversations.filter(
+        (conversation) => conversation.type === "group"
+      );
+      return groupConversations;
+    } catch (error) {
+      console.error("Có lỗi khi lấy hội thoại:", error);
+      throw new Error("Có lỗi khi lấy hội thoại");
+    }
+
   }
 
 };
