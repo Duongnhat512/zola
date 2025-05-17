@@ -151,6 +151,7 @@ const ConversationModel = {
     };
     try {
       const result = await dynamodb.update(params).promise();
+      
       return result.Attributes;
     } catch (error) {
       console.error("Có lỗi khi cập nhật hội thoại:", error);

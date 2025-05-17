@@ -169,9 +169,25 @@ ConversationController.updateGroupAvt = async (socket, data) => {
     socket.emit("update_avt_group", {
       status: "success",
       message: "Cập nhật ảnh đại diện nhóm thành công",
+      conversation_id: data.conversation_id,
       result,
     });
+    const members = await redisClient.smembers(
+      `group:${data.conversation_id}`
+    );
 
+    members.forEach(async (member) => {
+  const socketIds = await redisClient.smembers(`sockets:${member}`);
+  console.log(socketIds, `socketIds for member ${member}`);
+  
+  socketIds.forEach((socketId) => {
+    socket.to(socketId).emit("update_avt_group", {
+      conversation_id: data.conversation_id,
+      message: "Ảnh đại diện đã được cập nhật",
+      result,
+    });
+  });
+  });
   } catch (error) {
     console.error("Có lỗi khi cập nhật ảnh đại diện nhóm:", error);
     socket.emit("error", { message: "Có lỗi khi cập nhật ảnh đại diện nhóm" });
@@ -194,9 +210,13 @@ ConversationController.updateGroupName = async (socket, data) => {
       data.name
     );
 
+    console.log(result, "result");
+    
+
     socket.emit("update_name_group", {
       status: "success",
       message: "Cập nhật tên nhóm thành công",
+      conversation_id: data.conversation_id,
       result,
     });
 
@@ -204,16 +224,20 @@ ConversationController.updateGroupName = async (socket, data) => {
       `group:${data.conversation_id}`
     );
 
-    for (const member of members) {
-      const socketIds = await redisClient.smembers(`sockets:${member}`);
-      socketIds.forEach((socketId) => {
-        socket.to(socketId).emit("update_name_group", {
-          conversation_id: data.conversation_id,
-          message: "Tên nhóm đã được cập nhật",
-          name: data.name,
-        });
-      });
-    }
+    members.forEach(async (member) => {
+  const socketIds = await redisClient.smembers(`sockets:${member}`);
+  console.log(socketIds, `socketIds for member ${member}`);
+  
+  socketIds.forEach((socketId) => {
+    socket.to(socketId).emit("update_name_group", {
+      conversation_id: data.conversation_id,
+      message: "Tên nhóm đã được cập nhật",
+      name: data.name,
+      result,
+    });
+  });
+});
+
 
   } catch (error) {
     console.error("Có lỗi khi cập nhật tên nhóm:", error);
