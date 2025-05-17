@@ -20,17 +20,17 @@ const FriendList = () => {
   const user = useSelector((state) => state.user.user);
   const [userInfo, setUserInfo] = useState(null);
   const [openModalFriend, setOpenModalFriend] = useState(false);
-  const [step, setStep] = useState("info");  
+  const [step, setStep] = useState("info");
   const [chats, setChats] = useState([]);
-  
+
 
   const handleBack = () => {
     setOpenModalFriend(false);
   }
 
   const fetchConversations = () => {
-     
-     
+
+
   }
 
   useEffect(() => {
@@ -38,7 +38,7 @@ const FriendList = () => {
       try {
         const response = await getListFriend(user.id);
         console.log(response);
-        
+
         if (response.code === 200 && Array.isArray(response.data)) {
           const detailedUsers = await Promise.all(
             response.data.map(async (request) => {
@@ -98,7 +98,7 @@ const FriendList = () => {
       if (response.status === "success") {
         // Handle successful conversation retrieval
         if (response.newConversation) {
-          console.log("newConversation  : "+ response.newConversation);
+          console.log("newConversation  : " + response.newConversation);
 
           setSelectedChat({
             conversation_id: response.newConversation.id,
@@ -118,8 +118,8 @@ const FriendList = () => {
             )
           );
         } else {
-          console.log("Conversation : "+ response.conversation);
-          
+          console.log("Conversation : " + response.conversation);
+
           setSelectedChat(response.conversation);
 
           setChats((prevChats) =>
@@ -191,7 +191,7 @@ const FriendList = () => {
     setUserInfo(friend);
     setOpenModalFriend(true); // nếu bạn đang dùng modal
   };
-  
+
   // const handleRemoveFriend = async (friend) => {
   // try {
   //   const response = await deleteFriend(user.id, friend.id);
@@ -222,7 +222,7 @@ const FriendList = () => {
       confirmButtonColor: '#d33',
       cancelButtonColor: '#3085d6',
     });
-  
+
     if (result.isConfirmed) {
       try {
         const response = await deleteFriend(user.id, friend.id);
@@ -240,7 +240,7 @@ const FriendList = () => {
       }
     }
   };
-  
+
   return (
     <div className="flex h-screen">
       {/* Main Content */}
@@ -271,36 +271,36 @@ const FriendList = () => {
             <div key={letter}>
               <Divider orientation="left">{letter}</Divider>
               <List
-  dataSource={groupedFriends[letter]}
-  renderItem={(friend) => {
-    const menu = (
-      <Menu>
-        <Menu.Item key="info" onClick={() => handleViewInfo(friend)}>
-          Xem thông tin
-        </Menu.Item>
-        <Menu.Item key="remove" onClick={() => handleDeleteFriend(friend)}>
-          Xóa bạn
-        </Menu.Item>
-      </Menu>
-    );
+                dataSource={groupedFriends[letter]}
+                renderItem={(friend) => {
+                  const menu = (
+                    <Menu>
+                      <Menu.Item key="info" onClick={() => handleViewInfo(friend)}>
+                        Xem thông tin
+                      </Menu.Item>
+                      <Menu.Item key="remove" onClick={() => handleDeleteFriend(friend)}>
+                        Xóa bạn
+                      </Menu.Item>
+                    </Menu>
+                  );
 
-    return (
-      <List.Item className="flex items-center gap-4 justify-between">
-        <div
-          onClick={() => handleFindConversation(user.id, friend.id)}
-          className="flex flex-1 items-center gap-2 hover:bg-gray-100 p-2 rounded cursor-pointer"
-        >
-          <Avatar size={40} icon={<UserOutlined />} src={friend.avt} />
-          <span>{friend.fullname}</span>
-        </div>
+                  return (
+                    <List.Item className="flex items-center gap-4 justify-between">
+                      <div
+                        onClick={() => handleFindConversation(user.id, friend.id)}
+                        className="flex flex-1 items-center gap-2 hover:bg-gray-100 p-2 rounded cursor-pointer"
+                      >
+                        <Avatar size={40} icon={<UserOutlined />} src={friend.avt} />
+                        <span>{friend.fullname}</span>
+                      </div>
 
-        <Dropdown overlay={menu} trigger={['click']}>
-          <MoreOutlined className="text-xl cursor-pointer hover:text-gray-600" />
-        </Dropdown>
-      </List.Item>
-    );
-  }}
-/>
+                      <Dropdown overlay={menu} trigger={['click']}>
+                        <MoreOutlined className="text-xl cursor-pointer hover:text-gray-600" />
+                      </Dropdown>
+                    </List.Item>
+                  );
+                }}
+              />
             </div>
           ))}
         </div>
@@ -313,22 +313,22 @@ const FriendList = () => {
           setInput={setInput}
           setChats={setChats}
           fetchConversations={fetchConversations}
-          
+
         />
       )}
       {openModalFriend && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-        <div className="bg-white p-2 rounded-2xl shadow-lg max-w-md w-full">
-          <InfoFriend
-            userInfo={userInfo}
-            handleBack={handleBack}
-            step={step}
-            
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-2 rounded-2xl shadow-lg max-w-md w-full">
+            <InfoFriend
+              userInfo={userInfo}
+              handleBack={handleBack}
+              step={step}
 
-          />
+
+            />
+          </div>
         </div>
-      </div>
-    )}
+      )}
     </div>
   );
 };

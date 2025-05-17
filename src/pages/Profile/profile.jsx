@@ -1,8 +1,8 @@
-import { EditTwoTone } from "@ant-design/icons";
-import { Button, Image, Modal, Input, Radio, Select, Form } from "antd";
+import { CameraOutlined, EditTwoTone } from "@ant-design/icons";
+import { Button, Image, Modal, Input, Radio, Select, Form, Upload } from "antd";
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { decodedToken, updateUser } from "../../services/UserService";
+import { decodedToken, updateAvt, updateUser } from "../../services/UserService";
 import { login, setLoading } from "../../redux/UserSlice";
 
 const Profile = ({ isModalOpen, setModalOpen }) => {
@@ -11,6 +11,7 @@ const Profile = ({ isModalOpen, setModalOpen }) => {
   const dispatch = useDispatch(); // Redux dispatch function
   const [modalContent, setModalContent] = useState("profile"); // State to manage modal content
   const [form] = Form.useForm(); // Ant Design form instance
+  const [avatar, setAvatar] = useState(null);
   const initAuth = async () => {
     const token = localStorage.getItem("accessToken");
     if (token) {
@@ -65,6 +66,34 @@ const Profile = ({ isModalOpen, setModalOpen }) => {
     setModalContent("profile"); // Switch back to profile content
   };
 
+  const handleAvatarUpload = async (info) => {
+    const file = info.file;
+    const reader = new FileReader();
+
+    reader.onloadend = async () => {
+      const base64String = reader.result; // dạng: data:image/png;base64,...
+
+      try {
+        const res = await updateAvt(user.username, base64String);
+
+        if (res.status === "success") {
+          console.log("Upload thành công");
+          const updatedUser = { ...user, avt: res.data };
+          dispatch(login(updatedUser)); // Cập nhật lại thông tin người dùng trong Redux
+          setAvatar(res.data); // Cập nhật avatar mới
+          initAuth(); // Refresh user data after update
+        } else {
+          console.log("Upload thất bại");
+        }
+      } catch (err) {
+        console.error("Lỗi khi upload:", err);
+      }
+    };
+
+    reader.readAsDataURL(file); // convert file → base64 string
+  };
+
+
   return (
     <>
       {/* Main Modal */}
@@ -105,23 +134,24 @@ const Profile = ({ isModalOpen, setModalOpen }) => {
           <div>
             <Image width="100%" height={200} src={user?.avt} />
             <div className="flex gap-5 items-center ml-6 relative bottom-5">
-              <Image
-                width={80}
-                height={80}
-                className="border-2"
-                style={{ borderRadius: "50%" }}
-                src={user?.avt}
-              />
-              <div className="flex items-center gap-2">
-                <h1 className="font-sans text-xl">
-                  {user?.fullname || "Người dùng"}{" "}
-                </h1>
-                <Button
-                  className="border-0 text-sm"
-                  onClick={handleUpdateClick}
+
+              <div className="relative mr-5">
+                <Image
+                  width={80}
+                  height={80}
+                  className="border-2"
+                  style={{ borderRadius: "50%" }}
+                  src={user?.avt}
+                />
+                <Upload
+                  showUploadList={false}
+                  beforeUpload={() => false}
+                  onChange={handleAvatarUpload}
                 >
-                  <EditTwoTone />
-                </Button>
+                  <div className="absolute -right-1 -bottom-1 w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center cursor-pointer hover:bg-gray-300 border-2 border-white">
+                    <CameraOutlined className="text-sm text-gray-600" />
+                  </div>
+                </Upload>
               </div>
             </div>
             <div className="border-separate"></div>

@@ -13,28 +13,28 @@ import { useEffect } from "react";
 import SelectNewLeaderModal from "./SelectNewLeaderModal";
 
 const LeaderDeputyModal = ({ visible, onClose, leaders, onRemoveDeputy, onTransferLeader }) => {
-    
-    const tranferPermission = () => {
-        Swal.fire({
-          title: "Chuyển quyền trưởng nhóm",
-          text: "Người được chọn sẽ trở thành trưởng nhóm và có mọi quyền quản lý nhóm. Bạn sẽ mất quyền quản lý nhưng vẫn là một thành viên của nhóm. Hành động này không thể phục hồi.",
-          icon: "warning",
-          showCancelButton: true,
-          confirmButtonColor: "#3085d6",
-          cancelButtonColor: "#d33",
-          confirmButtonText: "Chuyển quyền",
-          cancelButtonText: "Hủy",
-          customClass: {
-            container: 'my-swal-container'
-          }
-        }).then((result) => {
-          if (result.isConfirmed) {
-            onTransferLeader();
-          }
-        });
-      }
 
-    return (
+  const tranferPermission = () => {
+    Swal.fire({
+      title: "Chuyển quyền trưởng nhóm",
+      text: "Người được chọn sẽ trở thành trưởng nhóm và có mọi quyền quản lý nhóm. Bạn sẽ mất quyền quản lý nhưng vẫn là một thành viên của nhóm. Hành động này không thể phục hồi.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Chuyển quyền",
+      cancelButtonText: "Hủy",
+      customClass: {
+        container: 'my-swal-container'
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        onTransferLeader();
+      }
+    });
+  }
+
+  return (
     <Modal
       title="Trưởng & phó nhóm"
       visible={visible}
@@ -53,7 +53,7 @@ const LeaderDeputyModal = ({ visible, onClose, leaders, onRemoveDeputy, onTransf
                   type="text"
                   danger
                   icon={<UserDeleteOutlined />}
-                  onClick={() => onRemoveDeputy(item,"member")}
+                  onClick={() => onRemoveDeputy(item, "member")}
                 >
                   Xóa
                 </Button>
@@ -77,7 +77,7 @@ const LeaderDeputyModal = ({ visible, onClose, leaders, onRemoveDeputy, onTransf
   );
 };
 
-const GroupSettingsModal = ({ visible, onClose, groupSettings, grantPermission ,onUpdateSettings,userMain,userOwner, seletedChat,disable }) => {
+const GroupSettingsModal = ({ visible, onClose, groupSettings, grantPermission, onUpdateSettings, userMain, userOwner, seletedChat, disable }) => {
   const [settings, setSettings] = useState(groupSettings);
   const [leaderDeputyModalVisible, setLeaderDeputyModalVisible] = useState(false);
   const [selectNewLeaderModalVisible, setSelectNewLeaderModalVisible] = useState(false);
@@ -109,14 +109,14 @@ const GroupSettingsModal = ({ visible, onClose, groupSettings, grantPermission ,
         cancelButtonText: 'Hủy',
         reverseButtons: true,
       });
-  
+
       if (result.isConfirmed) {
         socket.emit("delete_conversation", { conversation_id: seletedChat.conversation_id });
         Swal.fire('Đã xóa!', 'Nhóm đã được xóa thành công.', 'success');
       } else if (result.dismiss === Swal.DismissReason.cancel) {
         Swal.fire('Đã hủy', 'Nhóm vẫn được giữ nguyên.', 'info');
       }
-      
+
     } else {
       console.error("No conversation selected or invalid conversation ID");
     }
@@ -138,7 +138,7 @@ const GroupSettingsModal = ({ visible, onClose, groupSettings, grantPermission ,
       width={400}
     >
       <div className="space-y-4">
-        <div>
+        {/* <div>
           <Switch
             checked={settings.changeGroupInfo}
             onChange={() => handleToggle("changeGroupInfo")}
@@ -200,7 +200,7 @@ const GroupSettingsModal = ({ visible, onClose, groupSettings, grantPermission ,
             onChange={() => handleToggle("allowJoinLink")}
           />
           <span className="ml-2">Cho phép dùng link tham gia nhóm</span>
-        </div>
+        </div> */}
         <div className="flex items-center gap-2 mt-4">
           <Input value="zalo.me/g/djvuq760" readOnly className="flex-1" />
           <Tooltip title="Sao chép link">
@@ -222,24 +222,24 @@ const GroupSettingsModal = ({ visible, onClose, groupSettings, grantPermission ,
           </Button>
           {userMain?.permission === "owner" && (
             <div>
-                <Button
-            type="primary"
-            icon={<TeamOutlined />}
-            block
-            className="mb-2"
-            onClick={() => setLeaderDeputyModalVisible(true)}
-          >
-            Trưởng & phó nhóm
-          </Button>
-          <Button
-            onClick={handleDeleteGroup}
-            type="primary"
-            danger
-            icon={<DeleteOutlined />}
-            block
-          >
-            Giải tán nhóm
-          </Button>
+              <Button
+                type="primary"
+                icon={<TeamOutlined />}
+                block
+                className="mb-2"
+                onClick={() => setLeaderDeputyModalVisible(true)}
+              >
+                Trưởng & phó nhóm
+              </Button>
+              <Button
+                onClick={handleDeleteGroup}
+                type="primary"
+                danger
+                icon={<DeleteOutlined />}
+                block
+              >
+                Giải tán nhóm
+              </Button>
             </div>
           )}
         </div>

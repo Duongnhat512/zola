@@ -49,3 +49,26 @@ export const getPrivateConversation = async (userId, friendId) => {
     throw error;
   }
 };
+
+export const getGroupConversation = async (userId) => {
+  try {
+    const response = await axios.get(
+      `/chat-service/conversations/get-group-conversation?user_id=${userId}`
+    );
+    return response;
+  } catch (error) {
+    console.error("Failed to get group conversation", error);
+    throw error;
+  }
+}
+export const getGroupById = async (id) => {
+  try {
+    const response = await axios.get(
+      `/chat-service/conversations/get-conversation-by-id?conversation_id=${id}`
+    );
+    return response;
+  } catch (error) {
+    console.error("Failed to get group conversation", error);
+    throw error;
+  }
+}

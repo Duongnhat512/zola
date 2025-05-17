@@ -11,6 +11,7 @@ import AddGroupModal from "./AddGroupModal";
 import ChatWindow from "./ChatWindow";
 import FriendInvitations from "../../pages/Friend/FriendInvitations";
 import FriendList from "../../pages/Friend/FriendList";
+import GroupList from "../../pages/Group/GroupList";
 
 const MainLayout = () => {
   const [layout, setLayout] = useState("default"); // State to manage layout type
@@ -24,7 +25,13 @@ const MainLayout = () => {
         setLayout("default");
       },
     },
-    { label: "Danh sách nhóm và cộng đồng", key: "2", icon: <TeamOutlined /> },
+    {
+      label: "Danh sách nhóm và cộng đồng", key: "2", icon: <TeamOutlined />,
+      onClick: () => {
+        // Handle click event for "Danh sách nhóm và cộng đồng"
+        setLayout("group-list");
+      },
+    },
     {
       label: "Lời mời kết bạn",
       key: "3",
@@ -34,11 +41,7 @@ const MainLayout = () => {
         setLayout("friend-invitations");
       },
     },
-    {
-      label: "Lời mời vào nhóm và cộng đồng",
-      key: "4",
-      icon: <UsergroupAddOutlined />,
-    },
+
   ];
   const [isModalVisible, setIsModalVisible] = useState(false);
 
@@ -96,15 +99,17 @@ const MainLayout = () => {
 
         {/* Main Content */}
       </div>
-      {layout === "default" ? (
-        <div className="flex-1 p-4 bg-gray-50">
+      <div className="flex-1 p-4 bg-gray-50">
+        {layout === "default" ? (
           <FriendList />
-        </div>
-      ) : (
-        <div className="flex-1 p-4 bg-gray-50">
+        ) : layout === "friend-invitations" ? (
           <FriendInvitations />
-        </div>
-      )}
+        ) : (
+          <GroupList />
+        )}
+      </div>
+
+
     </div>
   );
 };

@@ -80,3 +80,24 @@ export const hiddenMessage = async (idMessage,idUser) => {
     throw error;
   }
 }
+
+export const updateAvt = async (username, base64File) => {
+  try {
+    const response = await axios.post(
+      `/auth-service/me/update-avt`,
+      {
+        username,
+        file: base64File,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response;
+  } catch (error) {
+    console.error("Failed to upload avatar", error);
+    throw error;
+  }
+};

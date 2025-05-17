@@ -39,6 +39,7 @@ import MessageList from "../untilChatWindow/MessageList";
 import { toast } from "react-toastify";
 const ChatWindow = ({
   selectedChat,
+  setSelectedChat,
   setChats,
   fetchConversations,
   setIsInfoGroupVisible,
@@ -79,7 +80,7 @@ const ChatWindow = ({
 
     socket.on("list_messages", (data) => {
       console.log("List messages event received:", data);
-      
+
       const dataSort = data.sort(
         (a, b) => new Date(a.created_at) - new Date(b.created_at)
       );
@@ -311,7 +312,7 @@ const ChatWindow = ({
     };
 
     const event = isGroup ? "send_group_message" : "send_private_message";
-    socket.emit(event, msg, () => {});
+    socket.emit(event, msg, () => { });
     socket.on("message_sent", (msg) => {
       console.log(msg);
 
@@ -319,18 +320,18 @@ const ChatWindow = ({
         prev.map((m) =>
           m.id === tempId
             ? {
-                ...m,
-                id: msg.message_id,
-                text: msg.message || null,
-                media: msg.media || null,
-                file_name: msg.file_name || null,
-                type: notify ? "notify" : msg.type || "text",
-                time: new Date(msg.created_at).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                }),
-                status: "sent",
-              }
+              ...m,
+              id: msg.message_id,
+              text: msg.message || null,
+              media: msg.media || null,
+              file_name: msg.file_name || null,
+              type: notify ? "notify" : msg.type || "text",
+              time: new Date(msg.created_at).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+              status: "sent",
+            }
             : m
         )
       );
@@ -350,9 +351,9 @@ const ChatWindow = ({
         prev.map((msg) =>
           msg.id === tempId
             ? {
-                ...msg,
-                uploadProgress: Math.min((msg.uploadProgress || 0) + 10, 100),
-              }
+              ...msg,
+              uploadProgress: Math.min((msg.uploadProgress || 0) + 10, 100),
+            }
             : msg
         )
       );
@@ -369,6 +370,9 @@ const ChatWindow = ({
       );
     }, 3000); // Giả lập tải lên hoàn tất sau 3 giây
   };
+  
+
+
   if (!selectedChat) {
     return (
       <div className="flex items-center justify-center flex-col text-center flex-1">
@@ -382,6 +386,7 @@ const ChatWindow = ({
       </div>
     );
   }
+
   return (
     <div className="flex-1 flex flex-col bg-white">
       <ChatHeader
@@ -453,7 +458,7 @@ const ChatWindow = ({
           <label htmlFor="file-upload" className="cursor-pointer">
             <PaperClipOutlined style={{ fontSize: "20px" }} />
           </label>
-          
+
 
           <Dropdown
             overlay={
