@@ -398,6 +398,7 @@ const getOriginalFileName = (fileName) => {
             </View>
           )}
 
+
           {file?.mimeType?.startsWith('video') && file.uri && (
             <View style={styles.previewContainer}>
               <Video
@@ -414,6 +415,24 @@ const getOriginalFileName = (fileName) => {
               </TouchableOpacity>
             </View>
           )}
+          {/* Xem trước file document (Word, Excel, PDF, ZIP, ...) */}
+            {file && !file?.mimeType?.startsWith('image') && !file?.mimeType?.startsWith('video') && file.uri && (
+              <View style={styles.previewContainer}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                  <Feather name="file" size={32} color="#007BFF" style={{ marginRight: 10 }} />
+                  <Text style={{ fontSize: 16, fontWeight: 'bold' }}>
+                    {getOriginalFileName(file.name)}
+                  </Text>
+                </View>
+                <Text style={{ color: '#555', marginBottom: 8 }}>
+                  Dung lượng: {file.size ? (file.size / 1024).toFixed(1) + ' KB' : 'Không rõ'}
+                </Text>
+                <TouchableOpacity onPress={() => setFile(null)} style={styles.cancelPreviewButton}>
+                  <Text style={styles.cancelPreviewText}>Hủy chọn file</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          
         </View>
         <View style={styles.footerWrapper}>
           <TouchableOpacity onPress={() => setShowEmojiPicker(!showEmojiPicker)}>

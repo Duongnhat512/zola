@@ -297,7 +297,7 @@ const FriendRequestModal = ({ visible, onClose }) => {
 };
 {/*render friend item*/}
 const renderFriendItem = ({ item }) => (
-       <TouchableOpacity onPress={() => navigation.navigate('ChatRoom', { chats:{name: item.friendInfo.fullname,type:"private",avatar:item.friendInfo.avt,friend_id:item.friendInfo.id} })}>
+       <TouchableOpacity >
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 15 }}>
       <Image
         source={{ uri: item.friendInfo.avt }}

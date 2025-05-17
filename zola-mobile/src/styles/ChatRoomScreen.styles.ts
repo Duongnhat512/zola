@@ -340,8 +340,8 @@ const styles = StyleSheet.create({
   previewContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 10,
-    backgroundColor: '#ccc',
+    padding: 10,
+    backgroundColor: '#888888',
   },
   
 
