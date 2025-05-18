@@ -74,6 +74,10 @@ MessageController.sendGroupMessage = async (socket, data) => {
       media: fileUrl,
       file_name: data.file_name,
     };
+    
+    console.log('====================================');
+    console.log(fileMessage);
+    console.log('====================================');
 
     const [savedMessage, sender, members] = await Promise.all([
       MessageModel.sendMessage(fileMessage),
@@ -367,6 +371,176 @@ MessageController.forwardMessage = async (socket, data) => {
   } catch (error) {
     console.error("Có lỗi khi chuyển tiếp tin nhắn:", error);
     socket.emit("error", { message: "Có lỗi khi chuyển tiếp tin nhắn" });
+  }
+};
+
+/**
+ * Ghim tin nhắn trong cuộc hội thoại
+ */
+MessageController.pinMessage = async (socket, data) => {
+  const { message_id, conversation_id, message_text } = data;
+  const user_id = socket.user.id;
+
+  if (!message_id) {
+    return socket.emit("error", { message: "Thiếu message_id" });
+  }
+
+  if (!conversation_id) {
+    return socket.emit("error", { message: "Thiếu conversation_id" });
+  }
+
+  try {
+    // Kiểm tra quyền trong nhóm (nếu là group conversation)
+    const isGroup = await ConversationModel.isGroupConversation(conversation_id);
+    if (isGroup) {
+      const permissions = await UserCacheService.getConversationPermissions(user_id, conversation_id);
+      if (permissions !== 'owner' && permissions !== 'moderator') {
+        return socket.emit("error", { message: "Bạn không có quyền ghim tin nhắn" });
+      }
+    }
+
+    // Thực hiện ghim tin nhắn
+    const result = await MessageModel.pinMessage(message_id, conversation_id, user_id);
+    
+    // Thông báo cho người dùng hiện tại
+    socket.emit("pin_message_success", {
+      status: "success",
+      message: "Ghim tin nhắn thành công",
+      pinned_message: result,
+      conversation_id,
+      message_text
+    });
+
+    // Thông báo cho các thành viên khác trong cuộc trò chuyện
+    const members = await redisClient.smembers(`group:${conversation_id}`);
+    for (const member of members) {
+      if (member === user_id) continue; // Bỏ qua người ghim
+      
+      const socketIds = await redisClient.smembers(`sockets:${member}`);
+      for (const socketId of socketIds) {
+        socket.to(socketId).emit("message_pinned", {
+          status: "success",
+          conversation_id,
+          message_id,
+          pinned_by: user_id,
+          pinned_message: result,
+          message: "Tin nhắn đã được ghim"
+        });
+      }
+    }
+  } catch (error) {
+    console.error("Lỗi khi ghim tin nhắn:", error);
+    socket.emit("error", { message: error.message || "Lỗi khi ghim tin nhắn" });
+  }
+};
+
+/**
+ * Bỏ ghim tin nhắn
+ */
+MessageController.unpinMessage = async (socket, data) => {
+  const { message_id, conversation_id, message_text } = data;
+  const user_id = socket.user.id;
+
+  if (!message_id) {
+    return socket.emit("error", { message: "Thiếu message_id" });
+  }
+
+  if (!conversation_id) {
+    return socket.emit("error", { message: "Thiếu conversation_id" });
+  }
+
+  try {
+    // Kiểm tra quyền trong nhóm (nếu là group conversation)
+    const isGroup = await ConversationModel.isGroupConversation(conversation_id);
+    console.log('====================================');
+    console.log(isGroup);
+    console.log('====================================');
+    if (isGroup) {
+      const permissions = await UserCacheService.getConversationPermissions(user_id, conversation_id);
+      if (permissions !== 'owner' && permissions !== 'moderator') {
+        return socket.emit("error", { message: "Bạn không có quyền bỏ ghim tin nhắn" });
+      }
+    }
+
+    // Thực hiện bỏ ghim tin nhắn
+    const result = await MessageModel.unpinMessage(message_id, conversation_id);
+
+    console.log('====================================');
+    console.log(result + "result");
+    console.log('====================================');
+    
+    // Thông báo cho người dùng hiện tại
+    socket.emit("unpin_message_success", {
+      status: "success",
+      message: "Bỏ ghim tin nhắn thành công",
+      message_id,
+      conversation_id,
+      message_text
+    });
+    const members = await redisClient.smembers(`group:${conversation_id}`);
+    // Thông báo cho các thành viên khác trong cuộc trò chuyện
+    for (const member of members) {
+      if (member === user_id) continue; // Bỏ qua người bỏ ghim
+      
+      const socketIds = await redisClient.smembers(`sockets:${member}`);
+      for (const socketId of socketIds) {
+        socket.to(socketId).emit("message_unpinned", {
+          conversation_id,
+          message_id,
+          unpinned_by: user_id,
+          message: "Tin nhắn đã được bỏ ghim",
+          message_text
+        });
+      }
+    }
+    
+  } catch (error) {
+    console.error("Lỗi khi bỏ ghim tin nhắn:", error);
+    socket.emit("error", { message: error.message || "Lỗi khi bỏ ghim tin nhắn" });
+  }
+};
+
+/**
+ * Lấy danh sách tin nhắn ghim trong cuộc trò chuyện
+ */
+MessageController.getPinnedMessages = async (socket, data) => {
+  const { conversation_id } = data;
+  
+  if (!conversation_id) {
+    return socket.emit("error", { message: "Thiếu conversation_id" });
+  }
+
+  try {
+    const pinnedMessages = await MessageModel.getPinnedMessages(conversation_id);
+    
+    // Thêm thông tin về người gửi tin nhắn
+    const pinnedMessagesWithSenderInfo = await Promise.all(
+      pinnedMessages.map(async (item) => {
+        const messageData = item.message_data;
+        const sender = await UserCacheService.getUserProfile(messageData.sender_id);
+        const pinnedBy = await UserCacheService.getUserProfile(item.pinned_by);
+        
+        return {
+          ...item,
+          message_data: {
+            ...messageData,
+            sender_name: sender?.fullname || null,
+            sender_avatar: sender?.avt || null,
+          },
+          pinned_by_name: pinnedBy?.fullname || null,
+          pinned_by_avatar: pinnedBy?.avt || null,
+        };
+      })
+    );
+    
+    socket.emit("pinned_messages", {
+      status: "success",
+      conversation_id,
+      pinned_messages: pinnedMessagesWithSenderInfo
+    });
+  } catch (error) {
+    console.error("Lỗi khi lấy danh sách tin nhắn ghim:", error);
+    socket.emit("error", { message: "Lỗi khi lấy danh sách tin nhắn ghim" });
   }
 };
 

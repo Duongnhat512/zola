@@ -218,6 +218,9 @@ const ConversationModel = {
     };
     try {
       const result = await dynamodb.get(params).promise();
+      console.log('====================================');
+      console.log(result.id + "Hiep");
+      console.log('====================================');
       return result.Item;
     } catch (error) {
       console.error("Có lỗi khi tìm hội thoại:", error);
@@ -323,6 +326,7 @@ const ConversationModel = {
 
     try {
       const result = await dynamodb.get(params).promise();
+      
       return result.Item ? result.Item.last_message_id : null;
     } catch (error) {
       console.error("Có lỗi khi lấy hội thoại:", error);
@@ -504,43 +508,25 @@ const ConversationModel = {
       throw new Error("Có lỗi khi lấy hội thoại");
     }
 
+  },
+  isGroupConversation: async (conversationId) => {
+  const params = {
+    TableName: tableName,
+    Key: {
+      id: conversationId,
+    },
+  };
+
+  try {
+    const result = await dynamodb.get(params).promise();
+    return result.Item && result.Item.type === "group";
+  } catch (error) {
+    console.error("Có lỗi khi kiểm tra hội thoại nhóm:", error);
+    throw new Error("Có lỗi khi kiểm tra hội thoại nhóm");
   }
+}
 
 };
-// ConversationModel.getListConversationsRecent = async (userId) => {
-//   const params = {
-//     TableName: memberTableName,
-//     IndexName: "userId-index",
-//     KeyConditionExpression: "user_id = :userId",
-//     ExpressionAttributeValues: {
-//       ":userId": userId,
-//     },
-//   };
-
-//   try {
-//     const result = await dynamodb.query(params).promise();
-//     const conversationIds = result.Items.map((item) => item.conversation_id);
-//     const conversationParams = {
-//       RequestItems: {
-//         [tableName]: {
-//           Keys: conversationIds.map((id) => ({ id })),
-//         },
-//       },
-//     };
-//     const conversationResult = await dynamodb.batchGet(conversationParams).promise();
-//     const conversations = conversationResult.Responses[tableName] || [];
-//     const recentConversations = conversations.filter(
-//       (conversation) => conversation.type === "private" || conversation.type === "group"
-//     );
-//     const sortedConversations = recentConversations.sort(
-//       (a, b) => new Date(b.updated_at) - new Date(a.updated_at)
-//     );
-//     const limitedConversations = sortedConversations.slice(0, 10); // Giới hạn số lượng hội thoại
-//     return limitedConversations;
-//   } catch (error) {
-//     console.error("Có lỗi khi lấy danh sách hội thoại:", error);
-//     throw new Error("Có lỗi khi lấy danh sách hội thoại");
-//   }
-// }
+  
 
 module.exports = ConversationModel;

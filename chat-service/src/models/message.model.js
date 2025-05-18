@@ -130,6 +130,8 @@ const MessageModel = {
     },
 
     getMessageById: async (message_id) => {
+       console.log(message_id + "aaaaaaaaa");
+       
         const params = {
             TableName: tableName,
             Key: {
@@ -291,6 +293,61 @@ const MessageModel = {
             throw new Error("Error finding hidden message");
         }
     },
+    pinMessage: async (message_id, conversation_id) => {
+        const params = {
+            TableName: tableName,
+            Key: {
+                id: message_id,
+            },
+            UpdateExpression: "set pinned = :pinned, updated_at = :updated_at",
+            ExpressionAttributeValues: {
+                ":pinned": true,
+                ":updated_at": new Date().toISOString(),
+            },
+        };
+        try {
+            await dynamodb.update(params).promise();
+            
+            // Trả về thông tin của tin nhắn đã ghim
+            const getMessageParams = {
+                TableName: tableName,
+                Key: {
+                    id: message_id,
+                },
+            };
+            const messageData = await dynamodb.get(getMessageParams).promise();
+            return {
+                conversation_id: conversation_id,
+                pinned_message: messageData.Item,
+            };
+        } catch (error) {
+            console.error("Error pinning message:", error);
+            throw new Error("Error pinning message");
+        }
+    },
+    unpinMessage: async (message_id, conversation_id) => {
+        const params = {
+            TableName: tableName,
+            Key: {
+                id: message_id,
+            },
+            UpdateExpression: "set pinned = :pinned, updated_at = :updated_at",
+            ExpressionAttributeValues: {
+                ":pinned": false,
+                ":updated_at": new Date().toISOString(),
+            },
+        };
+        try {
+            await dynamodb.update(params).promise();
+            return {
+                conversation_id: conversation_id,
+                message_id: message_id,
+            }
+        } catch (error) {
+            console.error("Error unpinning message:", error);
+            throw new Error("Error unpinning message");
+        }
+    }
 
 }
 

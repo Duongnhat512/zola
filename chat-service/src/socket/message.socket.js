@@ -82,6 +82,25 @@ const messageSocket = (io, socket) => {
             socket.emit('error', { message: "Lỗi xử lý chuyển tiếp tin nhắn" });
         }
     });
+    //Ghim tin nhắn
+    socket.on("pin_message", async (data) => {
+        console.log("Received pin_message data:", JSON.stringify(data));
+        try {
+            await messageController.pinMessage(socket, data);
+        } catch (error) {
+            console.error("Error handling pin_message:", error);
+            socket.emit('error', { message: "Lỗi xử lý ghim tin nhắn" });
+        }
+    });
+    socket.on("unpin_message", async (data) => {
+        console.log("Received unpin_message data:", JSON.stringify(data));
+        try {
+            await messageController.unpinMessage(socket, data);
+        } catch (error) {
+            console.error("Error handling unpin_message:", error);
+            socket.emit('error', { message: "Lỗi xử lý bỏ ghim tin nhắn" });
+        }
+    });
 
 };
 
