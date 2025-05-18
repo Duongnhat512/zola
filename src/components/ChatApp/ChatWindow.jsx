@@ -115,15 +115,15 @@ const ChatWindow = ({
   useEffect(() => {
     socket.on("new_message", (msg) => {
       console.log("New message event received:", msg);
-      // handleNewMessage(
-      //   msg,
-      //   selectedChatRef,
-      //   userMain,
-      //   setMessages,
-      //   setChats,
-      //   (conversationId) =>
-      //     markAsRead(socket, conversationId, userMain.id, setChats)
-      // );
+      handleNewMessage(
+        msg,
+        selectedChatRef,
+        userMain,
+        setMessages,
+        setChats,
+        (conversationId) =>
+          markAsRead(socket, conversationId, userMain.id, setChats)
+      );
     });
 
     return () => {
