@@ -37,6 +37,7 @@ import MessageOptions from "../untilChatWindow/MessageOptions";
 import ChatHeader from "../untilChatWindow/ChatHeader";
 import MessageList from "../untilChatWindow/MessageList";
 import { toast } from "react-toastify";
+import ShareMessageModal from "../untilChatWindow/ShareMessage";
 const ChatWindow = ({
   selectedChat,
   setSelectedChat,
@@ -67,6 +68,8 @@ const ChatWindow = ({
   const pageSize = 10; // Số lượng tin nhắn mỗi trang
   const [isLoading, setIsLoading] = useState(false); // Trạng thái đang tải tin nhắn
   const [hasMoreMessages, setHasMoreMessages] = useState(true); // Kiểm tra còn tin nhắn để tải không
+  const [isModalShareMessageVisible, setIsModalShareMessageVisible] = useState(false);
+  const [messageShare, setMessageShare] = useState(null);
   useEffect(() => {
     selectedChatRef.current = selectedChat;
   }, [selectedChat]);
@@ -370,8 +373,20 @@ const ChatWindow = ({
       );
     }, 3000); // Giả lập tải lên hoàn tất sau 3 giây
   };
-  
+  const handleForwardMessage = (msg) => {
+    // Xử lý chia sẻ tin nhắn ở đây
+    setMessageShare(msg);
+    setIsModalShareMessageVisible(true);
+  }
+  const onShareMessage = async (ids, note) => {
+    const payload = {
+      to_conversation_ids: ids,
+      message_id: messageShare.id,
+    };
 
+    socket.emit("forward_message", payload);
+    setIsModalShareMessageVisible(false)
+  };
 
   if (!selectedChat) {
     return (
@@ -400,6 +415,7 @@ const ChatWindow = ({
         handleCopyMessage={handleCopyMessage}
         handleDeleteMessage={handleDeleteMessage}
         handleRevokeMessage={handleRevokeMessage}
+        handleForwardMessage={handleForwardMessage}
         messagesEndRef={messagesEndRef}
         onScroll={handleScroll}
         isLoading={isLoading}
@@ -504,6 +520,15 @@ const ChatWindow = ({
           />
         </div>
       </div>
+      {isModalShareMessageVisible && (
+        <ShareMessageModal
+          userId={userMain.id}
+          visible={isModalShareMessageVisible}
+          onCancel={() => setIsModalShareMessageVisible(false)}
+          onShare={(ids, note) => onShareMessage(ids, note)}
+          messagePreview="Rep thì chắc thêm 1 field reply message id thôi nhỉ"
+        />
+      )}
     </div>
   );
 };

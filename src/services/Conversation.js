@@ -72,3 +72,14 @@ export const getGroupById = async (id) => {
     throw error;
   }
 }
+export const getConversationRecent = async (userId) => {
+  try {
+    const response = await axios.get(
+      `/chat-service/conversations/get-conversation-recent?user_id=${userId}`
+    );
+    return response;
+  } catch (error) {
+    console.error("Failed to get recent conversation", error);
+    throw error;
+  }
+}

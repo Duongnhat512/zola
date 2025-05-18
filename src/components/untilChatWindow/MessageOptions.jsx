@@ -1,10 +1,13 @@
 import React from "react";
 import { Menu } from "antd";
-import { CopyOutlined, DeleteOutlined, UndoOutlined } from "@ant-design/icons";
+import { CopyOutlined, DeleteOutlined, UndoOutlined, SwapRightOutlined } from "@ant-design/icons";
 
-const MessageOptions = ({ msg, onCopy, onDelete, onRevoke }) => {
+const MessageOptions = ({ msg, onCopy, onDelete, onRevoke, onForward }) => {
   return (
     <Menu>
+      <Menu.Item key="forward" icon={<SwapRightOutlined />} onClick={onForward}>
+        Chuyển tiếp
+      </Menu.Item>
       <Menu.Item key="copy" icon={<CopyOutlined />} onClick={() => onCopy(msg.text)}>
         Copy tin nhắn
       </Menu.Item>

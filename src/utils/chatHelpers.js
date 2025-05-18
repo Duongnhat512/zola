@@ -215,3 +215,9 @@ export const handleVideoChange = (e, setSelectedVideo, sendMessageCallback) => {
   reader.readAsDataURL(file); // Đọc video dưới dạng Base64
   e.target.value = ""; // Đặt lại giá trị của input video để có thể chọn lại cùng một video
 };
+
+// Hàm xử lý chuyển tin nhắn
+export const handleForwardMessage = (msg, to_conversation_id) => {
+  
+  
+};

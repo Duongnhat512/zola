@@ -8,6 +8,7 @@ import "react-toastify/dist/ReactToastify.css"; // Import CSS cho Toastify
 import { toast } from "react-toastify"; // Import react-toastify
 import InfoGroup from "../Group/InfoGroup";
 import { getUserById } from "../../services/UserService";
+import Swal from "sweetalert2";
 const HomeDetails = () => {
   const [selectedChat, setSelectedChat] = useState(null);
   const [chats, setChats] = useState([]);
@@ -628,6 +629,32 @@ const HomeDetails = () => {
       socket.off("update_name_group", handleUpdateNameGroup);
     };
   }, [socket]);
+
+
+  useEffect(() => {
+    const handleForwardMessage = async (data) => {
+      if (data.status === "success") {
+        Swal.fire({
+          icon: 'success',
+          title: 'Thành công',
+          text: 'Tin nhắn đã được chuyển tiếp!',
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Thất bại',
+          text: 'Chuyển tiếp tin nhắn thất bại!',
+        });
+      }
+    };
+    
+    socket.on("message_forwarded", handleForwardMessage);
+
+    return () => {
+      socket.off("message_forwarded", handleForwardMessage);
+    };
+  }, [socket]);
+
   return isLoading ? (
     <div className="flex h-screen w-full bg-gray-100">
       <Spin

@@ -1,5 +1,5 @@
 import React from "react";
-import { Avatar, Image, Dropdown, Spin, Progress } from "antd";
+import { Avatar, Image, Dropdown, Spin, Progress, Button } from "antd";
 import MessageOptions from "./MessageOptions";
 
 const MessageList = ({
@@ -7,6 +7,7 @@ const MessageList = ({
   handleCopyMessage,
   handleDeleteMessage,
   handleRevokeMessage,
+  handleForwardMessage,
   messagesEndRef,
   onScroll,
   isLoading,
@@ -17,7 +18,7 @@ const MessageList = ({
   return (
     <div
       className="flex-1 overflow-y-auto p-4 space-y-4 message-list-container"
-      // onScroll={onScroll}
+    // onScroll={onScroll}
     >
       {/* {!hasMoreMessages && messages.length>10&&( 
         <div className="text-center text-gray-500 mb-4">
@@ -41,13 +42,12 @@ const MessageList = ({
         .map((msg) => (
           <div
             key={msg.id}
-            className={`flex ${
-              msg.type === "notify"
-                ? "justify-center" // Thông báo căn giữa
-                : msg.sender === "me"
+            className={`flex ${msg.type === "notify"
+              ? "justify-center" // Thông báo căn giữa
+              : msg.sender === "me"
                 ? "justify-end"
                 : "items-start"
-            } gap-2`}
+              } gap-2`}
           >
             {msg.type === "notify" ? (
               <div
@@ -73,9 +73,8 @@ const MessageList = ({
                   />
                 )}
                 <div
-                  className={`flex flex-col items-${
-                    msg.sender === "me" ? "end" : "start"
-                  }`}
+                  className={`flex flex-col items-${msg.sender === "me" ? "end" : "start"
+                    }`}
                 >
                   <div
                     style={{
@@ -88,8 +87,8 @@ const MessageList = ({
                       style={{
                         padding:
                           msg.type === "text" ||
-                          msg.type === "document" ||
-                          msg.text === "Tin nhắn đã thu hồi"
+                            msg.type === "document" ||
+                            msg.text === "Tin nhắn đã thu hồi"
                             ? "8px 12px"
                             : "0",
                         borderRadius: "12px",
@@ -100,7 +99,7 @@ const MessageList = ({
                         textAlign: "center",
                       }}
                     >
-                      {msg.status === "pending" && msg.type!="text" ? (
+                      {msg.status === "pending" && msg.type != "text" ? (
                         <div
                           style={{
                             display: "flex",
@@ -175,6 +174,7 @@ const MessageList = ({
                           onCopy={handleCopyMessage}
                           onDelete={handleDeleteMessage}
                           onRevoke={handleRevokeMessage}
+                          onForward={() => handleForwardMessage(msg)}
                         />
                       }
                       trigger={["click"]}
@@ -204,7 +204,9 @@ const MessageList = ({
                           ⋮
                         </span>
                       )}
+
                     </Dropdown>
+
                   </div>
 
                   <span

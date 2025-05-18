@@ -50,7 +50,7 @@ const ChatHeader = ({ selectedChat, handleOpen, setIsInfoGroupVisible }) => {
         <div>
           <h2 id="name" className="font-semibold">{selectedChat?.name}
 
-            {selectedChat?.list_user_id?.length > 2 ? (
+            {selectedChat?.type === "group" ? (
               <Button className="border-0 text-xs" onClick={handleUpdateNameGroup}>
                 <EditTwoTone />
               </Button>
