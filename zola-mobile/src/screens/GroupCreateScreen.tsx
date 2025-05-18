@@ -103,42 +103,28 @@ useEffect(() => {
         return 'application/octet-stream'; // fallback
     }
   };
-  const handleCreateGroup = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({ base64: true });
-    if (!result.canceled) {
-      const image = result.assets[0];
-    
-      const fileName = image.fileName || image.uri.split('/').pop();
-      const fileType = getMimeType(image.fileName);
-      const ext = fileName.split('.').pop();
-      console.log(fileName);
-      console.log(fileType);
-      console.log(image.fileSize);
-      console.log(image.uri);
-      const cleanBase64 = image.base64.replace(/^data:image\/\w+;base64,/, "");
-      const members = selectedFriends.map(f => f.friendInfo.id);
-  
-      socket.emit("create_group", {
-        name: groupName,
-        members,
-        cleanBase64,
-        fileType,
-        fileName,
-      });
-    }
-    // let file_data = null;
-    // let file_type = null;
-    // let file_name = null;
-  
-    // if (groupAvatar?.uri) {
-    //   const base64 = await FileSystem.readAsStringAsync(groupAvatar.uri, { encoding: 'base64' });
-    //   file_data = base64;
-    //   file_type = 'image/jpeg'; // hoặc dùng hàm tự động detect cũng được
-    //   file_name = groupAvatar.uri.split('/').pop();
-    // }
-  
+const handleCreateGroup = async () => {
+  let file_data = null;
+  let file_type = null;
+  let file_name = null;
 
-  };
+  if (groupAvatar?.uri) {
+    const base64 = await FileSystem.readAsStringAsync(groupAvatar.uri, { encoding: 'base64' });
+    file_data = base64;
+    file_type = getMimeType(groupAvatar.uri);
+    file_name = groupAvatar.uri.split('/').pop();
+  }
+
+  const members = selectedFriends.map(f => f.friendInfo.id);
+
+  socket.emit("create_group", {
+    name: groupName,
+    members,
+    file_data,
+    file_type,
+    file_name,
+  });
+};
   return (
     <View style={styles.container}>
        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>

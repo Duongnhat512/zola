@@ -50,6 +50,18 @@ export const updateUser = async (username,fullname,dob,gender) => {
     throw error;
   }
 };
+export const updateAvatar = async (username, base64Image) => {
+  try {
+    const response = await axios.post("/auth-service/me/update-avt", {
+      username,
+      file: base64Image,
+    });
+    return response;
+  } catch (error) {
+    console.error("Update avatar failed", error);
+    throw error;
+  }
+};
 
 export const registerUser = async (data) => {
   try {

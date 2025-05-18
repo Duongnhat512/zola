@@ -370,11 +370,18 @@ const getOriginalFileName = (fileName) => {
           <Text style={styles.header}>{chats.name || 'Người dùng không xác định'}</Text>
           <TouchableOpacity
             onPress={() => {
+                
+
+              if (chats.type === "group") {
               navigation.navigate('EditGroup', {
                 conversation: chats,
                 socket: socket,
                 currentUserId: currentUser.id,
               });
+            }
+              else {
+              navigation.navigate("EditChat",{ friendProfile:chats});
+            }
             }}
             style={styles.backButton}
               >

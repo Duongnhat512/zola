@@ -24,10 +24,11 @@ const Profile = () => {
   return (
     <View style={styles.container}>
       {/* Ảnh bìa */}
-      <Image
+      <View style={styles.coverPhoto}></View>
+      {/* <Image
         source={{ uri: 'https://images.unsplash.com/photo-1503264116251-35a269479413' }}
         style={styles.coverPhoto}
-      />
+      /> */}
       <View style={styles.topLeftIcons}>
         <TouchableOpacity style={styles.iconButton} onPress={() =>navigation.goBack()}>
         <MaterialIcons name="arrow-back" size={24} color="#fff" />
@@ -86,6 +87,7 @@ const styles = StyleSheet.create({
   coverPhoto: {
     width: '100%',
     height: COVER_HEIGHT,
+    backgroundColor:'#000000'
   },
   topRightIcons: {
     position: 'absolute',

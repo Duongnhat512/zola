@@ -21,7 +21,7 @@ import ChatRoomScreen from '../screens/ChatRoomScreen';
 import MessagesScreen from '../screens/MessagesScreen';
 import GroupSettingsScreen from '../screens/GroupSettingsScreen';
 import FlashMessage from "react-native-flash-message";
-
+import PrivateChatSettingsScreen from '../screens/PrivateChatSettingsScreen';
 // Define navigation types
 export type RootStackParamList = {
   Welcome: undefined;
@@ -33,6 +33,7 @@ export type RootStackParamList = {
   Edit:undefined;
   GroupCreate:undefined;
   EditGroup:undefined;
+  EditChat:undefined;
 };
 
 // Create navigators
@@ -55,6 +56,7 @@ const AuthStack: React.FC = () => {
       <Stack.Screen name="Password" component={PasswordScreen} />
      <Stack.Screen name="GroupCreate" component={GroupCreateScreen} />
      <Stack.Screen name="EditGroup" component={GroupSettingsScreen} />
+      <Stack.Screen name="EditChat" component={PrivateChatSettingsScreen} />
     </Stack.Navigator>
   );
 };
@@ -120,7 +122,7 @@ const AppNavigator: React.FC = () => {
           <Stack.Screen name="ChatRoom" component={ChatRoomScreen} /> 
           <Stack.Screen name="GroupCreate" component={GroupCreateScreen} />
           <Stack.Screen name="EditGroup" component={GroupSettingsScreen} />
-
+          <Stack.Screen name="EditChat" component={PrivateChatSettingsScreen} />
         </Stack.Navigator>
       ) : (
         <AuthStack />

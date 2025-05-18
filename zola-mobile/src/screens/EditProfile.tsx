@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity, Modal, Pressable, TextInput, Alert } from 'react-native';
 import { Icon } from 'react-native-elements';
 import { updateUserRedux } from '../redux/slices/UserSlice';
-import { updateUser } from '../services/UserService';
+import { updateUser,updateAvatar } from '../services/UserService';
 import { MaterialIcons, Entypo, Ionicons } from '@expo/vector-icons';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
-
+import * as ImagePicker from 'expo-image-picker';
 const EditProfile = () => {
     const navigation = useNavigation();
   const user = useSelector((state: any) => state.user.user);
@@ -15,6 +15,22 @@ const EditProfile = () => {
     dob: '30/10/2002',
     gender: 'Nam',
   });
+{/*pickImage*/}
+
+const handlePickImage = async () => {
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsEditing: true,
+    base64: true,
+    quality: 0.7,
+  });
+
+  if (!result.canceled && result.assets.length > 0) {
+    const base64Image = `data:${result.assets[0].mimeType};base64,${result.assets[0].base64}`;
+    setForm({ ...form, avt: base64Image });
+    Alert.alert(form.avt);
+  }
+};
   const dispatch = useDispatch();
   const [form, setForm] = useState({
     fullname: user.fullname,
@@ -30,6 +46,9 @@ const EditProfile = () => {
   const handleSave = async() => {
     try {
       await updateUser(user.username,form.fullname,form.dob,form.gender);
+      if (form.avt?.startsWith('data:image/')) {
+      await updateAvatar(user.username, form.avt);
+      }
       dispatch(updateUserRedux(form)); // update redux
       Alert.alert('Thông báo','Cập nhật thành công!');
     } catch (err) {
@@ -45,10 +64,11 @@ const EditProfile = () => {
     <ScrollView style={styles.container}>
       {/* Header Background */}
       <View style={styles.header}>
-        <Image
+      <View  style={styles.headerImage}></View>
+        {/* <Image
           source={{ uri: 'https://i.imgur.com/jl1L3Km.jpg' }} // Placeholder ảnh nền
-          style={styles.headerImage}
-        />
+         
+        /> */}
           <View style={styles.topLeftIcons}>
         <TouchableOpacity style={styles.iconButton} onPress={() =>navigation.goBack()}>
         <MaterialIcons name="arrow-back" size={24} color="#fff" />
@@ -56,11 +76,12 @@ const EditProfile = () => {
       </View>
         <View style={styles.avatarWrapper}>
           <Image
-            source={{uri: user?.avt  }} // Placeholder avatar
+            source={{uri: form?.avt  }} // Placeholder avatar
             style={styles.avatar}
-          />
+          />    
           <Text style={styles.name}>{form.fullname}</Text>
         </View>
+        
       </View>
       <Modal
         visible={modalVisible}
@@ -76,10 +97,12 @@ const EditProfile = () => {
 
           {/* Nội dung trong modal */}
           <View style={styles.modalContent}>
+            <TouchableOpacity onPress={handlePickImage}>
             <Image
-              source={{ uri: 'https://i.imgur.com/4QfKuz1.png' }}
+              source={{uri: form?.avt  }} 
               style={styles.modalAvatar}
-            />
+            />              
+            </TouchableOpacity>
             <TextInput
               value={form.fullname}
               onChangeText={(text) => handleChange('fullname', text)}
@@ -169,6 +192,7 @@ const styles = StyleSheet.create({
   headerImage: {
     width: '100%',
     height: '100%',
+    backgroundColor:'#000000'
   },
   avatarWrapper: {
     position: 'absolute',

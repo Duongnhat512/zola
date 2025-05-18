@@ -61,6 +61,16 @@ export default function GroupSettingsScreen({ navigation  }) {
   console.log(avatar);
   const [permissions, setPermissions] = useState(""); // 'owner', 'member'
   const [modalVisible, setModalVisible] = useState(false);
+const [editGroupModalVisible, setEditGroupModalVisible] = useState(false);
+
+const openEditGroupModal = () => {
+  setEditGroupModalVisible(true);
+};
+
+const closeEditGroupModal = () => {
+  setEditGroupModalVisible(false);
+};
+
   const getMyPermission = (conversation) => {
     if (!conversation || !conversation.list_user_id) return null;
    
@@ -168,7 +178,7 @@ export default function GroupSettingsScreen({ navigation  }) {
       setAvatar(image); // Cập nhật UI nếu có
     
       const fileName = image.fileName || image.uri.split('/').pop();
-      const fileType = getMimeType(image.fileName);
+      const fileType = getMimeType(fileName);
       //const fileType = image.type || `image/${fileName.split('.').pop()}`;
       const ext = fileName.split('.').pop();
       //const fileType = mime.lookup(ext);
@@ -248,8 +258,9 @@ export default function GroupSettingsScreen({ navigation  }) {
     setMemberDetails(fetched);
   };
   const openAddMemberModal = () => {
+        const memberIds = conversation.list_user_id.map(m => m.user_id);
         const notInGroup = friendList.filter(
-          friend => !conversation.list_user_id.includes(friend.friendInfo.id)
+          friend => !memberIds.includes(friend.friendInfo.id)
         );
         console.log(notInGroup);
         setFriendList(notInGroup);
@@ -279,8 +290,6 @@ export default function GroupSettingsScreen({ navigation  }) {
   </TouchableOpacity>
   <Text style={styles.headerTitle}>Tùy chọn nhóm</Text>
 </View>
-
-      <TouchableOpacity onPress={pickImage}>
       <Image
   source={{
     uri:
@@ -290,16 +299,13 @@ export default function GroupSettingsScreen({ navigation  }) {
   }}
   style={styles.avatar}
 />
-      </TouchableOpacity>
-
-      <TextInput
-        value={groupName}
-        onChangeText={setGroupName}
-        onBlur={updateGroupName}
-        style={styles.nameInput}
-      />
+      <Text style={styles.nameInput}>{groupName}</Text>
 
       <View style={styles.options}>
+        <TouchableOpacity onPress={openEditGroupModal} style={styles.option}>
+          <Text>✏️ Chỉnh sửa tên và ảnh nhóm</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity onPress={openAddMemberModal} style={styles.option}>
           <Text>➕ Thêm thành viên</Text>
         </TouchableOpacity>
@@ -413,7 +419,42 @@ export default function GroupSettingsScreen({ navigation  }) {
             <Text style={styles.deleteText}> Giải tán nhóm</Text>
           </TouchableOpacity>
         )}
-      </View>
+      
+<Modal visible={editGroupModalVisible} animationType="slide">
+  <View style={styles.modal}>
+    <Text style={styles.modalTitle}>Chỉnh sửa nhóm</Text>
+
+    <TouchableOpacity onPress={pickImage} style={{ alignSelf: 'center' }}>
+      <Image
+        source={{
+          uri:
+            typeof avatar === 'string'
+              ? avatar
+              : avatar?.uri || conversation?.avatar || '',
+        }}
+        style={styles.avatar}
+      />
+      <Text style={{ textAlign: 'center', color: '#007AFF' }}>Chọn ảnh mới</Text>
+    </TouchableOpacity>
+
+    <TextInput
+      value={groupName}
+      onChangeText={setGroupName}
+      placeholder="Nhập tên nhóm mới"
+      style={styles.nameInput}
+    />
+
+    <TouchableOpacity onPress={updateGroupName} style={styles.confirmAdd}>
+      <Text style={styles.confirmAddText}>💾 Lưu thay đổi</Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity onPress={closeEditGroupModal} style={styles.closeModal}>
+      <Text style={styles.closeText}>Đóng</Text>
+    </TouchableOpacity>
+  </View>
+</Modal>
+
+</View>
 
       <Modal visible={modalVisible} animationType="slide">
         
@@ -462,6 +503,15 @@ console.log("Emit add_member:", {
             user_id: friend.friendInfo.id,
           });
         });
+        setMemberDetails(prev => [
+          ...prev,
+          ...selectedFriends.map(f => ({
+            user_id: f.friendInfo.id,
+            fullname: f.friendInfo.fullname,
+            avatar: f.friendInfo.avt,
+            permission: "member"
+          }))
+        ]);
         setSelectedFriends([]);
         setModalVisible(false);
       }}
