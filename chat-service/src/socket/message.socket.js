@@ -72,6 +72,16 @@ const messageSocket = (io, socket) => {
             isTyping: data.isTyping
         });
     });
+    // chuyển tiếp
+    socket.on("forward_message", async (data) => {
+        console.log("Received forward_message data:", JSON.stringify(data));
+        try {
+            await messageController.forwardMessage(socket, data);
+        } catch (error) {
+            console.error("Error handling forward_message:", error);
+            socket.emit('error', { message: "Lỗi xử lý chuyển tiếp tin nhắn" });
+        }
+    });
 
 };
 

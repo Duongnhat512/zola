@@ -944,8 +944,52 @@ ConversationController.getConversationById = async (req, res) => {
         } catch (err) {
           console.error(`Lỗi khi xử lý hội thoại ${conversation_id}:`, err);
           return null;
-        }
-
+        }       
 }
+// Lấy danh sách trò chuyện gần đây
+ConversationController.getConversationsRecent = async (req, res) => {
+  console.log('====================================');
+  console.log("Helllo");
+  console.log('====================================');
+  const { user_id } = req.query;
+  console.log('====================================');
+  console.log(user_id+ "user_id");
+  console.log('====================================');
 
+  if (!user_id) {
+    return res.status(400).json({ message: "Thiếu user_id" });
+  }
+
+  try {
+    // Lấy 10 hội thoại gần nhất từ chatlist
+    const conversationIds = await redisClient.zrevrange(`chatlist:${user_id}`, 0, 9);
+
+    if (!conversationIds || conversationIds.length === 0) {
+      return res.status(200).json({
+        status: "success",
+        message: "Không có hội thoại nào gần đây",
+        conversations: [],
+      });
+    }
+
+    // Lấy thông tin hội thoại
+    const conversations = await ConversationModel.getConversationsByIds(conversationIds);
+    // Trả về kết quả
+    const result = conversations.map((conversation, idx) => ({
+      conversation_id: conversation.id,
+      name: conversation.name,
+      avatar: conversation.avatar,
+      type: conversation.type,
+    }));
+
+    res.status(200).json({
+      status: "success",
+      message: "Lấy danh sách hội thoại gần đây thành công",
+      conversations: result,
+    });
+  } catch (error) {
+    console.error("Có lỗi khi lấy danh sách hội thoại gần đây:", error);
+    res.status(500).json({ message: "Có lỗi khi lấy danh sách hội thoại gần đây" });
+  }
+}
 module.exports = ConversationController;

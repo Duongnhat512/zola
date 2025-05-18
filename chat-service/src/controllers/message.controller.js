@@ -298,5 +298,76 @@ MessageController.setHiddenMessage = async (socket, data) => {
     socket.emit("error", { message: "Lỗi khi đánh dấu ẩn" });
   }
 };
+MessageController.forwardMessage = async (socket, data) => {
+  const { message_id, to_conversation_ids } = data;
+  const user_id = socket.user.id;
+
+  if (!message_id || !to_conversation_ids || !Array.isArray(to_conversation_ids) || to_conversation_ids.length === 0) {
+    return socket.emit("error", { message: "Thiếu message_id hoặc to_conversation_ids" });
+  }
+
+  try {
+    // Lấy nội dung tin nhắn gốc
+    const originalMessage = await MessageModel.getMessageById(message_id);
+    if (!originalMessage) {
+      return socket.emit("error", { message: "Không tìm thấy tin nhắn gốc" });
+    }
+
+    const results = [];
+
+    for (const to_conversation_id of to_conversation_ids) {
+      // Tạo tin nhắn mới dựa trên tin nhắn gốc
+      const newMessage = {
+        conversation_id: to_conversation_id,
+        sender_id: user_id,
+        type: originalMessage.type,
+        message: originalMessage.message,
+        media: originalMessage.media,
+        file_name: originalMessage.file_name,
+        is_forwarded: true,
+        forwarded_from: originalMessage.sender_id,
+      };
+
+      // Lưu tin nhắn mới
+      const [savedMessage, sender, members] = await Promise.all([
+        MessageModel.sendMessage(newMessage),
+        UserCacheService.getUserProfile(user_id),
+        redisClient.smembers(`group:${to_conversation_id}`),
+      ]);
+
+      const messageToSend = {
+        ...savedMessage,
+        sender_name: sender?.fullname,
+        sender_avatar: sender?.avt,
+        is_forwarded: true,
+        forwarded_from: originalMessage.sender_id,
+      };
+
+      // Gửi tin nhắn đến các thành viên trong nhóm
+      for (const member of members) {
+        const socketIds = await redisClient.smembers(`sockets:${member}`);
+        for (const socketId of socketIds) {
+          socket.to(socketId).emit("new_message", messageToSend);
+        }
+      }
+
+      results.push({
+        conversation_id: to_conversation_id,
+        message: messageToSend,
+      });
+    }
+
+    // Gửi xác nhận về cho người chuyển tiếp
+    socket.emit("message_forwarded", {
+      status: "success",
+      message: "Chuyển tiếp tin nhắn thành công",
+      data: results,
+    });
+
+  } catch (error) {
+    console.error("Có lỗi khi chuyển tiếp tin nhắn:", error);
+    socket.emit("error", { message: "Có lỗi khi chuyển tiếp tin nhắn" });
+  }
+};
 
 module.exports = MessageController;
