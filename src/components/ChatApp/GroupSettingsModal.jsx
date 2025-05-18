@@ -112,7 +112,6 @@ const GroupSettingsModal = ({ visible, onClose, groupSettings, grantPermission, 
 
       if (result.isConfirmed) {
         socket.emit("delete_conversation", { conversation_id: seletedChat.conversation_id });
-        Swal.fire('Đã xóa!', 'Nhóm đã được xóa thành công.', 'success');
       } else if (result.dismiss === Swal.DismissReason.cancel) {
         Swal.fire('Đã hủy', 'Nhóm vẫn được giữ nguyên.', 'info');
       }

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { SmileOutlined, SendOutlined } from "@ant-design/icons";
-import { Input, Avatar, Button, Dropdown, Menu, Image } from "antd";
+import { Input, Avatar, Button, Dropdown, Menu, Image, message } from "antd";
 import {
   VideoCameraOutlined,
   PictureOutlined,
@@ -40,7 +40,6 @@ const ChatWindow = ({
   setIsModalAddMemberVisible,
   messages,
   setMessages
-
 }) => {
   const [showVideoCall, setShowVideoCall] = useState(false);
   const selectedChatRef = useRef();
@@ -62,10 +61,24 @@ const ChatWindow = ({
   const [hasMoreMessages, setHasMoreMessages] = useState(true); // Kiểm tra còn tin nhắn để tải không
   const [isModalShareMessageVisible, setIsModalShareMessageVisible] = useState(false);
   const [messageShare, setMessageShare] = useState(null);
+  const [permission, setPermission] = useState(null);
+  const [pinnedMessageNew, setPinnedMessageNew] = useState(null);
+  const userMain = useSelector((state) => state.user.user);
+
   useEffect(() => {
     selectedChatRef.current = selectedChat;
-  }, [selectedChat]);
-  const userMain = useSelector((state) => state.user.user);
+
+    if (selectedChat && selectedChat.list_user_id && userMain) {
+      // Tìm user trong list_user_id
+      const userInChat = selectedChat.list_user_id.find(
+        (user) => user.user_id === userMain.id // hoặc userMain.user_id tùy định nghĩa
+      );
+      setPermission(userInChat ? userInChat.permission : null);
+    } else {
+      setPermission(null);
+    }
+  }, [selectedChat, userMain]);
+
 
   useEffect(() => {
     if (!selectedChat?.conversation_id) return;
@@ -94,6 +107,7 @@ const ChatWindow = ({
           minute: "2-digit",
         }),
         file_name: msg.file_name || null,
+        pinned: msg.pinned
       }));
       setMessages(formattedMessages);
       setVisibleMessages(formattedMessages.slice(-pageSize));
@@ -380,6 +394,38 @@ const ChatWindow = ({
     setIsModalShareMessageVisible(false)
   };
 
+  const handlePinMessage = (msg) => {
+    const payload = {
+      conversation_id: selectedChat.conversation_id,
+      message_id: msg.id,
+      message_text: msg.text
+    };
+    socket.emit("pin_message", payload);
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === msg.id
+          ? { ...m, pinned: !m.pinned }
+          : m
+      )
+    );
+    setPinnedMessageNew(msg);
+  }
+  const handleUnPinMessage = async (msg) => {
+    const payload = {
+      conversation_id: selectedChat.conversation_id,
+      message_id: msg.id,
+      message_text: msg.text
+    }
+    socket.emit("unpin_message", payload);
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === msg.id
+          ? { ...m, pinned: !m.pinned }
+          : m
+      )
+    );
+  }
+
   if (!selectedChat) {
     return (
       <div className="flex items-center justify-center flex-col text-center flex-1">
@@ -404,10 +450,14 @@ const ChatWindow = ({
       <MessageList
         // messages={visibleMessages}
         messages={messages}
+        pinnedMessage={pinnedMessageNew}
+        permission={permission}
         handleCopyMessage={handleCopyMessage}
         handleDeleteMessage={handleDeleteMessage}
         handleRevokeMessage={handleRevokeMessage}
         handleForwardMessage={handleForwardMessage}
+        handlePinMessage={handlePinMessage}
+        handleUnPinMessage={handleUnPinMessage}
         messagesEndRef={messagesEndRef}
         onScroll={handleScroll}
         isLoading={isLoading}

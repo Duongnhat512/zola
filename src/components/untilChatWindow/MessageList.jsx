@@ -1,25 +1,97 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Avatar, Image, Dropdown, Spin, Progress, Button } from "antd";
+import { ArrowDownOutlined, PushpinFilled } from "@ant-design/icons";
 import MessageOptions from "./MessageOptions";
+import { PinnedListBlock } from "./ShareMessage";
 
 const MessageList = ({
   messages,
+  permission,
   handleCopyMessage,
   handleDeleteMessage,
   handleRevokeMessage,
   handleForwardMessage,
+  handlePinMessage,
+  handleUnPinMessage,
   messagesEndRef,
   onScroll,
   isLoading,
   hasMoreMessages,
+  pinnedMessage, // <-- add this prop if you have it, or derive below
 }) => {
-  console.log("messages", messages);
+  // Lấy tin nhắn ghim đầu tiên (nếu chưa truyền prop)
+  let pinned;
+  if (pinnedMessage === null) {
+    pinned = messages.find((msg) => msg.pinned);
+  } else {
+    pinned = messages.find((msg) => msg.id === pinnedMessage.id);
+  }
 
+  const [isPinnedModal, setIsPinnedModal] = useState(false);
+  const [pinnedMessages, setPinnedMessages] = useState([]);
+
+  const handleOpenPinnedModal = () => {
+    setIsPinnedModal(true);
+  };
+  useEffect(() => {
+    if (messages && messages.length > 0) {
+      const filteredPinned = messages.filter((msg) => msg.pinned === true);
+      setPinnedMessages(filteredPinned);
+    } else {
+      setPinnedMessages([]);
+    }
+  }, [messages]); // thay vì [pinned], dùng [messages] để luôn cập nhật khi có thay đổi
   return (
-    <div
-      className="flex-1 overflow-y-auto p-4 space-y-4 message-list-container"
-    // onScroll={onScroll}
-    >
+    <div className="flex-1 overflow-y-auto py-2 px-4 space-y-4 message-list-container relative">
+      {/* Pinned message block */}
+      {pinned && isPinnedModal === false && pinnedMessages.length > 0 && (
+        <div className="sticky top-0 z-20 flex justify-center mb-4">
+          <div className="flex items-center justify-between bg-white border border-gray-200 shadow-sm px-4 py-2 rounded-lg w-full max-w-[600px]">
+            <div className="flex">
+              <PushpinFilled className="text-orange-500 text-lg mr-2" />
+              <div className="flex flex-col">
+                <div className="font-medium text-gray-700 mr-2">Tin nhắn đã ghim</div>
+                <div className="font-semibold text-gray-900 truncate max-w-[220px]">
+                  {pinned.text}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Button onClick={handleOpenPinnedModal}>
+                Tin ghim <ArrowDownOutlined />
+              </Button>
+              <a
+                href={`#msg-${pinned.id}`}
+                className="text-blue-500 font-medium ml-2"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const el = document.getElementById(`msg-${pinned.id}`);
+                  if (el) {
+                    el.scrollIntoView({ behavior: "smooth", block: "center" });
+                  }
+                }}
+              >
+                Xem
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pinned && isPinnedModal === true && pinnedMessages.length > 0 && (
+        <PinnedListBlock
+          visible={isPinnedModal}
+          onClose={() => setIsPinnedModal(false)}
+          onUnpin={handleUnPinMessage}
+          onViewAll={() => { }}
+          onViewMessage={() => { }}
+          pinnedMessages={pinnedMessages}
+          permission={permission}
+        />
+      )}
+
+      <div style={{ height: pinned && pinnedMessages.length > 0 ? 64 : 0 }} /> {/* Spacer for pinned block */}
       {/* {!hasMoreMessages && messages.length>10&&( 
         <div className="text-center text-gray-500 mb-4">
           Đã ở tin nhắn đầu tiên
@@ -42,6 +114,7 @@ const MessageList = ({
         .map((msg) => (
           <div
             key={msg.id}
+            id={`msg-${msg.id}`}
             className={`flex ${msg.type === "notify"
               ? "justify-center" // Thông báo căn giữa
               : msg.sender === "me"
@@ -171,10 +244,12 @@ const MessageList = ({
                       overlay={
                         <MessageOptions
                           msg={msg}
+                          permission={permission}
                           onCopy={handleCopyMessage}
                           onDelete={handleDeleteMessage}
                           onRevoke={handleRevokeMessage}
                           onForward={() => handleForwardMessage(msg)}
+                          onPinMessage={() => handlePinMessage(msg)}
                         />
                       }
                       trigger={["click"]}

@@ -44,11 +44,13 @@ const HomeDetails = () => {
   });
 
   const openChat = (chat) => {
+    localStorage.setItem("selectedChat", JSON.stringify(chat));
+    setSelectedChat(chat);
     setIsInfoGroupVisible(false);
     setIsModalGroupVisible(false);
     setIsModalAddMemberVisible(false);
     setIsGroupSettingsVisible(false);
-    setSelectedChat(chat);
+
     // Đặt badge về 0 khi mở cuộc trò chuyện
     setChats((prevChats) =>
       prevChats.map((c) =>
@@ -67,6 +69,8 @@ const HomeDetails = () => {
 
     const handleConversations = (response) => {
       if (response.status === "success") {
+        console.log(response.conversations);
+
         setChats(response.conversations);
       } else {
         console.error("Lỗi khi lấy danh sách hội thoại:", response.message);
@@ -83,8 +87,21 @@ const HomeDetails = () => {
   const sendMessage = (
     fileData = null,
     notify = false,
-    messageNotify = "Đã được phân quyền "
+    messageNotify = "Đã được phân quyền ",
   ) => {
+
+    let selectedChat = localStorage.getItem("selectedChat");
+
+    if (selectedChat) {
+      try {
+        selectedChat = JSON.parse(selectedChat);
+      } catch (error) {
+        console.error("Lỗi khi parse selectedChat từ localStorage:", error);
+        selectedChat = null;
+      }
+    } else {
+      selectedChat = null;
+    }
     if (
       !notify &&
       !input.trim() &&
@@ -99,7 +116,6 @@ const HomeDetails = () => {
     }
     const tempId = `msg-${Date.now()}`;
     const isGroup = selectedChat?.type === "group";
-
     setMessages((prev) => [
       ...prev,
       {
@@ -124,9 +140,9 @@ const HomeDetails = () => {
 
     const msg = {
       conversation_id: selectedChat?.conversation_id || null,
-      receiver_id:
-        selectedChat?.list_user_id?.find((userMain) => userMain.user_id !== user.id)
-          .user_id || null,
+      receiver_id: !isGroup
+        ? selectedChat?.list_user_id?.find(u => u.user_id !== user.id)?.user_id
+        : null,
       message: notify ? messageNotify : input || null,
       file_name:
         selectedVideo?.file_name ||
@@ -269,9 +285,6 @@ const HomeDetails = () => {
         leaders: updatedLeaders,
       };
     });
-
-
-
     if (permissions === "owner") {
       setDisabledModalGroup(true);
       setIsGroupSettingsVisible(false);
@@ -483,13 +496,15 @@ const HomeDetails = () => {
         fetchConversations();
         return;
       }
-
       setChats(prev => prev.filter(
         (chat) => String(chat.conversation_id) !== String(data.conversation_id)
       ));
       setSelectedChat(null);
       setIsInfoGroupVisible(false);
       setIsGroupSettingsVisible(false);
+      if (data.success) {
+        Swal.fire('Đã xóa!', 'Nhóm đã được xóa thành công.', 'success');
+      }
     };
 
     socket.on("group_deleted", handleGroupRemoved);
@@ -572,7 +587,7 @@ const HomeDetails = () => {
   useEffect(() => {
     const handleUploadGroupAvt = async (data) => {
       const avatar = data.result.avatar;
-      if (avatar) {
+      if (avatar && data.status === "success") {
         sendMessage(null, true, `Ảnh đại diện nhóm đã thay đổi`);
       }
       setChats(prev =>
@@ -634,26 +649,99 @@ const HomeDetails = () => {
   useEffect(() => {
     const handleForwardMessage = async (data) => {
       if (data.status === "success") {
-        Swal.fire({
-          icon: 'success',
-          title: 'Thành công',
-          text: 'Tin nhắn đã được chuyển tiếp!',
-        });
+        toast.success("Tin nhắn đã được chuyển tiếp!");
+
       } else {
-        Swal.fire({
-          icon: 'error',
-          title: 'Thất bại',
-          text: 'Chuyển tiếp tin nhắn thất bại!',
-        });
+        toast.error("Chuyển tiếp tin nhắn thất bại!");
       }
     };
-    
+
     socket.on("message_forwarded", handleForwardMessage);
 
     return () => {
       socket.off("message_forwarded", handleForwardMessage);
     };
   }, [socket]);
+  useEffect(() => {
+    const handlePinMessage = (data) => {
+      if (data.status === "success") {
+        sendMessage(null, true, `Tin nhắn ${data.message_text} đã được ghim!`);
+      } else {
+        toast.error("Không thể ghim tin nhắn.");
+      }
+    };
+
+    socket.on("pin_message_success", handlePinMessage);
+    return () => {
+      socket.off("pin_message_success", handlePinMessage);
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    const handleError = async (data) => {
+      toast.error(data.message)
+    }
+    socket.on("error", handleError);
+
+    return () => {
+      socket.off("error", handleError);
+    };
+  }, [socket])
+
+
+  useEffect(() => {
+    const handlePinMessageClient = async (data) => {
+      if (data.status === "success") {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === data.message_id
+              ? {
+                ...msg,
+                pinned: true,
+              }
+              : msg
+          )
+        );
+      } else {
+        toast.error("Ghim tin nhắn thất bại!");
+      }
+    }
+    socket.on("message_pinned", handlePinMessageClient);
+
+    return () => {
+      socket.off("message_pinned", handlePinMessageClient);
+    };
+  }, [socket])
+
+  useEffect(() => {
+    const handleUnPinMessage = async (data) => {
+      if (data.status === "success") {
+        sendMessage(null, true, `Tin nhắn ` + data.message_text + " đã được bỏ ghim!");
+      }
+    }
+    socket.on("unpin_message_success", handleUnPinMessage);
+
+    return () => {
+      socket.off("unpin_message_success", handleUnPinMessage);
+    };
+
+  }, [socket])
+
+  useEffect(() => {
+    const handleUnPinMessageClient = async (data) => {
+      console.log('====================================');
+      console.log(data);
+      console.log('====================================');
+    }
+
+    socket.on("message_unpinned", handleUnPinMessageClient);
+
+    return () => {
+      socket.off("message_unpinned", handleUnPinMessageClient);
+    };
+
+  }, [socket])
+
 
   return isLoading ? (
     <div className="flex h-screen w-full bg-gray-100">
@@ -679,8 +767,6 @@ const HomeDetails = () => {
         setIsModalAddMemberVisible={setIsModalAddMemberVisible}
         messages={messages}
         setMessages={setMessages}
-
-
       />
       {isInfoGroupVisible && (
         <InfoGroup

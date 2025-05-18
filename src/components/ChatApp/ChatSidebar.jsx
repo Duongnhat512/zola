@@ -8,7 +8,7 @@ import {
 import AddFriendModal from "./AddFriendModal";
 import AddGroupModal from "./AddGroupModal";
 
-const ChatSidebar = ({ chats, openChat, isModalGroupVisible,setIsModalGroupVisible }) => {
+const ChatSidebar = ({ chats, openChat, isModalGroupVisible, setIsModalGroupVisible }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const openModal = () => {
     setIsModalVisible(true);
@@ -25,9 +25,6 @@ const ChatSidebar = ({ chats, openChat, isModalGroupVisible,setIsModalGroupVisib
   const closeModalGroup = () => {
     setIsModalGroupVisible(false);
   };
-  
-  console.log("chats", chats);
-  
   return (
     <div
       className="w-1/4 border-r border-gray-300 flex flex-col bg-white shadow-lg "
@@ -76,12 +73,12 @@ const ChatSidebar = ({ chats, openChat, isModalGroupVisible,setIsModalGroupVisib
               height: "100px",
               margin: "0 auto",
               display: "flex",
-              
+
             }}
           >
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-3">
-                <Badge count={chat?.unread_count||0} size="small">
+                <Badge count={chat?.unread_count || 0} size="small">
                   <Avatar
                     size="large"
                     src={chat?.avatar || "/default-avatar.jpg"}
@@ -93,26 +90,26 @@ const ChatSidebar = ({ chats, openChat, isModalGroupVisible,setIsModalGroupVisib
                     {chat?.name || "Người dùng"}
                   </div>
                   <div className="text-xs text-gray-500 truncate">
-                    {chat?.last_message?.type === "image"  ? (
+                    {chat?.last_message?.type === "image" ? (
                       <span className="text-gray-400">Đã gửi một ảnh</span>
                     ) : chat?.last_message?.type === "document" ? (
                       <span className="text-gray-400">Đã gửi một tệp</span>
-                    ) : chat?.last_message?.type === "video"  ? (
+                    ) : chat?.last_message?.type === "video" ? (
                       <span className="text-gray-400">Đã gửi một video</span>
-                    ) : 
-                      <span className="text-gray-400">{chat.last_message?.message ? "Đã gửi một tin nhắn":"Không có tin nhắn"}</span>}
+                    ) :
+                      <span className="text-gray-400">{chat.last_message?.message ? "Đã gửi một tin nhắn" : "Không có tin nhắn"}</span>}
                   </div>
                 </div>
               </div>
-              <div style={{fontSize:"11px"}} className="text-gray-400 whitespace-nowrap">
+              <div style={{ fontSize: "11px" }} className="text-gray-400 whitespace-nowrap">
                 {chat?.last_message?.created_at
                   ? new Date(chat?.last_message?.created_at).toLocaleString(
-                      "vi-VN",
-                      {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      }
-                    )
+                    "vi-VN",
+                    {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }
+                  )
                   : ""}
               </div>
             </div>

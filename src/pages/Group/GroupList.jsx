@@ -7,6 +7,7 @@ import { getGroupById, getGroupConversation, getPrivateConversation } from "../.
 import ChatWindow from "../../components/ChatApp/ChatWindow";
 import InfoFriend from "../../components/ChatApp/InfoFriend";
 import Swal from "sweetalert2";
+import InfoGroup from "./InfoGroup";
 
 const GroupList = () => {
   const [groups, setGroup] = useState([]);
@@ -20,8 +21,29 @@ const GroupList = () => {
   const [openModalFriend, setOpenModalFriend] = useState(false);
   const [step, setStep] = useState("info");
   const [chats, setChats] = useState([]);
+  const [isInfoGroupVisible, setIsInfoGroupVisible] = useState(false);
+  const [isModalGroupVisible, setIsModalGroupVisible] = useState(false);
+  const [IsGroupSettingsVisible, setIsGroupSettingsVisible] = useState(false)
+  const [infoPermissions, setInfoPermissions] = useState(null);
+  const [isModalAddMemberVisible, setIsModalAddMemberVisible] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
+  const [userMain, setUserMain] = useState(null);
+  const [disabledModalGroup, setDisabledModalGroup] = useState(false);
+  const [members, setMembers] = useState([]);
 
-
+  const [groupSettings, setGroupSettings] = useState({
+    leaders: [],
+    members: [],
+    changeGroupInfo: true,
+    pinMessages: false,
+    createReminders: true,
+    createPolls: true,
+    sendMessages: true,
+    approveNewMembers: false,
+    markLeaderMessages: false,
+    allowNewMembersRead: true,
+    allowJoinLink: true,
+  });
   const handleBack = () => {
     setOpenModalFriend(false);
   }
@@ -83,6 +105,210 @@ const GroupList = () => {
       setSelectedChat(response.conversation);
     } catch (error) {
       console.error("Error fetching conversation:", error);
+    }
+  };
+  const sendMessage = (
+    fileData = null,
+    notify = false,
+    messageNotify = "Đã được phân quyền ",
+  ) => {
+
+    let selectedChat = localStorage.getItem("selectedChat");
+
+    if (selectedChat) {
+      try {
+        selectedChat = JSON.parse(selectedChat);
+      } catch (error) {
+        console.error("Lỗi khi parse selectedChat từ localStorage:", error);
+        selectedChat = null;
+      }
+    } else {
+      selectedChat = null;
+    }
+    if (
+      !notify &&
+      !input.trim() &&
+      !previewImage &&
+      !selectedFile &&
+      !selectedImage &&
+      !selectedVideo &&
+      !fileData
+    ) {
+      toast.error("Vui lòng nhập nội dung tin nhắn hoặc chọn tệp để gửi.");
+      return;
+    }
+    const tempId = `msg-${Date.now()}`;
+    const isGroup = selectedChat?.type === "group";
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: tempId,
+        sender: notify ? "system" : "me", // Nếu là notify, sender là "system"
+        avatar: notify ? null : user.avatar || "/default-avatar.jpg",
+        text: notify ? messageNotify : input || null,
+        media: notify ? null : previewImage || null,
+        file_name: notify
+          ? null
+          : selectedFile?.file_name || fileData?.file_name || null,
+        time: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        type: notify ? "notify" : "text", // Gán type là "notify" nếu là thông báo
+        status: notify ? "sent" : "pending", // Notify không cần trạng thái pending
+        uploadProgress: notify ? null : 0, // Notify không cần uploadProgress
+      },
+    ]);
+
+
+    const msg = {
+      conversation_id: selectedChat?.conversation_id || null,
+      receiver_id: !isGroup
+        ? selectedChat?.list_user_id?.find(u => u.user_id !== user.id)?.user_id
+        : null,
+      message: notify ? messageNotify : input || null,
+      file_name:
+        selectedVideo?.file_name ||
+        selectedImage?.file_name ||
+        selectedFile?.file_name ||
+        fileData?.file_name ||
+        null,
+      file_type:
+        selectedVideo?.file_name ||
+        selectedImage?.file_type ||
+        selectedFile?.file_type ||
+        fileData?.file_type ||
+        null,
+      file_size:
+        selectedVideo?.file_name ||
+        selectedImage?.file_size ||
+        selectedFile?.file_size ||
+        fileData?.file_size ||
+        null,
+      file_data:
+        selectedVideo?.file_name ||
+        selectedImage?.file_data ||
+        selectedFile?.file_data ||
+        fileData?.file_data ||
+        null,
+      is_notify: notify,
+    };
+    const event = isGroup ? "send_group_message" : "send_private_message";
+    socket.emit(event, msg, () => { });
+    socket.on("message_sent", (msg) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === tempId
+            ? {
+              ...m,
+              id: msg.message_id,
+              text: msg.message || null,
+              media: msg.media || null,
+              file_name: msg.file_name || null,
+              type: notify ? "notify" : msg.type || "text",
+              time: new Date(msg.created_at).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+              status: "sent",
+            }
+            : m
+        )
+      );
+      fetchConversations();
+    });
+
+    setInput("");
+    setPreviewImage(null);
+    setSelectedFile(null);
+    setSelectedImage(null);
+    setSelectedVideo(null);
+    // if (!notify) simulateUpload(tempId);
+  };
+  const getProfile = async (userId) => {
+    try {
+      const response = await getUserById(userId);
+      if (response.status === "success") {
+        setUserProfile(response.user);
+        return response.user; // 🔁 trả về user để dùng sau
+      } else {
+        console.error("Failed to fetch user profile:", response.message);
+        return null;
+      }
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      return null;
+    }
+  }
+  const processPermissionUpdate = async (data, isSocketEvent = false) => {
+    const { permissions, user_id, conversation_id } = data;
+
+    const permissionName =
+      permissions === "owner"
+        ? "Trưởng nhóm"
+        : permissions === "moderator"
+          ? "Phó nhóm"
+          : "Thành viên";
+
+    const profile = await getProfile(user_id);
+
+    if (profile) {
+      const displayName = profile.fullname || "Người dùng";
+      sendMessage(null, true, `${displayName} đã trở thành ${permissionName}`);
+    }
+    // Cập nhật quyền trong danh sách chat hiện tại
+    if (!isSocketEvent && selectedChat?.conversation_id === conversation_id) {
+      setSelectedChat((prev) => {
+        const updatedList = prev.list_user_id?.map((member) =>
+          member.user_id === user_id ? { ...member, permission: permissions } : member
+        );
+        return { ...prev, list_user_id: updatedList };
+      });
+    }
+    setMembers((prev) =>
+      prev.map((member) => {
+        if (member.id === user_id) {
+          return { ...member, permission: permissions };
+        }
+        if (permissions === "owner" && user_id !== userMain.id) {
+          if (member.id === userMain.id) {
+            return { ...member, permission: "member" };
+          }
+        }
+        // Nếu không phải thành viên được cập nhật, giữ nguyên quyền
+        return member;
+      })
+    );
+
+    // Cập nhật trong groupSettings và members
+    setGroupSettings((prev) => {
+      const updatedMembers = prev.members.map((member) =>
+        member.id === user_id ? { ...member, permission: permissions } : member
+      );
+
+      let updatedLeaders = prev.leaders;
+      if (permissions === "owner" || permissions === "moderator") {
+        const isAlreadyLeader = prev.leaders.some((leader) => leader.id === user_id);
+        if (!isAlreadyLeader) {
+          const memberData = updatedMembers.find((m) => m.id === user_id);
+          if (memberData) {
+            const newLeader = { ...memberData, permissions };
+            updatedLeaders = [...prev.leaders, newLeader];
+          }
+        }
+      } else if (permissions === "member") {
+        updatedLeaders = prev.leaders.filter((leader) => leader.id !== user_id);
+      }
+
+      return {
+        ...prev,
+        members: updatedMembers,
+        leaders: updatedLeaders,
+      };
+    });
+    if (permissions === "owner") {
+      setDisabledModalGroup(true);
+      setIsGroupSettingsVisible(false);
     }
   };
 
@@ -160,19 +386,34 @@ const GroupList = () => {
           setInput={setInput}
           setChats={setChats}
           fetchConversations={fetchConversations}
-
+          setIsInfoGroupVisible={setIsInfoGroupVisible}
+          isInfoGroupVisible={isInfoGroupVisible}
+          isModalGroupVisible={isModalGroupVisible}
+          infoPermissions={infoPermissions}
+          isModalAddMemberVisible={isModalAddMemberVisible}
+          setIsModalAddMemberVisible={setIsModalAddMemberVisible}
         />
       )}
-      {openModalFriend && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-2 rounded-2xl shadow-lg max-w-md w-full">
-            <InfoFriend
-              userInfo={userInfo}
-              handleBack={handleBack}
-              step={step}
-            />
-          </div>
-        </div>
+      {isInfoGroupVisible && (
+        <InfoGroup
+          selectedChat={selectedChat}
+          onClose={() => setIsInfoGroupVisible(false)}
+          isGroupSettingsVisible={IsGroupSettingsVisible}
+          setIsGroupSettingsVisible={setIsGroupSettingsVisible}
+          setIsModalAddMemberVisible={setIsModalAddMemberVisible}
+          sendMessage={sendMessage}
+          getProfile={getProfile}
+          userProfile={userProfile}
+          userMain={userMain}
+          setUserMain={setUserMain}
+          disabledModalGroup={disabledModalGroup}
+          setDisabledModalGroup={setDisabledModalGroup}
+          members={members}
+          setMembers={setMembers}
+          groupSettings={groupSettings}
+          setGroupSettings={setGroupSettings}
+          processPermissionUpdate={processPermissionUpdate}
+        />
       )}
     </div>
   );

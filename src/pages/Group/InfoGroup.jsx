@@ -70,9 +70,6 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
         console.error("list_user_id không phải mảng:", selectedChat?.list_user_id);
         return;
       }
-      console.log("Fetch member");
-
-
       // Reset leaders và userOwner trước khi fetch lại
       setUserOwner(null);  // Reset userOwner (leader)
       setGroupSettings((prevSettings) => ({
@@ -80,12 +77,8 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
         leaders: [],  // Reset danh sách leaders
         members: [],
       }));
-
-      console.log(selectedChat.list_user_id);
-
-
       const memberData = await Promise.all(
-        selectedChat.list_user_id.map(async ({ user_id, permission }) => {
+        selectedChat?.list_user_id.map(async ({ user_id, permission }) => {
           try {
             const response = await getUserById(user_id);
             if (response.status === "success") {

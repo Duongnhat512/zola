@@ -9,6 +9,8 @@ import { getPrivateConversation } from "../../services/Conversation";
 import ChatWindow from "../../components/ChatApp/ChatWindow";
 import InfoFriend from "../../components/ChatApp/InfoFriend";
 import Swal from "sweetalert2";
+import { toast } from "react-toastify";
+import InfoGroup from "../Group/InfoGroup";
 
 const FriendList = () => {
   const [friends, setFriends] = useState([]);
@@ -22,17 +24,13 @@ const FriendList = () => {
   const [openModalFriend, setOpenModalFriend] = useState(false);
   const [step, setStep] = useState("info");
   const [chats, setChats] = useState([]);
-
-
+  const [isInfoGroupVisible, setIsInfoGroupVisible] = useState(false);
+  const [isModalGroupVisible, setIsModalGroupVisible] = useState(false);
+  const [infoPermissions, setInfoPermissions] = useState(null);
+  const [isModalAddMemberVisible, setIsModalAddMemberVisible] = useState(false);
   const handleBack = () => {
     setOpenModalFriend(false);
   }
-
-  const fetchConversations = () => {
-
-
-  }
-
   useEffect(() => {
     const fetchFriends = async () => {
       try {
@@ -82,8 +80,6 @@ const FriendList = () => {
 
   const groupedFriends = filteredFriends.reduce((acc, friend) => {
     const firstLetter = friend.fullname.charAt(0).toUpperCase();
-    console.log(firstLetter);
-
     if (!acc[firstLetter]) {
       acc[firstLetter] = [];
     }
@@ -91,15 +87,15 @@ const FriendList = () => {
     return acc;
   }, {});
 
-  const handleFindConversation = async (userId, friendId) => {
+  const handleFindConversation = async (userId, friend) => {
+    setUserInfo(friend);
     try {
-      const response = await getPrivateConversation(userId, friendId);
+      const response = await getPrivateConversation(userId, friend.id);
       console.log("Private conversation response:", response);
       if (response.status === "success") {
         // Handle successful conversation retrieval
         if (response.newConversation) {
           console.log("newConversation  : " + response.newConversation);
-
           setSelectedChat({
             conversation_id: response.newConversation.id,
             list_user_id: response.newConversation.members,
@@ -130,7 +126,7 @@ const FriendList = () => {
             )
           );
         }
-        fetchUserDetails(response.conversation, friendId); // Fetch user details for the conversation
+        fetchUserDetails(response.conversation, friend.id); // Fetch user details for the conversation
       } else {
         console.error("Error fetching conversation:", response.message);
       }
@@ -147,70 +143,57 @@ const FriendList = () => {
     //     list_message: [],
     //   };
     // }
-
-    try {
-      const updatedChats = await Promise.all(
-        chat.list_user_id.map(async (userId) => {
-          console.log("Fetching user details for userId:", userId);
-          try {
-            const response = await getUserById(userId);
-            if (response.status === "success") {
-              return {
-                ...chat,
-                user: response.user,
-              };
-            } else {
-              console.error(
-                "Không lấy được thông tin người dùng:",
-                response.message
-              );
-              return {
-                ...chat,
-                user: null,
-              };
-            }
-          } catch (error) {
-            console.error("Lỗi khi gọi API lấy user:", error);
-            return {
-              ...chat,
-              user: null,
-            };
-          }
-        })
-      );
-
-      console.log("Updated Chats:", updatedChats);
-
-      // Nếu bạn chỉ cần 1 user (ví dụ người còn lại trong cuộc trò chuyện), dùng cái đầu tiên
-      setSelectedChat(updatedChats[0]);
-    } catch (error) {
-      console.error("Lỗi khi xử lý danh sách chats:", error);
+    friends.forEach((friend) => {
+      if (friend.id === friendId) {
+        chat.name = friend.fullname;
+        chat.avatar = friend.avt;
+      }
     }
+    );
+    setSelectedChat(chat);
+    // try {
+    //   const updatedChats = await Promise.all(
+    //     chat.list_user_id.map(async (userId) => {
+    //       console.log("Fetching user details for userId:", userId);
+    //       try {
+    //         const response = await getUserById(userId);
+    //         if (response.status === "success") {
+    //           return {
+    //             ...chat,
+    //             user: response.user,
+    //           };
+    //         } else {
+    //           console.error(
+    //             "Không lấy được thông tin người dùng:",
+    //             response.message
+    //           );
+    //           return {
+    //             ...chat,
+    //             user: null,
+    //           };
+    //         }
+    //       } catch (error) {
+    //         console.error("Lỗi khi gọi API lấy user:", error);
+    //         return {
+    //           ...chat,
+    //           user: null,
+    //         };
+    //       }
+    //     })
+    //   );
+
+    //   console.log("Updated Chats:", updatedChats);
+
+    //   // Nếu bạn chỉ cần 1 user (ví dụ người còn lại trong cuộc trò chuyện), dùng cái đầu tiên
+    //   setSelectedChat(updatedChats);
+    // } catch (error) {
+    //   console.error("Lỗi khi xử lý danh sách chats:", error);
+    // }
   };
   const handleViewInfo = (friend) => {
     setUserInfo(friend);
     setOpenModalFriend(true); // nếu bạn đang dùng modal
   };
-
-  // const handleRemoveFriend = async (friend) => {
-  // try {
-  //   const response = await deleteFriend(user.id, friend.id);
-  //   console.log('Xóa bạn:', response);
-
-  //   if (response.code === 200) {
-  //     message.success('Đã xóa bạn thành công');
-
-  //     // Cập nhật lại danh sách bạn bè sau khi xóa
-  //     setFriends((prevFriends) =>
-  //       prevFriends.filter((f) => f.id !== friend.id)
-  //     );
-  //   } else {
-  //     message.error('Xóa bạn không thành công');
-  //   }
-  // } catch (error) {
-  //   console.error('Lỗi khi xóa bạn:', error);
-  //   message.error('Đã xảy ra lỗi khi xóa bạn');
-  // }
   const handleDeleteFriend = async (friend) => {
     const result = await Swal.fire({
       title: 'Xác nhận xóa bạn',
@@ -227,16 +210,16 @@ const FriendList = () => {
       try {
         const response = await deleteFriend(user.id, friend.id);
         if (response.code === 200) {
-          Swal.fire('Đã xóa!', 'Bạn đã xóa bạn thành công.', 'success');
+          toast.success('Đã xóa bạn thành công');
           setFriends((prevFriends) =>
             prevFriends.filter((f) => f.id !== friend.id)
           );
         } else {
-          Swal.fire('Thất bại', 'Xóa bạn không thành công.', 'error');
+          toast.error('Xóa bạn không thành công');
         }
       } catch (error) {
         console.error('Lỗi khi xóa bạn:', error);
-        Swal.fire('Lỗi', 'Đã xảy ra lỗi khi xóa bạn.', 'error');
+        toast.error('Đã xảy ra lỗi khi xóa bạn');
       }
     }
   };
@@ -287,7 +270,7 @@ const FriendList = () => {
                   return (
                     <List.Item className="flex items-center gap-4 justify-between">
                       <div
-                        onClick={() => handleFindConversation(user.id, friend.id)}
+                        onClick={() => handleFindConversation(user.id, friend)}
                         className="flex flex-1 items-center gap-2 hover:bg-gray-100 p-2 rounded cursor-pointer"
                       >
                         <Avatar size={40} icon={<UserOutlined />} src={friend.avt} />
@@ -312,22 +295,18 @@ const FriendList = () => {
           setMessages={setMessages}
           setInput={setInput}
           setChats={setChats}
-          fetchConversations={fetchConversations}
-
-        />
+          setIsInfoGroupVisible={setIsInfoGroupVisible}
+          isInfoGroupVisible={isInfoGroupVisible} />
       )}
-      {openModalFriend && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-2 rounded-2xl shadow-lg max-w-md w-full">
-            <InfoFriend
-              userInfo={userInfo}
-              handleBack={handleBack}
-              step={step}
+      {isInfoGroupVisible && (
+        <InfoGroup
+          selectedChat={selectedChat}
+          onClose={() => setIsInfoGroupVisible(false)}
+        // userInfo={userInfo}
+        // handleBack={handleBack}
+        // step={step}
+        />
 
-
-            />
-          </div>
-        </div>
       )}
     </div>
   );

@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Modal, Tabs, Input, List, Avatar, Button, Checkbox } from "antd";
 import { getConversationRecent } from "../../services/Conversation";
 import { useEffect } from "react";
+import { ArrowUpOutlined, MessageOutlined, MoreOutlined } from "@ant-design/icons";
+import { Dropdown, Menu } from "antd";
 
 const { TabPane } = Tabs;
 
@@ -126,4 +128,119 @@ const ShareMessageModal = ({
     );
 };
 
+const PinnedListBlock = ({
+    permission,
+    pinnedMessages = [],
+    onUnpin,
+    onViewMessage,
+    onViewAll,
+    onClose
+}) => {
+    return (
+        <div
+            style={{
+                background: "#f7f8fa",
+                border: "1px solid #e5e7eb",
+                borderRadius: 8,
+                overflow: "hidden",
+                marginTop: 24,
+            }}
+            className="sticky top-0 z-20 mb-4"
+        >
+            <div
+                style={{
+                    background: "#f1f2f5",
+                    padding: "12px 16px",
+                    fontWeight: 600,
+                    borderBottom: "1px solid #e5e7eb",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center"
+                }}
+            >
+                <div>Danh sách ghim ({pinnedMessages.length})</div>
+                <Button onClick={onClose}>
+                    Thu gọn <ArrowUpOutlined></ArrowUpOutlined>
+                </Button>
+            </div>
+
+
+            <List
+                dataSource={pinnedMessages}
+                renderItem={(item) => (
+                    <List.Item
+                        style={{
+                            background: "#fff",
+                            borderBottom: "1px solid #f0f0f0",
+                            padding: "12px 16px",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                        }}
+                    >
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <MessageOutlined style={{ color: "#1890ff", fontSize: 22 }} />
+                            <div>
+                                <div style={{ fontWeight: 500, color: "#222" }}>Tin nhắn</div>
+                                <div
+                                    style={{
+                                        color: "#444",
+                                        fontSize: 15,
+                                        marginTop: 2,
+                                        maxWidth: 260,
+                                        whiteSpace: "nowrap",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                    }}
+                                >
+                                    {item.senderName ? `${item.senderName}: ` : ""}
+                                    {item.text}
+                                </div>
+                            </div>
+                        </div>
+                        <Dropdown
+                            overlay={
+                                <Menu>
+                                    <Menu.Item key="view" onClick={() => onViewMessage(item)}>
+                                        Xem
+                                    </Menu.Item>
+                                    {permission !== "member" && (
+                                        <Menu.Item key="unpin" onClick={() => onUnpin(item)}>
+                                            Bỏ ghim
+                                        </Menu.Item>
+                                    )}
+                                </Menu>
+                            }
+                            trigger={["click"]}
+                            placement="bottomRight"
+                        >
+                            <MoreOutlined style={{ fontSize: 20, color: "#888", cursor: "pointer" }} />
+                        </Dropdown>
+                    </List.Item>
+                )}
+                locale={{ emptyText: <span style={{ color: '#888' }}>Chưa có tin nhắn ghim nào</span> }}
+                style={{
+                    background: "#fff",
+                    maxHeight: 320,
+                    overflowY: "auto",
+                }}
+            />
+
+            <div
+                style={{
+                    background: "#fff",
+                    borderTop: "1px solid #f0f0f0",
+                    textAlign: "center",
+                    padding: 10,
+                }}
+            >
+                <Button type="link" style={{ color: "#1890ff", fontWeight: 500 }} onClick={onViewAll}>
+                    Xem tất cả ở bảng tin nhóm &gt;
+                </Button>
+            </div>
+        </div>
+    );
+};
+
 export default ShareMessageModal;
+export { PinnedListBlock };
