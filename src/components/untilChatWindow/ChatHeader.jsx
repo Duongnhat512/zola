@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Avatar, Button, Modal } from "antd";
+import { Avatar, Button, Modal, Input, Tooltip } from "antd";
 import {
   UserOutlined,
   VideoCameraOutlined,
@@ -7,9 +7,13 @@ import {
   InfoCircleOutlined,
   EditTwoTone,
 } from "@ant-design/icons";
+import { useSelector } from "react-redux";
 import socket from "../../services/Socket";
+import VideoCall from "../ChatApp/VideoCall";
 
 const ChatHeader = ({ selectedChat, handleOpen, setIsInfoGroupVisible }) => {
+  const userMain = useSelector((state) => state.user.user);
+  const [showVideoCall, setShowVideoCall] = useState(false);
   const [isRenameModalVisible, setIsRenameModalVisible] = useState(false);
   const [newGroupName, setNewGroupName] = useState(selectedChat?.name || "");
   const [loading, setLoading] = useState(false);
@@ -19,19 +23,13 @@ const ChatHeader = ({ selectedChat, handleOpen, setIsInfoGroupVisible }) => {
     setIsRenameModalVisible(true);
   };
 
-  const handleRenameCancel = () => {
-    setIsRenameModalVisible(false);
-  };
-
   const handleRenameConfirm = async () => {
     setLoading(true);
-    // TODO: Call API or socket to update group name here
-    // Example: await updateGroupName(selectedChat.conversation_id, newGroupName);
     try {
       socket.emit("update_group_name", {
         conversation_id: selectedChat.conversation_id,
-        name: newGroupName
-      })
+        name: newGroupName,
+      });
     } catch (err) {
       console.error("Lỗi không đổi tên thành công");
     }
@@ -40,77 +38,79 @@ const ChatHeader = ({ selectedChat, handleOpen, setIsInfoGroupVisible }) => {
   };
 
   return (
-    <div className="bg-white p-4 shadow flex items-center justify-between">
+    <div className="bg-white px-4 py-3 shadow-sm flex items-center justify-between border-b">
       <div className="flex items-center">
-        <Avatar
-          src={selectedChat?.avatar || "/default-avatar.jpg"}
-          size="large"
-          className="mr-3"
-        />
-        <div>
-          <h2 id="name" className="font-semibold">{selectedChat?.name}
-
-            {selectedChat?.type === "group" ? (
-              <Button className="border-0 text-xs" onClick={handleUpdateNameGroup}>
-                <EditTwoTone />
-              </Button>
-
-            ) : (
-              <div></div>
+        <Avatar src={selectedChat?.avatar || "/default-avatar.jpg"} size={45} />
+        <div className="ml-3">
+          <div className="flex items-center">
+            <h2 className="font-medium text-base mr-2">{selectedChat?.name}</h2>
+            {selectedChat?.type === "group" && (
+              <Tooltip title="Đổi tên nhóm">
+                <EditTwoTone onClick={handleUpdateNameGroup} className="cursor-pointer" />
+              </Tooltip>
             )}
-          </h2>
-          {selectedChat?.list_user_id?.length > 2 ? (
-            <p className="text-sm text-gray-500">
-              {selectedChat?.list_user_id?.length} thành viên
-            </p>
-          ) : (
-            <p className="text-sm text-gray-500">Vừa truy cập</p>
-          )}
+          </div>
+          <p className="text-xs text-gray-500">
+            {selectedChat?.list_user_id?.length > 2
+              ? `${selectedChat?.list_user_id?.length} thành viên`
+              : "Vừa truy cập"}
+          </p>
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <Button className="flex gap-2 ml-2" onClick={handleOpen}>
-          <UserOutlined className="text-gray-500 text-lg cursor-pointer hover:text-blue-500" />
-        </Button>
-        <button className="text-gray-600 hover:text-blue-500">
-          <VideoCameraOutlined className="text-xl" title="Video call" />
-        </button>
-        <button className="text-gray-600 hover:text-blue-500">
-          <SearchOutlined className="text-xl" title="Tìm kiếm" />
-        </button>
-        <button
-          className="text-gray-600 hover:text-blue-500"
-          onClick={() => setIsInfoGroupVisible((prev) => !prev)}
-        >
-          <InfoCircleOutlined className="text-xl" title="Thông tin hộp thoại" />
-        </button>
+      <div className="flex items-center space-x-3">
+        <Tooltip title="Thành viên">
+          <Button type="text" icon={<UserOutlined />} onClick={handleOpen} />
+        </Tooltip>
+        <Tooltip title="Video Call">
+          <Button type="text" icon={<VideoCameraOutlined />} onClick={() => setShowVideoCall(true)} />
+        </Tooltip>
+        <Tooltip title="Tìm kiếm">
+          <Button type="text" icon={<SearchOutlined />} />
+        </Tooltip>
+        <Tooltip title="Thông tin hội thoại">
+          <Button type="text" icon={<InfoCircleOutlined />} onClick={() => setIsInfoGroupVisible((prev) => !prev)} />
+        </Tooltip>
       </div>
+
       <Modal
         title="Đổi tên nhóm"
         open={isRenameModalVisible}
-        onCancel={handleRenameCancel}
+        onCancel={() => setIsRenameModalVisible(false)}
         onOk={handleRenameConfirm}
         okText="Xác nhận"
         cancelText="Hủy"
         confirmLoading={loading}
         centered
       >
-        <Avatar
-          src={selectedChat?.avatar || "/default-avatar.jpg"}
-          size={100}
-          className="mx-auto mb-4"
-        />
-        <div className="mb-3 text-black font-semibold text-base text-center">
-          Bạn có chắc chắn muốn đổi tên nhóm, khi xác nhận tên nhóm mới sẽ hiển thị với tất cả thành viên.
+        <div className="text-center">
+          <Avatar src={selectedChat?.avatar || "/default-avatar.jpg"} size={80} className="mx-auto mb-4" />
+          <p className="text-gray-700 mb-3">
+            Tên nhóm mới sẽ hiển thị với tất cả thành viên.
+          </p>
+          <Input
+            value={newGroupName}
+            onChange={(e) => setNewGroupName(e.target.value)}
+            placeholder="Nhập tên nhóm mới"
+          />
         </div>
-        <input
-          className="w-full border rounded px-3 py-2 text-center text-base"
-          value={newGroupName}
-          onChange={e => setNewGroupName(e.target.value)}
-          autoFocus
-        />
       </Modal>
+
+      {showVideoCall && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="bg-white p-5 rounded-xl shadow-lg w-[480px]">
+            <VideoCall
+              userId={userMain.id}
+              peerId={
+                selectedChat?.list_user_id?.find((u) => u.user_id !== userMain.id)?.user_id
+              }
+            />
+            <Button onClick={() => setShowVideoCall(false)} block className="mt-4">
+              Đóng
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

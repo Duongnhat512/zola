@@ -1,20 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { SmileOutlined, SendOutlined } from "@ant-design/icons";
-import {
-  EllipsisOutlined,
-  CopyOutlined,
-  DeleteOutlined,
-  UndoOutlined,
-} from "@ant-design/icons";
 import { Input, Avatar, Button, Dropdown, Menu, Image } from "antd";
 import {
-  UserOutlined,
-  SearchOutlined,
   VideoCameraOutlined,
-  InfoCircleOutlined,
   PictureOutlined,
   PaperClipOutlined,
-  FileTextOutlined,
 } from "@ant-design/icons";
 import socket from "../../services/Socket";
 import { useSelector } from "react-redux";
@@ -38,6 +28,7 @@ import ChatHeader from "../untilChatWindow/ChatHeader";
 import MessageList from "../untilChatWindow/MessageList";
 import { toast } from "react-toastify";
 import ShareMessageModal from "../untilChatWindow/ShareMessage";
+import VideoCall from "./VideoCall";
 const ChatWindow = ({
   selectedChat,
   setSelectedChat,
@@ -51,6 +42,7 @@ const ChatWindow = ({
   setMessages
 
 }) => {
+  const [showVideoCall, setShowVideoCall] = useState(false);
   const selectedChatRef = useRef();
   const [emojiList, setEmojiList] = useState({});
   const [isEmojiPickerVisible, setIsEmojiPickerVisible] = useState(false);
