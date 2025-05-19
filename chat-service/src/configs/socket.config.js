@@ -5,6 +5,7 @@ const conversationSocket = require("../socket/conversation.socket");
 const redisClient = require("./redis.config");
 const UserCacheService = require("../services/user-cache.service");
 const callSocket = require("../socket/call.socket");
+const friendSocket = require("../socket/friend.socket");
 
 function setupSocket(server) {
   const io = new Server(server, {
@@ -39,6 +40,7 @@ function setupSocket(server) {
     messageSocket(io, socket);
     conversationSocket(io, socket);
     callSocket(io, socket);
+    friendSocket(io, socket);
 
     // Disconnect
     socket.on("disconnect", async () => {

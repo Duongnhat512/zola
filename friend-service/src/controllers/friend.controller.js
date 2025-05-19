@@ -343,7 +343,8 @@ const FriendController = {
         message: "Có lỗi khi tìm kiếm bạn bè",
       });
     }
-  }
+  },
+  
 };
 
 module.exports = FriendController;

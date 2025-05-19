@@ -514,6 +514,7 @@ ConversationController.removeMember = async (socket, data) => {
       message: `Thành viên đã bị xóa khỏi nhóm`,
       user_id: user_id,
       conversation_id: conversation_id,
+      status: "success",
     });
 
     // Thông báo cho tất cả thành viên trong nhóm
@@ -868,16 +869,41 @@ ConversationController.getGroupConversationByUserId = async (req, res) => {
   if (!user_id) {
     return res.status(400).json({ message: "Thiếu user_id" });
   }
+  const conversationIds = await redisClient.zrevrange(`chatlist:${user_id}`, 0, 49);    
+    if (conversationIds.length === 0) {
+      return socket.emit("conversations", {
+        status: "success",
+        message: "Không có hội thoại nào",
+        conversations: [],
+      });
+    }
 
   try {
     const conversations = await ConversationModel.getGroupConversationByUserId(
       user_id
     );
 
+    const permissionsList = await getMembersAndPermissions(conversationIds, redisClient, UserCacheService);
+
+    const result = conversations.map((conversation, idx) => {
+      let name = conversation.name || "";
+      let avt = conversation.avatar || "";
+      return {
+        ...conversation,
+        id: conversation.id,
+        name,
+        avatar: avt,
+        list_user_id: permissionsList[idx],
+        type: conversation.type,
+        created_at: conversation.created_at,
+        created_by: conversation.created_by,
+      };
+    });   
+    
     res.status(200).json({
       status: "success",
       message: "Lấy danh sách hội thoại thành công",
-      conversations,
+      conversations: result,
     });
   } catch (error) {
     console.error("Có lỗi khi lấy danh sách hội thoại:", error);
@@ -969,6 +995,7 @@ ConversationController.getConversationsRecent = async (req, res) => {
 
     // Lấy thông tin hội thoại
     const conversations = await ConversationModel.getConversationsByIds(conversationIds);
+
     // Trả về kết quả
     const result = conversations.map((conversation, idx) => ({
       conversation_id: conversation.id,
@@ -987,7 +1014,4 @@ ConversationController.getConversationsRecent = async (req, res) => {
     res.status(500).json({ message: "Có lỗi khi lấy danh sách hội thoại gần đây" });
   }
 }
-
-
-
 module.exports = ConversationController;
