@@ -7,6 +7,9 @@ const MessageActionModal = ({
   onRevoke,
   onDelete,
   styles,
+  navigation,
+  message,
+  conversations,
 }) => {
   return (
     <Modal visible={visible} transparent animationType="fade">
@@ -20,7 +23,11 @@ const MessageActionModal = ({
           >
             <Text style={styles.modalOptionText}>Thu hồi</Text>
           </TouchableOpacity>
-
+          <TouchableOpacity onPress={()=>{
+            navigation.navigate('Forward',{message:message,conversations:conversations});
+          }}>
+            <Text style={styles.modalOptionText}>Chuyển tiếp</Text>
+            </TouchableOpacity>    
           <TouchableOpacity
             onPress={() => {
               onDelete();

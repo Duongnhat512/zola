@@ -372,9 +372,16 @@ const FriendRequestModal = ({ visible, onClose }) => {
   );
   
 const renderFriendItem = ({ item }) => (
-    <TouchableOpacity onPress={() => navigation.navigate('ChatRoom', { chats:{name: item.friendInfo.fullname,type:"private",avatar:item.friendInfo.avt,friend_id:item.friendInfo.id} })}>
-
-
+    <TouchableOpacity onPress={() => {
+      
+      const matchedConversations = conversation.filter((c) =>
+  c.type === 'private'&&c.name===item.friendInfo.fullname
+);   
+    if(matchedConversations==null)
+    {
+      navigation.navigate('ChatRoom', { chats:matchedConversations[0]})
+    }
+}}>
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 15, borderBottomWidth: 1, borderColor: "#eee" }}>
       <Image
         source={{ uri: item.friendInfo.avt }}

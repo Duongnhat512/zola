@@ -33,7 +33,7 @@ dayjs.extend(relativeTime);
 dayjs.locale('vi');
 
 const ChatRoomScreen = ({ route, navigation }) => {
-  const { chats } = route.params;
+  const { chats,conversations } = route.params;
   const currentUser = useSelector((state) => state.user.user);
   const flatListRef = useRef(null);
   const [messages, setMessages] = useState([]);
@@ -48,6 +48,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
   const [selectedVideo, setSelectedVideo] = useState(null);
   const isValidInput = inputText.trim().length > 0 || file !== null;
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [selectText,setSelectText] = useState('');
   const inputRef = useRef(null);
 
 
@@ -283,6 +284,7 @@ const getOriginalFileName = (fileName) => {
           setSelectedMessage(item);
           setModalVisible(true);
         }
+        setSelectText(item.text);
       }}
       disabled={item.type === 'notify'} // Không cho long press notify
     >
@@ -380,7 +382,7 @@ const getOriginalFileName = (fileName) => {
               });
             }
               else {
-              navigation.navigate("EditChat",{ conversation:chats,
+              navigation.navigate("EditChat",{  conversation: chats,
                 socket: socket,
                 currentUserId: currentUser.id,});
             }
@@ -509,7 +511,10 @@ const getOriginalFileName = (fileName) => {
             deleteMessage(selectedMessage.id);
             setModalVisible(false);
           }}
+          navigation={navigation}
           styles={styles}
+          message={selectedMessage}
+          conversations={conversations}
         />
       </KeyboardAvoidingView>
       </TouchableWithoutFeedback>

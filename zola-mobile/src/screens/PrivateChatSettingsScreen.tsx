@@ -7,30 +7,40 @@ import {
   Image,
   Alert,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { useSelector } from 'react-redux';
+import { sendFriendRequest, getFriendRequests, getSentFriendRequests, getListFriends,acceptFriendRequest,rejectFriendRequest} from '../services/FriendService';
+import * as ImageManipulator from 'expo-image-manipulator';
 import Feather from 'react-native-vector-icons/Feather';
-
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useState,useEffect  } from 'react';
 
 import {GetUserById} from '../services/UserService';
 export default function PrivateChatSettingsScreen({ navigation  }) {
   const route = useRoute();
-  const { friendProfile } = route.params || {};
+  const { conversation, socket, currentUserId } = route.params || {};
   const [friend,setFriend] = useState({});
-  if (!friendProfile) {
+  const user = useSelector((state: any) => state.user.user);
+  const [friendList, setFriendList] = useState([]);
+  const [memberDetails, setMemberDetails] = useState({fullname:'',phone:''});
+  const [selectedFriends, setSelectedFriends] = useState([]);
+  if (!conversation) {
     return (
       <View style={styles.centered}>
         <Text>Không tìm thấy thông tin người dùng.</Text>
       </View>
     );
   }
-
+  const fetchMemberDetails = async () => {
+    const fetched = await GetUserById(conversation.list_user_id[0].user_id);
+    setMemberDetails(fetched?.user);
+  };
   const handleBlockUser = () => {
-    Alert.alert('Đã chặn người dùng', `${friendProfile.fullname} đã bị chặn.`);
+    Alert.alert('Đã chặn người dùng', `${memberDetails.fullname||'lp'} đã bị chặn.`);
   };
 
   const handleReportUser = () => {
-    Alert.alert('Đã báo cáo', `Bạn đã báo cáo ${friendProfile.fullname}.`);
+    Alert.alert('Đã báo cáo', `Bạn đã báo cáo ${memberDetails.fullname||'ko'}.`);
   };
 
   const handleLeaveChat = () => {
@@ -43,12 +53,9 @@ export default function PrivateChatSettingsScreen({ navigation  }) {
       },
     ]);
   };
- useEffect(() => {
-        //fetchFriendData();
-       // const data = GetUserById(friendProfile);
-       // setFriend(data);
-     //  Alert.alert(friendProfile);
-      }, []);
+  useEffect(() => {
+    fetchMemberDetails();
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -57,11 +64,11 @@ export default function PrivateChatSettingsScreen({ navigation  }) {
       </TouchableOpacity>
 
       <Image
-        source={{ uri: friendProfile.avt }}
+        source={{ uri: memberDetails.avt }}
         style={styles.avatar}
       />
-      <Text style={styles.name}>{friendProfile.fullname}</Text>
-      <Text style={styles.phone}>{friendProfile.phone || 'Không có số điện thoại'}</Text>
+      <Text style={styles.name}>{memberDetails.fullname||'khong co ten'}</Text>
+      <Text style={styles.phone}>{memberDetails.username || 'Không có số điện thoại'}</Text>
 
       <View style={styles.options}>
         <TouchableOpacity onPress={handleBlockUser} style={styles.optionButton}>
