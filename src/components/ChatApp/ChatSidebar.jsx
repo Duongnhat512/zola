@@ -1,35 +1,82 @@
-import React, { useState } from "react";
-import { Input, Avatar, Badge } from "antd";
+import React, { useEffect, useState } from "react";
+import { Input, Avatar, Badge, Dropdown, Menu } from "antd";
 import {
   SearchOutlined,
   UserOutlined,
   UsergroupAddOutlined,
+  MoreOutlined,
 } from "@ant-design/icons";
 import AddFriendModal from "./AddFriendModal";
 import AddGroupModal from "./AddGroupModal";
+import socket from "../../services/Socket";
+import { useSelector } from "react-redux";
+import { Modal, message as AntMessage } from "antd";
 
-const ChatSidebar = ({ chats, openChat, isModalGroupVisible, setIsModalGroupVisible }) => {
+const ChatSidebar = ({
+  chats,
+  openChat,
+  isModalGroupVisible,
+  setIsModalGroupVisible,
+  setChats,
+  selectedChat, // Thêm prop này
+  setMessages,   // Thêm prop này
+  setSelectedChat
+}) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const openModal = () => {
-    setIsModalVisible(true);
-  };
+  const [hoveredId, setHoveredId] = useState(null);
+  const user = useSelector(state => state.user.user); // Lấy user từ redux
 
-  const closeModal = () => {
-    setIsModalVisible(false);
+  const openModal = () => setIsModalVisible(true);
+  const closeModal = () => setIsModalVisible(false);
+  const openModalGroup = () => setIsModalGroupVisible(true);
+  const closeModalGroup = () => setIsModalGroupVisible(false);
+  useEffect(() => {
+    socket.on("delete_history_for_me_success", ({ conversation_id }) => {
+      AntMessage.success("Đã xóa lịch sử hội thoại!");
+      if (setChats) {
+        setChats(prev => prev.filter(chat => chat.conversation_id !== conversation_id));
+      }
+    });
+    return () => socket.off("delete_history_for_me_success");
+  }, [setChats]);
+  const handleDeleteChat = (chat) => {
+    if (selectedChat && selectedChat.conversation_id === chat.conversation_id) {
+      if (setMessages) setMessages([]);
+      if (setSelectedChat) setSelectedChat(null);
+    }
+    socket.emit("delete_history_for_me", {
+      user_id: user.id,
+      conversation_id: chat.conversation_id,
+    });
   };
+  // Dropdown menu
+  const getMenu = (chat) => (
+    <Menu>
+      <Menu.Item key="unread" onClick={e => { e.domEvent.stopPropagation(); /* Đánh dấu chưa đọc */ }}>
+        Đánh dấu chưa đọc
+      </Menu.Item>
+      <Menu.Item key="hide" onClick={e => { e.domEvent.stopPropagation(); /* Ẩn trò chuyện */ }}>
+        Ẩn trò chuyện
+      </Menu.Item>
+      <Menu.Item
+        key="delete"
+        danger
+        onClick={e => {
+          handleDeleteChat(chat);
+        }}
+      >
+        Xóa hộp thoại
+      </Menu.Item>
+    </Menu>
+  );
 
-  const openModalGroup = () => {
-    setIsModalGroupVisible(true);
-  };
-
-  const closeModalGroup = () => {
-    setIsModalGroupVisible(false);
-  };
   return (
     <div
       className="w-1/4 border-r border-gray-300 flex flex-col bg-white shadow-lg "
       style={{ width: "320px" }}
     >
+      <button onClick={() => handleDeleteChat(chats[0])}>Test Delete Modal</button>
+
       {/* Header */}
       <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
         <Input
@@ -52,8 +99,6 @@ const ChatSidebar = ({ chats, openChat, isModalGroupVisible, setIsModalGroupVisi
         <div className="flex gap-2 ml-2" onClick={openModalGroup}>
           <UsergroupAddOutlined className="text-gray-500 text-lg cursor-pointer hover:text-blue-500" />
         </div>
-
-        {/* Add Group Modal */}
         {isModalGroupVisible && (
           <AddGroupModal
             visible={isModalGroupVisible}
@@ -67,16 +112,17 @@ const ChatSidebar = ({ chats, openChat, isModalGroupVisible, setIsModalGroupVisi
         {chats.map((chat) => (
           <div
             key={chat?.conversation_id}
-            className="px-4 py-3 border-b border-gray-100 hover:bg-gray-100 cursor-pointer transition-all duration-200 "
+            className="px-4 py-3 border-b border-gray-100 hover:bg-gray-100 cursor-pointer transition-all duration-200"
             onClick={() => openChat(chat)}
+            onMouseEnter={() => setHoveredId(chat.conversation_id)}
+            onMouseLeave={() => setHoveredId(null)}
             style={{
               height: "100px",
               margin: "0 auto",
               display: "flex",
-
             }}
           >
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center w-full">
               <div className="flex items-center gap-3">
                 <Badge count={chat?.unread_count || 0} size="small">
                   <Avatar
@@ -96,21 +142,36 @@ const ChatSidebar = ({ chats, openChat, isModalGroupVisible, setIsModalGroupVisi
                       <span className="text-gray-400">Đã gửi một tệp</span>
                     ) : chat?.last_message?.type === "video" ? (
                       <span className="text-gray-400">Đã gửi một video</span>
-                    ) :
-                      <span className="text-gray-400">{chat.last_message?.message ? "Đã gửi một tin nhắn" : "Không có tin nhắn"}</span>}
+                    ) : (
+                      <span className="text-gray-400">
+                        {chat.last_message?.message
+                          ? "Đã gửi một tin nhắn"
+                          : "Không có tin nhắn"}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
               <div style={{ fontSize: "11px" }} className="text-gray-400 whitespace-nowrap">
-                {chat?.last_message?.created_at
-                  ? new Date(chat?.last_message?.created_at).toLocaleString(
-                    "vi-VN",
-                    {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    }
-                  )
-                  : ""}
+                {hoveredId === chat.conversation_id ? (
+                  <Dropdown overlay={getMenu(chat)} trigger={['click']}>
+                    <span
+                      onClick={e => e.stopPropagation()} // Thêm dòng này để ngăn click lan lên cha
+                    >
+                      <MoreOutlined className="text-xl cursor-pointer" />
+                    </span>
+                  </Dropdown>
+                ) : (
+                  chat?.last_message?.created_at
+                    ? new Date(chat?.last_message?.created_at).toLocaleString(
+                      "vi-VN",
+                      {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      }
+                    )
+                    : ""
+                )}
               </div>
             </div>
           </div>

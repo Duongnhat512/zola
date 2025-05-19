@@ -9,6 +9,8 @@ import { login, setLoading } from "./redux/UserSlice";
 import Register from "./pages/Register/Register";
 import { Spin } from "antd";
 import { LoadingOutlined } from "@ant-design/icons";
+import "antd/dist/reset.css";
+
 
 function App() {
   const dispatch = useDispatch();
