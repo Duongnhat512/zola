@@ -29,7 +29,7 @@ const conversationSocket = (io, socket) => {
 
     socket.on("create_group", async (data) => {
         console.log("Nhận yêu cầu tạo nhóm từ client:", data);
-        try{
+        try {
             await conversationController.createGroup(socket, data);
         } catch (error) {
             console.error("Lỗi khi tạo nhóm:", error);
@@ -146,7 +146,17 @@ const conversationSocket = (io, socket) => {
             socket.emit("error", { message: "Lỗi khi xóa redis" });
         }
     });
-
+    socket.on("delete_history_for_me", async (data) => {
+        // data: { user_id, conversation_id }
+        console.log("Nhận yêu cầu xóa lịch sử hội thoại phía tôi:", data);
+        try {
+            await conversationController.deleteHistoryForUser(socket, data);
+            socket.emit("delete_history_for_me_success", { message: "Đã xóa lịch sử hội thoại ở phía bạn" });
+        } catch (error) {
+            console.error("Lỗi khi xóa lịch sử hội thoại phía tôi:", error);
+            socket.emit("error", { message: "Lỗi khi xóa lịch sử hội thoại phía tôi" });
+        }
+    });
 };
 
 module.exports = conversationSocket;
