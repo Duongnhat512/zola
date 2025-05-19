@@ -24,6 +24,7 @@ const MessageActionModal = ({
             <Text style={styles.modalOptionText}>Thu hồi</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={()=>{
+            onClose();
             navigation.navigate('Forward',{message:message,conversations:conversations});
           }}>
             <Text style={styles.modalOptionText}>Chuyển tiếp</Text>

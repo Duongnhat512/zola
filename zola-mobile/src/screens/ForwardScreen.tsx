@@ -50,6 +50,7 @@ const handleForward = () => {
           onPress: () => navigation.goBack(),
         },
       ]);
+      
     }
   });
 
@@ -76,7 +77,9 @@ const handleForward = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Chia sẻ</Text>
-
+      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Text style={styles.backText}>←</Text>
+        </TouchableOpacity>
       <FlatList
         data={conversations}
         renderItem={renderItem}
@@ -139,6 +142,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginRight: 8,
   },
+    backButton: { padding: 8 },
+backText: { fontSize: 24 },
   input: {
     flex: 1,
     height: 40,
