@@ -758,7 +758,17 @@ const HomeDetails = () => {
     </div>
   ) : (
     <div className="flex h-screen w-full bg-gray-100">
-      <ChatSidebar chats={chats} openChat={openChat} setIsModalGroupVisible={setIsModalGroupVisible} isModalGroupVisible={isModalGroupVisible} />
+      <ChatSidebar
+        chats={chats}
+        openChat={openChat}
+        setIsModalGroupVisible={setIsModalGroupVisible}
+
+        isModalGroupVisible={isModalGroupVisible}
+        setChats={setChats}
+        selectedChat={selectedChat} // Thêm prop này
+        setMessages={setMessages}   // Thêm prop này
+        setSelectedChat={setSelectedChat} // Thêm prop này
+      />
       <ChatWindow
         selectedChat={selectedChat}
         setSelectedChat={setSelectedChat}

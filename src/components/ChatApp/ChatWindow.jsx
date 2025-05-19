@@ -84,6 +84,8 @@ const ChatWindow = ({
     if (!selectedChat?.conversation_id) return;
     socket.emit("get_messages", {
       conversation_id: selectedChat.conversation_id,
+      user_id: userMain.id, // Thêm dòng này để BE lọc đúng
+
     });
 
     socket.on("list_messages", (data) => {
