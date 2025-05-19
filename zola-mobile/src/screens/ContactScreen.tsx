@@ -378,7 +378,7 @@ const renderFriendItem = ({ item }) => (
   c.type === 'private'&&c.name===item.friendInfo.fullname
 );   
    
-    if(matchedConversations==undefined)
+    if(matchedConversations[0]==undefined)
     {
 
     }
