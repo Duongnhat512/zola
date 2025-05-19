@@ -380,7 +380,9 @@ const getOriginalFileName = (fileName) => {
               });
             }
               else {
-              navigation.navigate("EditChat",{ friendProfile:chats});
+              navigation.navigate("EditChat",{ conversation:chats,
+                socket: socket,
+                currentUserId: currentUser.id,});
             }
             }}
             style={styles.backButton}
