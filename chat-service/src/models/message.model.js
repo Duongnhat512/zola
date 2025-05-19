@@ -4,7 +4,7 @@ const { v4: uuidv4 } = require("uuid");
 const tableName = "messages";
 
 const hiddenMessageTable = "hidden_messages";
-
+const deleteHistoryTable = "deleted_history";
 const MessageModel = {
     /**
      * Gửi text message
@@ -43,7 +43,26 @@ const MessageModel = {
             throw new Error("Error sending message");
         }
     },
+    setDeleteHistory: async (user_id, conversation_id) => {
+        const params = {
+            TableName: deleteHistoryTable,
+            Key: { user_id, conversation_id },
+            UpdateExpression: "set last_deleted_at = :time",
+            ExpressionAttributeValues: {
+                ":time": new Date().toISOString(),
+            },
+        };
+        await dynamodb.update(params).promise();
+    },
 
+    getDeleteHistory: async (user_id, conversation_id) => {
+        const params = {
+            TableName: deleteHistoryTable,
+            Key: { user_id, conversation_id },
+        };
+        const data = await dynamodb.get(params).promise();
+        return data.Item ? data.Item.last_deleted_at : null;
+    },
     /**`
      * Lấy danh sách tin nhắn trong cuộc hội thoại theo conversation_id
      * @param {String} conversation_id 
@@ -68,6 +87,14 @@ const MessageModel = {
             let messages = data.Items;
 
             if (user_id) {
+                console.log("aaa",user_id, conversation_id);
+                
+                const lastDeletedAt = await MessageModel.getDeleteHistory(user_id, conversation_id);
+                console.log("lastDeletedAt", lastDeletedAt);
+                
+                if (lastDeletedAt) {
+                    messages = messages.filter(msg => !msg.created_at || msg.created_at > lastDeletedAt);
+                }
                 const hiddenParams = {
                     TableName: hiddenMessageTable,
                     IndexName: "user-id-index",
@@ -130,8 +157,8 @@ const MessageModel = {
     },
 
     getMessageById: async (message_id) => {
-       console.log(message_id + "aaaaaaaaa");
-       
+        console.log(message_id + "aaaaaaaaa");
+
         const params = {
             TableName: tableName,
             Key: {
@@ -143,7 +170,7 @@ const MessageModel = {
 
             const message = data.Item;
 
-            if(message?.is_deleted) {
+            if (message?.is_deleted) {
                 return {
                     ...message,
                     message: "Tin nhắn đã thu hồi",
@@ -223,17 +250,17 @@ const MessageModel = {
                     id: message_id
                 }
             };
-            
+
             const messageData = await dynamodb.get(getMessage).promise();
-            
+
             if (!messageData.Item) {
                 throw new Error("Tin nhắn không tồn tại");
             }
-            
+
             if (messageData.Item.sender_id !== user_id) {
                 throw new Error("Bạn không có quyền xóa tin nhắn này");
             }
-            
+
             // 2. Nếu message thuộc về user thì thực hiện xóa
             const queryParams = {
                 TableName: tableName,
@@ -246,16 +273,16 @@ const MessageModel = {
                     ":updated_at": new Date().toISOString(),
                 }
             };
-            
+
             await dynamodb.update(queryParams).promise();
-            return { conversation_id: messageData.Item.conversation_id};
+            return { conversation_id: messageData.Item.conversation_id };
         }
         catch (error) {
             console.error("Error deleting message:", error);
             throw new Error(error.message || "Error deleting message");
         }
     },
-    
+
     setHiddenMessage: async (user_id, message_id) => {
         const params = {
             TableName: hiddenMessageTable,
@@ -307,7 +334,7 @@ const MessageModel = {
         };
         try {
             await dynamodb.update(params).promise();
-            
+
             // Trả về thông tin của tin nhắn đã ghim
             const getMessageParams = {
                 TableName: tableName,
@@ -347,7 +374,8 @@ const MessageModel = {
             console.error("Error unpinning message:", error);
             throw new Error("Error unpinning message");
         }
-    }
+    },
+
 
 }
 
