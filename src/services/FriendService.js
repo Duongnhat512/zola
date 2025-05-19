@@ -2,7 +2,7 @@ import axios from "../utils/customize-axios";
 
 export const getFriendList = async (userId) => {
   try {
-    const response = await axios.get(`/friend-service/friends/${userId}`);
+    const response = await axios.get(`/chat-service/friends/${userId}`);
     return response;
   } catch (error) {
     console.error("Failed to get friend list", error);
@@ -12,7 +12,7 @@ export const getFriendList = async (userId) => {
 export const getRequestFriend = async (userId) => {
   try {
     const response = await axios.get(
-      `/friend-service/friends/requests/${userId}`
+      `/chat-service/friends/requests/${userId}`
     );
     return response;
   } catch (error) {
@@ -22,7 +22,7 @@ export const getRequestFriend = async (userId) => {
 };
 export const createFriendRequest = async (userId, friendId) => {
   try {
-    const response = await axios.post("/friend-service/friends/request", {
+    const response = await axios.post("/chat-service/friends/request", {
       user_id: userId,
       user_friend_id: friendId,
     });
@@ -39,7 +39,7 @@ export const createFriendRequest = async (userId, friendId) => {
 export const getReceivedFriendRequests = async (userId) => {
   try {
     const response = await axios.get(
-      `/friend-service/friends/sentRequests/${userId}`
+      `/chat-service/friends/sentRequests/${userId}`
     );
     return response;
   } catch (error) {
@@ -51,7 +51,7 @@ export const getReceivedFriendRequests = async (userId) => {
 export const acceptFriendRequest = async (userId, friendId) => {
   try {
     const response = await axios.put(
-      "/friend-service/friends/accept",
+      "/chat-service/friends/accept",
       {
         user_id: userId,
         user_friend_id: friendId,
@@ -75,7 +75,7 @@ export const acceptFriendRequest = async (userId, friendId) => {
 export const getListFriend = async (userId) => {
   try {
     const response = await axios.get(
-      `/friend-service/friends/listFriend/${userId}`
+      `/chat-service/friends/listFriend/${userId}`
     );
     return response;
   } catch (error) {
@@ -87,7 +87,7 @@ export const getListFriend = async (userId) => {
 export const rejectFriendRequest = async (userId, friendId) => {
   try {
     const response = await axios.put(
-      `/friend-service/friends/reject?user_id=${userId}&user_friend_id=${friendId}`
+      `/chat-service/friends/reject?user_id=${userId}&user_friend_id=${friendId}`
     );
     return response;
   } catch (error) {
@@ -99,7 +99,7 @@ export const rejectFriendRequest = async (userId, friendId) => {
 export const getRequestByUserIdAndUserFriendId = async (userId, friendId) => {
   try {
     const response = await axios.get(
-      `/friend-service/friends/getRequestByUserIdAndUserFriendId?user_id=${userId}&user_friend_id=${friendId}`
+      `/chat-service/friends/getRequestByUserIdAndUserFriendId?user_id=${userId}&user_friend_id=${friendId}`
     );
     return response;
   } catch (error) {
@@ -111,7 +111,7 @@ export const getRequestByUserIdAndUserFriendId = async (userId, friendId) => {
 export const cancelFriendRequest = async (userId, friendId) => {
   try {
     const response = await axios.delete(
-      `/friend-service/friends/deleteRequest?user_id=${userId}&user_friend_id=${friendId}`
+      `/chat-service/friends/deleteRequest?user_id=${userId}&user_friend_id=${friendId}`
     );
     return response;
   } catch (error) {
@@ -122,7 +122,7 @@ export const cancelFriendRequest = async (userId, friendId) => {
 export const deleteFriend = async (userId, friendId) => {
   try {
     const response = await axios.delete(
-      `/friend-service/friends/deleteFriend?user_id=${userId}&user_friend_id=${friendId}`
+      `/chat-service/friends/deleteFriend?user_id=${userId}&user_friend_id=${friendId}`
     );
     return response;
   } catch (error) {
@@ -133,7 +133,7 @@ export const deleteFriend = async (userId, friendId) => {
 export const getFriendByPhoneAndName = async (userId, search) => {
   try {
     const response = await axios.get(
-      `/friend-service/friends/getFriendByPhoneAndName?user_id=${userId}&search=${search}`
+      `/chat-service/friends/getFriendByPhoneAndName?user_id=${userId}&search=${search}`
     );
     return response;
   } catch (error) {

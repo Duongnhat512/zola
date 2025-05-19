@@ -5,28 +5,54 @@ import { useSelector } from 'react-redux';
 import { cancelFriendRequest, createFriendRequest, deleteFriend, getRequestByUserIdAndUserFriendId } from '../../services/FriendService';
 import { getPrivateConversation } from '../../services/Conversation';
 import { setSelectedChat } from '../../redux/UserChatSlice';
+import socket from '../../services/Socket';
 
-const InfoFriend = ({ userInfo, handleBack, step }) => {
+const InfoFriend = ({ userInfo, handleBack, step, isReceiveInvitation }) => {
   const user = useSelector((state) => state.user.user);
   const [showMessage, setShowMessage] = useState(false);
   const [changeButton, setchangeButton] = useState(false);
 
   const handleRequestFriend = async () => {
-    try {
-      const response = await createFriendRequest(user.id, userInfo.id);
-      if (response.code === 201) {
-        // setStep("search"); // Quay lại bước tìm kiếm sau khi gửi yêu cầu
-        setchangeButton("pending"); // Đặt nút thành "Đã gửi yêu cầu"
+    socket.emit("send_friend_request", {
+      user_id: user.id,
+      user_friend_id: userInfo.id,
+    })
+  };
+  useEffect(() => {
+    socket.on("friend_request_sent", (data) => {
+      console.log("Received friend request:", data);
+      if (data.code === 200) {
+        setchangeButton("pending");
       } else {
-        console.error("Không thể gửi yêu cầu kết bạn:", response.message);
-        setError("Không thể gửi yêu cầu kết bạn.");
+        console.error("Failed to send friend request:", data.message);
+        setError("Failed to send friend request.");
         setShowMessage(true);
         setTimeout(() => setShowMessage(false), 3000);
       }
-    } catch (error) {
-      console.error("Lỗi khi gửi yêu cầu kết bạn:", error);
-    }
-  };
+    });
+
+    return () => {
+      socket.off("friend_request_sent");
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    socket.on("new_friend_request", (data) => {
+      console.log("Received friend request:", data);
+      if (data.from) {
+        setchangeButton("pending");
+      } else {
+        console.error("Failed to send friend request:", data.message);
+        setError("Failed to send friend request.");
+        setShowMessage(true);
+        setTimeout(() => setShowMessage(false), 3000);
+      }
+    });
+
+    return () => {
+      socket.off("new_friend_request");
+    };
+  }, [socket]);
 
   const handleMessageClick = async () => {
     try {
@@ -79,8 +105,12 @@ const InfoFriend = ({ userInfo, handleBack, step }) => {
       }
       if (response.code === 200) {
         // Check if the user is already a friend
+
         if (response.data.status === "pending") {
           setchangeButton("pending"); // Set button to "Unfriend"
+          if (response.data.user_id !== user.id) {
+            setchangeButton("approve"); // Set button to "Unfriend"
+          }
         } else if (response.data.status === "accepted") {
           setchangeButton("accepted"); // Set button to "Unfriend"
         }
@@ -96,36 +126,116 @@ const InfoFriend = ({ userInfo, handleBack, step }) => {
     if (step === "info") {
       handleGetRequestFriendByUserIdAndUserFriendId();
     }
-  }, [step, userInfo]); // Add userInfo as a dependency to re-fetch when it changes
-  const handleCancelRequest = async () => {
-    try {
-      const response = await cancelFriendRequest(user.id, userInfo.id);
-      if (response.code === 200) {
-        setchangeButton("add"); // Quay lại bước tìm kiếm sau khi gửi yêu cầu
-      } else {
-        console.error("Không thể hủy gửi yêu cầu kết bạn:", response.message);
-        setError("Không thể hủy gửi yêu cầu kết bạn.");
-        setShowMessage(true);
-        setTimeout(() => setShowMessage(false), 3000);
+  }, [step, userInfo]);
+
+  const handleAccept = async () => {
+    socket.emit("accept_friend_request", {
+      user_id: user.id,
+      user_friend_id: userInfo.id,
+    });
+  };
+  useEffect(() => {
+    const handleAccept = (data) => {
+      console.log('====================================');
+      console.log(data);
+      console.log('====================================');
+      if (data.code === 200 && data.data?.result?.user_id) {
+        // Cập nhật trạng thái của nút
+        setchangeButton("accepted");
+        // Cập nhật danh sách bạn bè
       }
-    }
-    catch (error) {
-      console.error("Lỗi khi gửi yêu cầu kết bạn:", error);
-    }
-  }
+    };
+
+    socket.on("friend_request_accepted", handleAccept);
+
+    return () => {
+      socket.off("friend_request_accepted", handleAccept);
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    const handleAccept = (data) => {
+      console.log('====================================');
+      console.log(data);
+      console.log('====================================');
+      if (data.status === "success" && data.from) {
+        setchangeButton("accepted");
+      }
+    };
+    socket.on("friend_request_accepted_notify", handleAccept);
+
+    return () => {
+      socket.off("friend_request_accepted_notify", handleAccept);
+    };
+  }, [socket])
+
+  const handleWithdraw = async () => {
+    socket.emit("cancel_friend_request", {
+      user_id: user.id,
+      user_friend_id: userInfo.id
+    })
+  };
+  useEffect(() => {
+    const handleWithdraw = (data) => {
+      if (data.code === 200 && data.data?.user_friend_id) {
+        // Loại bỏ lời mời kết bạn đã được chấp nhận khỏi danh sách
+        setchangeButton("add");
+      }
+    };
+    socket.on("friend_request_deleted", handleWithdraw);
+
+    return () => {
+      socket.off("friend_request_deleted", handleWithdraw);
+    };
+  }, [socket]);
+  useEffect(() => {
+    const handleWithdraw = (data) => {
+      if (data.code === 200 && data.from) {
+        // Loại bỏ lời mời kết bạn đã được chấp nhận khỏi danh sách
+        setchangeButton("add");
+      }
+    };
+    socket.on("friend_request_deleted_notify", handleWithdraw);
+
+    return () => {
+      socket.off("friend_request_deleted_notify", handleWithdraw);
+    };
+  }, [socket]);
+
+
   const handleDeleteFriend = async () => {
-    try {
-      const response = await deleteFriend(user.id, userInfo.id);
-      if (response.code === 200) {
-        setchangeButton("add"); // Quay lại bước tìm kiếm sau khi gửi yêu cầu
-      } else {
-        console.error("Không thể hủy gửi yêu cầu kết bạn:", response.message);
-        setError("Không thể hủy gửi yêu cầu kết bạn.");
-      }
-    } catch (error) {
-      console.error("Lỗi khi gửi yêu cầu kết bạn:", error);
-    }
+    socket.emit("delete_friend", {
+      user_id: user.id,
+      user_friend_id: userInfo.id
+    })
   }
+  useEffect(() => {
+    const handleDeleteFriend = (data) => {
+      console.log('====================================');
+      console.log(data);
+      console.log('====================================');
+      if (data.code === 200) {
+        setchangeButton("add")
+      }
+    };
+    socket.on("friend_deleted", handleDeleteFriend);
+
+    return () => {
+      socket.off("friend_deleted", handleDeleteFriend);
+    };
+  }, [socket])
+  useEffect(() => {
+    const handleDeleteFriend = (data) => {
+      if (data.code === 200) {
+        setchangeButton("add")
+      }
+    };
+    socket.on("friend_deleted_notify", handleDeleteFriend);
+
+    return () => {
+      socket.off("friend_deleted_notify", handleDeleteFriend);
+    };
+  }, [socket])
   return (
     <div className="flex flex-col h-[760px]">
       <div className="px-4">
@@ -169,8 +279,11 @@ const InfoFriend = ({ userInfo, handleBack, step }) => {
 
       {/* Nút hành động */}
       <div className="flex justify-center mt-4 gap-3">
+        {changeButton === "approve" && (
+          <Button onClick={handleAccept}>Chấp nhận</Button>
+        )}
         {changeButton === "pending" && (
-          <Button onClick={handleCancelRequest}>Hủy lời mời</Button>
+          <Button onClick={handleWithdraw}>Hủy lời mời</Button>
         )}
 
         {changeButton === "add" && (

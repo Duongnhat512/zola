@@ -72,11 +72,12 @@ const FriendList = () => {
     )
     .sort((a, b) => {
       if (sortOrder === "A-Z") {
-        return a.name?.localeCompare(b.name || "");
+        return a.fullname?.localeCompare(b.fullname || "");
       } else {
-        return b.name?.localeCompare(a.name || "");
+        return b.fullname?.localeCompare(a.fullname || "");
       }
     });
+
 
   const groupedFriends = filteredFriends.reduce((acc, friend) => {
     const firstLetter = friend.fullname.charAt(0).toUpperCase();

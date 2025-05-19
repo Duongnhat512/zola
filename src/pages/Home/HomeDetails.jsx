@@ -546,9 +546,15 @@ const HomeDetails = () => {
         fetchConversations();
         return;
       }
+      console.log('====================================');
+      console.log(data);
+      console.log('====================================');
 
       const profile = await getProfile(data.user_id);
-      if (profile) {
+      console.log('====================================');
+      console.log(profile);
+      console.log('====================================');
+      if (profile && data.status === "success") {
         sendMessage(null, true, `${userProfile?.fullname} đã rời nhóm`);
       }
 
@@ -561,7 +567,7 @@ const HomeDetails = () => {
 
     socket.on("out_group", handleOutGroup);
     return () => socket.off("out_group", handleOutGroup);
-  }, [socket, selectedChat, userProfile]);
+  }, [socket]);
 
   // Xóa thành viên khỏi nhóm
   useEffect(() => {
@@ -569,7 +575,7 @@ const HomeDetails = () => {
 
     const handleRemoveMember = async (data) => {
       const profile = await getProfile(data.user_id);
-      if (profile) {
+      if (profile && data.status === "success") {
         sendMessage(null, true, `${profile.fullname} đã bị xóa khỏi nhóm`);
       }
 
