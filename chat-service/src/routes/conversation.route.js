@@ -29,5 +29,11 @@ router.get(
   isAuthExpress,
   ConversationController.getConversationById
 );
+router.get(
+  "/get-conversation-recent",
+  isAuthExpress,
+  ConversationController.getConversationsRecent
+);
+
 
 module.exports = router;

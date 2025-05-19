@@ -169,6 +169,7 @@ const ConversationModel = {
     };
     try {
       const result = await dynamodb.update(params).promise();
+      
       return result.Attributes;
     } catch (error) {
       console.error("Có lỗi khi cập nhật hội thoại:", error);
@@ -217,6 +218,9 @@ const ConversationModel = {
     };
     try {
       const result = await dynamodb.get(params).promise();
+      console.log('====================================');
+      console.log(result.id + "Hiep");
+      console.log('====================================');
       return result.Item;
     } catch (error) {
       console.error("Có lỗi khi tìm hội thoại:", error);
@@ -322,6 +326,7 @@ const ConversationModel = {
 
     try {
       const result = await dynamodb.get(params).promise();
+      
       return result.Item ? result.Item.last_message_id : null;
     } catch (error) {
       console.error("Có lỗi khi lấy hội thoại:", error);
@@ -503,8 +508,25 @@ const ConversationModel = {
       throw new Error("Có lỗi khi lấy hội thoại");
     }
 
+  },
+  isGroupConversation: async (conversationId) => {
+  const params = {
+    TableName: tableName,
+    Key: {
+      id: conversationId,
+    },
+  };
+
+  try {
+    const result = await dynamodb.get(params).promise();
+    return result.Item && result.Item.type === "group";
+  } catch (error) {
+    console.error("Có lỗi khi kiểm tra hội thoại nhóm:", error);
+    throw new Error("Có lỗi khi kiểm tra hội thoại nhóm");
   }
+}
 
 };
+  
 
 module.exports = ConversationModel;
