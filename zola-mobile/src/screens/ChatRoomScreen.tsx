@@ -48,9 +48,8 @@ const ChatRoomScreen = ({ route, navigation }) => {
   const [selectedVideo, setSelectedVideo] = useState(null);
   const isValidInput = inputText.trim().length > 0 || file !== null;
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [selectText,setSelectText] = useState('');
   const inputRef = useRef(null);
-
+  console.log('chat.list_user_id', chats.list_user_id);
 
   useEffect(() => {
     const initSocket = async () => {
@@ -79,7 +78,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
             };
           });
           setMessages(formatted);
-          console.log('Messages:', formatted);
+          // console.log('Messages:', formatted);
         });
 
         socketInstance.on('hidden_message', (data) => {
@@ -188,7 +187,7 @@ const getOriginalFileName = (fileName) => {
     const tempId = `msg-${Date.now()}`;
     const now = new Date();
     const isGroup = chats.type === 'group';
-   
+
     setMessages((prev) => [
       ...prev,
       {
@@ -217,7 +216,13 @@ const getOriginalFileName = (fileName) => {
           const msg = {
             conversation_id: chats.conversation_id,
             sender_id: currentUser.id,
-            receiver_id: isGroup ? null : chats.list_user_id.filter(user => user.user_id !== currentUser.id)[0]?.user_id,
+            receiver_id: isGroup
+                ? null
+                : Array.isArray(chats.list_user_id)
+                  ? typeof chats.list_user_id[0] === "string"
+                    ? chats.list_user_id.find(id => id !== currentUser.id)
+                    :  chats.list_user_id?.filter(user => user.user_id !== currentUser.id)[0]?.user_id
+                  : null,
             message: inputText.trim(),
             file_name: file.name,
             file_type: file.mimeType,
@@ -244,11 +249,18 @@ const getOriginalFileName = (fileName) => {
         console.error('Lỗi tải tệp:', error);
       }
     } else {
-     
+      console.log('Gửi tin nhắn văn bản:', chats);
+      console.log('Gửi tin nhắn văn bản:',  chats.list_user_id?.filter(user => user.user_id !== currentUser.id)[0]?.user_id);
       const msg = {
         conversation_id: chats.conversation_id,
         sender_id: currentUser.id,
-        receiver_id: isGroup ? null : chats.list_user_id.filter(user => user.user_id !== currentUser.id)[0]?.user_id,
+        receiver_id: isGroup
+          ? null
+          : Array.isArray(chats.list_user_id)
+            ? typeof chats.list_user_id[0] === "string"
+              ? chats.list_user_id.find(id => id !== currentUser.id)
+              :  chats.list_user_id?.filter(user => user.user_id !== currentUser.id)[0]?.user_id
+            : null,
         message: inputText.trim(),
         status: 'pending',
         created_at: now.toISOString(),
@@ -284,7 +296,7 @@ const getOriginalFileName = (fileName) => {
           setSelectedMessage(item);
           setModalVisible(true);
         }
-        setSelectText(item.text);
+      
       }}
       disabled={item.type === 'notify'} // Không cho long press notify
     >

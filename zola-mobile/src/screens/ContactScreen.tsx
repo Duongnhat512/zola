@@ -23,6 +23,12 @@ import { useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 import {GetUserByUserName} from '../services/UserService'
 import { Socket } from 'socket.io-client';
+import { getPrivateConversation } from '../services/ConversationService';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
+
+
+
 const sampleGroups = [
   { id: 'g1', name: 'Nhóm Game Dev', avatar: 'https://i.pravatar.cc/100?img=5' },
   { id: 'g2', name: 'React Native VN', avatar: 'https://i.pravatar.cc/100?img=12' },
@@ -39,6 +45,67 @@ const FriendScreen = () => {
   const [conversation,setConversation]= useState(null);
   const user = useSelector((state: any) => state.user.user);
   const socket = useSocket();
+
+  const [chats, setChats] = useState([]);
+
+
+
+
+
+
+const handleFindConversation = async (userId, friend) => {
+  console.log("Finding conversation for user:", userId, "and friend:", friend);
+  try {
+    const response = await getPrivateConversation(userId, friend.id);
+    console.log("Private conversation response:", response);
+
+    if (response.status === "success") {
+      let chatToNavigate;
+
+      if (response.newConversation) {
+        console.log("newConversation:", response.newConversation);
+        const newChat = {
+          conversation_id: response.newConversation.id,
+          list_user_id: response.newConversation.members,
+          list_message: [],
+          avatar: response.newConversation.avatar,
+          name: friend.fullname,
+          created_by: response.newConversation.created_by,
+          unread_count: 0,
+          is_unread: false,
+        };
+        setChats(newChat);
+        setConversation(prev => [...prev, newChat]);
+        chatToNavigate = newChat;
+      } else {
+        console.log("Conversation:", response.conversation);
+        const updatedConversation = {
+          ...response.conversation,
+          name: friend.fullname,
+          avatar: friend.avt,
+        };
+        setChats(updatedConversation);
+        setConversation(prev => [...prev, updatedConversation]);
+        chatToNavigate = updatedConversation;
+      }
+      console.log("Navigating to ChatRoom with chat:", chatToNavigate);
+      navigation.navigate("ChatRoom", {
+        chats: chatToNavigate,
+        conversations: conversation, // nếu muốn chính xác luôn, bạn cũng có thể truyền [...conversation, chatToNavigate]
+      });
+    } else {
+      console.error("Error fetching conversation:", response.message);
+    }
+  } catch (error) {
+    console.error("Error fetching conversation:", error);
+  }
+};
+
+
+
+
+
+
  useEffect(() => {
       socket.on("conversations", (response) => {
           if (response.status === "success") {
@@ -334,7 +401,9 @@ const FriendRequestModal = ({ visible, onClose }) => {
   };
 
   const renderChatItem = ({ item }) => (
-    <TouchableOpacity onPress={() => navigation.navigate('ChatRoom', { chats: item })}>
+    <TouchableOpacity 
+    // onPress={() => navigation.navigate('ChatRoom', { chats: item })}
+    >
       <View style={styles.chatItem}>
         <Image
           source={{
@@ -372,21 +441,7 @@ const FriendRequestModal = ({ visible, onClose }) => {
   );
   
 const renderFriendItem = ({ item }) => (
-    <TouchableOpacity onPress={() => {
-      
-      const matchedConversations = conversation.filter((c) =>
-  c.type === 'private'&&c.name===item.friendInfo.fullname
-);   
-   
-    if(matchedConversations[0]==undefined)
-    {
-
-    }
-    else
-    {
-      navigation.navigate('ChatRoom', { chats:matchedConversations[0]})
-    }
-}}>
+    <TouchableOpacity onPress={() => handleFindConversation(user.id, item.friendInfo)}>
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 15, borderBottomWidth: 1, borderColor: "#eee" }}>
       <Image
         source={{ uri: item.friendInfo.avt }}
@@ -412,7 +467,7 @@ const renderFriendItem = ({ item }) => (
         <View style={styles.searchBar}>
           <Feather name="search" size={20} color="#BFE6FC" style={styles.iconLeft} />
           <TextInput
-            placeholder="Tìm bạn bè,tin nhắn...."
+            placeholder="Tìm bạn bè,tins nhắn...."
             placeholderTextColor="#D6F0FC"
             style={styles.input}
             onChangeText={setSearchText}

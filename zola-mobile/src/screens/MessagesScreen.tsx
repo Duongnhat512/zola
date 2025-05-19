@@ -130,7 +130,15 @@ const MessagesScreen = () => {
   }, [socket, user]);
 
   const renderChatItem = ({ item }) => (
-    <TouchableOpacity onPress={() => navigation.navigate('ChatRoom', { chats: item,conversations:chats })}>
+    <TouchableOpacity
+  onPress={() => {
+    console.log("👉 chats:", item);
+    navigation.navigate('ChatRoom', {
+      chats: item,
+      conversations: chats,
+    });
+  }}
+>
       <View style={styles.chatItem}>
         <Image
           source={{
