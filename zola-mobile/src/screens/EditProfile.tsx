@@ -28,7 +28,6 @@ const handlePickImage = async () => {
   if (!result.canceled && result.assets.length > 0) {
     const base64Image = `data:${result.assets[0].mimeType};base64,${result.assets[0].base64}`;
     setForm({ ...form, avt: base64Image });
-    Alert.alert(form.avt);
   }
 };
   const dispatch = useDispatch();

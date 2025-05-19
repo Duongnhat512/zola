@@ -4,6 +4,8 @@ import { createStackNavigator } from '@react-navigation/stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSelector } from 'react-redux';
 import { View, Text, TouchableOpacity } from 'react-native';
+import { SocketProvider } from '../context/SocketContext';
+
 // Screens
 import WelcomeScreen from '../screens/WelcomeScreen';
 import LoginScreen from '../screens/LoginScreen';
@@ -109,6 +111,8 @@ const AppNavigator: React.FC = () => {
   }
 
   return (
+       <SocketProvider>
+
     <NavigationContainer ref={navigationRef}>
       {isAuthenticated ? (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -129,8 +133,8 @@ const AppNavigator: React.FC = () => {
       )}
          {/* FlashMessage hiển thị toàn app, nên để dưới NavigationContainer */}
     <FlashMessage position="top" />
-    </NavigationContainer>
-    
+    </NavigationContainer>           
+       </SocketProvider>
   );
 };
 

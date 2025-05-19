@@ -7,6 +7,8 @@ import {
   Image,
   Alert,
 } from 'react-native';
+import Feather from 'react-native-vector-icons/Feather';
+
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useState,useEffect  } from 'react';
 
@@ -63,15 +65,24 @@ export default function PrivateChatSettingsScreen({ navigation  }) {
 
       <View style={styles.options}>
         <TouchableOpacity onPress={handleBlockUser} style={styles.optionButton}>
-          <Text style={styles.optionText}>🚫 Chặn người này</Text>
+          <View style={{flexDirection:'row'}}> 
+        <Feather name="alert-circle" size={20} color="#ff"  style={{marginRight:10}} />           
+        <Text style={styles.optionText}> Chặn người này</Text>
+          </View>
+     
         </TouchableOpacity>
 
         <TouchableOpacity onPress={handleReportUser} style={styles.optionButton}>
-          <Text style={styles.optionText}>⚠️ Báo cáo người này</Text>
+              <View style={{flexDirection:'row'}}> 
+        <Feather name="flag" size={20} color="#ff" style={{marginRight:10}} />           
+          <Text style={styles.optionText}>Báo cáo người này</Text>
+          </View>
         </TouchableOpacity>
-
-        <TouchableOpacity onPress={handleLeaveChat} style={styles.leaveButton}>
-          <Text style={styles.leaveText}>🗑 Xoá đoạn chat</Text>
+        <TouchableOpacity onPress={handleLeaveChat} style={styles.optionButton}>
+                   <View style={{flexDirection:'row'}}> 
+        <Feather name="trash" size={20} color="#ff" style={{marginRight:10}}  />           
+         <Text style={styles.leaveText}>Xoá đoạn chat</Text>
+          </View>  
         </TouchableOpacity>
       </View>
     </View>
@@ -83,7 +94,7 @@ const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   backButton: { alignSelf: 'flex-start', marginBottom: 16 },
   backText: { fontSize: 24 },
-  avatar: { width: 100, height: 100, borderRadius: 50, marginBottom: 12 },
+  avatar: { width: 100, height: 100, borderRadius: 50, marginBottom: 12,backgroundColor:'#000000' },
   name: { fontSize: 20, fontWeight: 'bold' },
   phone: { fontSize: 16, color: '#666', marginBottom: 20 },
   options: { width: '100%', marginTop: 20 },

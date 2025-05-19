@@ -55,15 +55,15 @@ const MessagesScreen = () => {
   
         socketInstance.on("new_group", (data) => {
           showMessage({
-            message: "Bạn đã được thêm vào nhóm"+data.group_name,
-            description: data.group_name,
+            message: "Bạn đã được thêm vào nhóm"+" "+data.group_name,
+            description: "",
             type: "success",
           });
           navigation.navigate("Main");
         });
         socketInstance.on("group_deleted", (data) => {
           showMessage({
-            message: "Nhóm"+data.group_name+"đã bị giải tán",
+            message: "Nhóm "+data.group_name+" đã bị giải tán",
             type: "danger",
           });
           navigation.navigate("Main");

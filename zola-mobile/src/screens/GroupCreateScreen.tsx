@@ -81,7 +81,7 @@ useEffect(() => {
     const isSelected = selectedFriends.some(f => f.friendInfo.id === item.friendInfo.id);
     return (
       <TouchableOpacity style={styles.friendRow} onPress={() => toggleSelectFriend(item)}>
-        <Image source={item.friendInfo.avt} style={styles.avatar} />
+        <Image source={{ uri:item.friendInfo.avt}} style={styles.avatar} />
         <Text style={styles.fullname}>{item.friendInfo.fullname}</Text>
         <View style={[styles.checkbox, isSelected && styles.checked]} />
       </TouchableOpacity>
@@ -158,7 +158,7 @@ const handleCreateGroup = async () => {
         <View style={styles.modalBottom}>
           <View style={styles.selectedAvatars}>
             {selectedFriends.map((f) => (
-              <Image key={f.friendInfo.id} source={f.friendInfo.avt} style={styles.selectedAvatar} />
+              <Image key={f.friendInfo.id} source={{uri:f.friendInfo.avt}} style={styles.selectedAvatar} />
             ))}
           </View>
           <TouchableOpacity
@@ -216,7 +216,8 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    marginRight: 10
+    marginRight: 10,
+    backgroundColor:'#000000'
   },
   fullname: {
     flex: 1,

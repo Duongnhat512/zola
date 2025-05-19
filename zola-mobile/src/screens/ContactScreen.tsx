@@ -11,6 +11,10 @@ import {
   Alert
 } from 'react-native';
 import Feather from 'react-native-vector-icons/Feather';
+import { useSocket } from "../context/SocketContext";
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import 'dayjs/locale/vi';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { sendFriendRequest, getFriendRequests, getSentFriendRequests, getListFriends,acceptFriendRequest,rejectFriendRequest} from '../services/FriendService';
 import {GetUserById} from '../services/UserService';
@@ -18,6 +22,7 @@ import UserModal from '../screens/UserModal';
 import { useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 import {GetUserByUserName} from '../services/UserService'
+import { Socket } from 'socket.io-client';
 const sampleGroups = [
   { id: 'g1', name: 'Nhóm Game Dev', avatar: 'https://i.pravatar.cc/100?img=5' },
   { id: 'g2', name: 'React Native VN', avatar: 'https://i.pravatar.cc/100?img=12' },
@@ -30,9 +35,31 @@ const FriendScreen = () => {
   const navigation = useNavigation();
   const [selectedUser, setSelectedUser] = useState(null);
   const [searchText, setSearchText] = useState('');
-      const [modalVisibleFriend, setModalVisibleFriend] = useState(false);
-  
+  const [modalVisibleFriend, setModalVisibleFriend] = useState(false);
+  const [conversation,setConversation]= useState(null);
   const user = useSelector((state: any) => state.user.user);
+  const socket = useSocket();
+ useEffect(() => {
+      socket.on("conversations", (response) => {
+          if (response.status === "success") {
+            setConversation(response.conversations);
+            console.log("🗨️ Danh sách hội thoại:", response.conversations);
+          } else {
+            console.error("Lỗi khi lấy danh sách hội thoại:", response.message);
+          }
+        });
+    return () => {
+      
+
+      };
+  }, []);
+  useEffect(() => {
+     const timeout = setTimeout(() => {
+        socket.emit("get_conversations", { user_id: user.id });
+      }, 500); 
+
+      return () => clearTimeout(timeout);
+  }, [socket]);
 {/*Nơi tạo biến lưu data và lấy data*/}
     {/*Data bạn bè*/}
     const [friendRequests, setFriendRequests] = useState([]);
@@ -163,7 +190,6 @@ const FriendScreen = () => {
           };
     {/*tạo nhóm nè*/}
         const handleCreateGroup = () => {
-          Alert.alert('Tạo nhóm', 'Chức năng tạo nhóm sẽ được triển khai sau.');
           navigation.navigate("GroupCreate",{friendsList});
         };
     {/*từ chối nè*/}
@@ -229,10 +255,12 @@ const FriendRequestModal = ({ visible, onClose }) => {
   const renderItem = ({ item }) => (
    
     <View style={styles.requestBox}>
-    <Image source={{ uri: item.avatar }} style={styles.groupAvatar} />
-      <Text style={styles.name}>{item.name}</Text>
+      <View style={{flexDirection:'row'}}>
+      <Image source={{ uri: item.friendInfo.avt }} style={styles.groupAvatar} />
+      <Text style={styles.name}>{item.friendInfo.fullname}</Text>
+      </View>    
       <Text style={styles.date}>{item.date} • Tìm kiếm số điện thoại</Text>
-      <Text style={styles.desc}>{item.desc}</Text>
+      {/* <Text style={styles.desc}>{item.desc}</Text> */}
       {activeTab === 'received' && (
         <View style={styles.buttonRow}>
           <TouchableOpacity style={styles.rejectBtn} onPress={()=>{handleRejectRequest(item.friendInfo.id)}}>
@@ -296,9 +324,58 @@ const FriendRequestModal = ({ visible, onClose }) => {
   );
 };
 {/*render friend item*/}
+ 
+  dayjs.extend(relativeTime);
+  dayjs.locale('vi');
+  
+  const formatRelativeTime = (timestamp) => {
+    if (!timestamp) return '';
+    return dayjs(timestamp).fromNow(); // ví dụ: "5 phút trước"
+  };
+
+  const renderChatItem = ({ item }) => (
+    <TouchableOpacity onPress={() => navigation.navigate('ChatRoom', { chats: item })}>
+      <View style={styles.chatItem}>
+        <Image
+          source={{
+            uri: item.avatar || 'https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg',
+          }}
+          style={styles.avatar}
+        />
+        <View style={styles.chatInfo}>
+          <Text style={styles.chatName}>
+            {item.name || 'Người dùng không xác định'}
+          </Text>
+          <View style={styles.chatMessageRow}>
+            <Text
+              style={styles.chatMessage}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {item.last_message?.type === 'text'
+                ? item.last_message?.message
+                : item.last_message?.type === 'image'
+                ? 'Đã gửi một ảnh'
+                : item.last_message?.type === 'video'
+                ? 'Đã gửi một video'
+                : item.last_message?.type === 'document'
+                ? 'Đã gửi một tệp'
+                : 'Chưa có tin nhắn'}
+            </Text>
+            <Text style={styles.chatTime}>
+              {formatRelativeTime(item.last_message?.created_at)}
+            </Text>
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+  
 const renderFriendItem = ({ item }) => (
-       <TouchableOpacity >
-    <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 15 }}>
+    <TouchableOpacity onPress={() => navigation.navigate('ChatRoom', { chats:{name: item.friendInfo.fullname,type:"private",avatar:item.friendInfo.avt,friend_id:item.friendInfo.id} })}>
+
+
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 15, borderBottomWidth: 1, borderColor: "#eee" }}>
       <Image
         source={{ uri: item.friendInfo.avt }}
         style={{ width:52, height: 52, borderRadius: 24, marginRight: 15 }}
@@ -366,14 +443,23 @@ const renderFriendItem = ({ item }) => (
       {/* PHẦN DƯỚI */}
       <View style={styles.body}>
         {/* Danh sách nè*/}
-        <FlatList
+        { activeTab==='groups'&&
+        (<FlatList
+          data={conversation.filter(chat => chat.type === 'group')}
+          keyExtractor={(item) => item.id}
+          renderItem={renderChatItem}
+          style={{ marginTop: 12 }}
+        />)
+        }
+         { activeTab==='friends'&&
+        (<FlatList
           data={friendsList}
           keyExtractor={(item) => item.id}
           renderItem={renderFriendItem}
           style={{ marginTop: 12 }}
-        />
+        />)
+        }
       </View>
-
       {/* Modal lời mời kết bạn */}
       <FriendRequestModal visible={modalVisible} onClose={() => setModalVisible(false)} />
       <UserModal
@@ -615,4 +701,34 @@ const styles = StyleSheet.create({
       flex: 1,
       alignItems: 'center',
     },
+     chatItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEE',
+  },
+  chatInfo: {
+    flex: 1,
+  },
+  chatName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  chatMessageRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  chatMessage: {
+    fontSize: 14,
+    color: '#666',
+    flex: 1,
+    marginRight: 8,
+  },
+  chatTime: {
+    fontSize: 12,
+    color: '#999',
+  },
 });

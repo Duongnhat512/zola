@@ -8,6 +8,7 @@ import { useSelector } from 'react-redux';
 import { sendFriendRequest, getFriendRequests, getSentFriendRequests, getListFriends,acceptFriendRequest,rejectFriendRequest} from '../services/FriendService';
 import {GetUserById} from '../services/UserService';
 import * as ImageManipulator from 'expo-image-manipulator';
+import Feather from 'react-native-vector-icons/Feather';
 
 export default function GroupSettingsScreen({ navigation  }) {
     const route = useRoute();
@@ -82,12 +83,12 @@ const closeEditGroupModal = () => {
   };
   const handleNameUpdate = (data) => {
     console.log("✅ Tên nhóm đã cập nhật:", data.name);
-    Alert.alert("Thành công", data.message || "Tên nhóm đã được cập nhật.");
+    Alert.alert("Thành công", data.message || "Tên nhóm và avatar nhóm đã được cập nhật.");
     navigation.navigate("Main");
   };
   const handleAvatarUpdate = (data) => {
     console.log("✅ anh nhóm đã cập nhật:");
-    Alert.alert("Thành công", data.message || "Tên nhóm đã được cập nhật.");
+    //Alert.alert("Thành công", data.message || "Tên nhóm đã được cập nhật.");
     navigation.navigate("Main");
   };
   //loaddata
@@ -166,8 +167,9 @@ const closeEditGroupModal = () => {
         return 'application/octet-stream'; // fallback
     }
   };
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
+  const pickImage = async ()=>
+  {
+     const result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ImagePicker.MediaTypeOptions.Images,
           allowsEditing: true,
           quality: 1,
@@ -176,7 +178,10 @@ const closeEditGroupModal = () => {
     if (!result.canceled) {
       const image = result.assets[0];
       setAvatar(image); // Cập nhật UI nếu có
-    
+    }
+  }
+  const savePickImage = async (image) => {
+   
       const fileName = image.fileName || image.uri.split('/').pop();
       const fileType = getMimeType(fileName);
       //const fileType = image.type || `image/${fileName.split('.').pop()}`;
@@ -202,11 +207,11 @@ const closeEditGroupModal = () => {
         file_data: cleanBase64,
         file_size: image.fileSize || image.uri.length, // optional
       });
-    }
   };
   
 
   const updateGroupName = () => {
+    savePickImage(avatar);
     console.log("update name"+groupName);
     console.log(conversation.conversation_id);
     socket.emit("update_group_name", {
@@ -302,12 +307,20 @@ const closeEditGroupModal = () => {
       <Text style={styles.nameInput}>{groupName}</Text>
 
       <View style={styles.options}>
+        
         <TouchableOpacity onPress={openEditGroupModal} style={styles.option}>
-          <Text>✏️ Chỉnh sửa tên và ảnh nhóm</Text>
+           <View style={{flexDirection:'row'}}> 
+                  <Feather name="edit" size={20} color="#ff" style={{marginRight:10}} />           
+                      <Text>Chỉnh sửa tên và ảnh nhóm</Text>
+                    </View>    
         </TouchableOpacity>
 
         <TouchableOpacity onPress={openAddMemberModal} style={styles.option}>
-          <Text>➕ Thêm thành viên</Text>
+           <View style={{flexDirection:'row'}}> 
+                  <Feather name="user-plus" size={20} color="#ff" style={{marginRight:10}} />           
+                   <Text>Thêm thành viên</Text>
+                    </View>    
+       
         </TouchableOpacity>
         <View style={{ marginTop: 20 }}>
   <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 10 }}>Thành viên nhóm</Text>
@@ -533,7 +546,7 @@ console.log("Emit add_member:", {
 
 const styles = StyleSheet.create({
   container: { padding: 20, backgroundColor: "#fff", flex: 1 },
-  avatar: { width: 100, height: 100, borderRadius: 50, alignSelf: 'center' },
+  avatar: { width: 100, height: 100, borderRadius: 50, alignSelf: 'center',backgroundColor:'#000000' },
   nameInput: { fontSize: 18, textAlign: 'center', marginVertical: 16 },
   options: { marginTop: 24 },
   option: { padding: 12, borderBottomWidth: 1, borderColor: "#eee" },
