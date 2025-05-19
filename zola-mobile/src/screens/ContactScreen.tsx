@@ -377,7 +377,12 @@ const renderFriendItem = ({ item }) => (
       const matchedConversations = conversation.filter((c) =>
   c.type === 'private'&&c.name===item.friendInfo.fullname
 );   
-    if(matchedConversations==null)
+   
+    if(matchedConversations==undefined)
+    {
+
+    }
+    else
     {
       navigation.navigate('ChatRoom', { chats:matchedConversations[0]})
     }
