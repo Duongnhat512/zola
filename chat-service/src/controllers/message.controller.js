@@ -1,4 +1,3 @@
-const MessageModel = require("../models/message.model.js");
 const ConversationModel = require("../models/conversation.model.js");
 const { processFileUploadMessage } = require("../services/file.service.js");
 const redisClient = require("../configs/redis.config.js");
@@ -13,6 +12,7 @@ const {
   notifyNewMessage,
   notifySendMessageError,
 } = require("../services/socket.service.js");
+const MessageModel = require("../models/message.model.js");
 const MessageController = {};
 
 MessageController.getMessages = async (socket, data) => {

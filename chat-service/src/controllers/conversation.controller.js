@@ -381,9 +381,9 @@ ConversationController.findPrivateConversation = async (req, res) => {
       });
     }
 
-    const list_user_id_raw = await redisClient.smembers(`group:${conversation.id}`);
+    const list_user_id_raw = redisClient.smembers(`group:${conversation.id}`);
 
-    const last_message_id = await ConversationModel.getLastMessage(
+    const last_message_id = ConversationModel.getLastMessage(
       conversation.id
     );
 
@@ -474,6 +474,7 @@ ConversationController.addMember = async (socket, data) => {
         });
       }
     }
+
   } catch (error) {
     console.error("Có lỗi khi thêm thành viên:", error);
     socket.emit("error", { message: "Có lỗi khi thêm thành viên" });
@@ -693,7 +694,6 @@ ConversationController.deleteConversation = async (socket, data) => {
 
 
   const permissions = await UserCacheService.getConversationPermissions(socket.user.id, conversation_id);
-
   if (permissions !== 'owner') {
     return socket.emit("error", { message: "Bạn không có quyền giải tán nhóm" });
   }
@@ -860,6 +860,7 @@ ConversationController.resetUnreadCount = async (user_id, conversation_id) => {
     console.error("Có lỗi khi đặt lại số tin nhắn chưa đọc:", error);
   }
 }
+
 ConversationController.getGroupConversationByUserId = async (req, res) => {
   const { user_id } = req.query;
 
@@ -907,6 +908,7 @@ ConversationController.getGroupConversationByUserId = async (req, res) => {
     res.status(500).json({ message: "Có lỗi khi lấy danh sách hội thoại" });
   }
 }
+
 ConversationController.getConversationById = async (req, res) => {
   const { conversation_id } = req.query;
   try {
@@ -1011,13 +1013,5 @@ ConversationController.getConversationsRecent = async (req, res) => {
     res.status(500).json({ message: "Có lỗi khi lấy danh sách hội thoại gần đây" });
   }
 }
-ConversationController.deleteHistoryForUser = async (socket, data) => {
-  const { user_id, conversation_id } = data;
-  if (!user_id || !conversation_id) {
-    throw new Error("Thiếu tham số");
-  }
-  await messageModel.setDeleteHistory(user_id, conversation_id);
-};
-
 
 module.exports = ConversationController;

@@ -4,7 +4,6 @@ const { v4: uuidv4 } = require("uuid");
 const tableName = "messages";
 
 const hiddenMessageTable = "hidden_messages";
-const deleteHistoryTable = "deleted_history";
 const MessageModel = {
     /**
      * Gửi text message
@@ -43,26 +42,6 @@ const MessageModel = {
             throw new Error("Error sending message");
         }
     },
-    setDeleteHistory: async (user_id, conversation_id) => {
-        const params = {
-            TableName: deleteHistoryTable,
-            Key: { user_id, conversation_id },
-            UpdateExpression: "set last_deleted_at = :time",
-            ExpressionAttributeValues: {
-                ":time": new Date().toISOString(),
-            },
-        };
-        await dynamodb.update(params).promise();
-    },
-
-    getDeleteHistory: async (user_id, conversation_id) => {
-        const params = {
-            TableName: deleteHistoryTable,
-            Key: { user_id, conversation_id },
-        };
-        const data = await dynamodb.get(params).promise();
-        return data.Item ? data.Item.last_deleted_at : null;
-    },
     /**`
      * Lấy danh sách tin nhắn trong cuộc hội thoại theo conversation_id
      * @param {String} conversation_id 
@@ -87,14 +66,8 @@ const MessageModel = {
             let messages = data.Items;
 
             if (user_id) {
-                console.log("aaa",user_id, conversation_id);
+                console.log("User ID:", user_id);
                 
-                const lastDeletedAt = await MessageModel.getDeleteHistory(user_id, conversation_id);
-                console.log("lastDeletedAt", lastDeletedAt);
-                
-                if (lastDeletedAt) {
-                    messages = messages.filter(msg => !msg.created_at || msg.created_at > lastDeletedAt);
-                }
                 const hiddenParams = {
                     TableName: hiddenMessageTable,
                     IndexName: "user-id-index",
