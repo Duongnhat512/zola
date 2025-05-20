@@ -63,27 +63,29 @@ export const handleNewMessage = (
       .map((chat) =>
         chat.conversation_id === msg.conversation_id
           ? {
-              ...chat,
-              unread_count:
-                currentChat?.conversation_id === msg.conversation_id
-                  ? chat.unread_count // Không tăng nếu đang ở trong cuộc trò chuyện
-                  : (chat.unread_count || 0) + 1,
-              last_message: {
-                ...chat.last_message,
-                message: msg.message,
-                created_at: msg.created_at,
-                type: msg.type,
-              },
-            }
+            ...chat,
+            unread_count:
+              currentChat?.conversation_id === msg.conversation_id
+                ? chat.unread_count // Không tăng nếu đang ở trong cuộc trò chuyện
+                : (chat.unread_count || 0) + 1,
+            last_message: {
+              ...chat.last_message,
+              message: msg.message,
+              created_at: msg.created_at,
+              type: msg.type,
+            },
+          }
           : chat
       )
-      .sort(
-        (a, b) =>
-          // new Date(b.last_message.created_at) -
-          console.log("AAAAAAAAAA" +a,b)
-          
-          // new Date(a.last_message.created_at)
-      ); // Sắp xếp giảm dần theo created_at
+      .sort((a, b) => {
+        const aTime = a.last_message?.created_at
+          ? new Date(a.last_message.created_at).getTime()
+          : 0;
+        const bTime = b.last_message?.created_at
+          ? new Date(b.last_message.created_at).getTime()
+          : 0;
+        return bTime - aTime;
+      });
 
     console.log("Updated Chats:", updatedChats); // Log để kiểm tra danh sách đã sắp xếp
     return updatedChats; // Trả về danh sách đã sắp xếp
@@ -103,7 +105,7 @@ export const deleteMessage = (socket, userId, idMessage, setMessages) => {
   };
   console.log("hidden message payload:", payload);
 
-  socket.emit("set_hidden_message", payload, () => {});
+  socket.emit("set_hidden_message", payload, () => { });
   setMessages((prev) => prev.filter((msg) => msg.id !== idMessage));
 };
 
@@ -116,16 +118,16 @@ export const revokeMessage = (socket, userId, idMessage, setMessages) => {
     message_id: idMessage,
   };
   console.log("Revoke message payload:", payload);
-  socket.emit("delete_message", payload, () => {});
+  socket.emit("delete_message", payload, () => { });
   setMessages((prev) =>
     prev.map((msg) =>
       msg.id === idMessage
         ? {
-            ...msg,
-            text: "Tin nhắn đã thu hồi",
-            media: null,
-            file_name: null,
-          }
+          ...msg,
+          text: "Tin nhắn đã thu hồi",
+          media: null,
+          file_name: null,
+        }
         : msg
     )
   );

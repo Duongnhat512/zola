@@ -75,8 +75,6 @@ const ChatSidebar = ({
       className="w-1/4 border-r border-gray-300 flex flex-col bg-white shadow-lg "
       style={{ width: "320px" }}
     >
-      <button onClick={() => handleDeleteChat(chats[0])}>Test Delete Modal</button>
-
       {/* Header */}
       <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
         <Input
