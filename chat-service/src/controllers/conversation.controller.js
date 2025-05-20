@@ -558,30 +558,43 @@ ConversationController.getConversations = async (socket, data) => {
       getUnreadCounts(user_id, conversationIds, redisClient)
     ]);
 
+    permissionsList.forEach((item) => {
+      console.log('====================================');
+      console.log(item);
+      console.log('====================================');
+    })
+
     const finalFriendProfiles = await getFriendProfiles(
       conversations, permissionsList, user_id, UserCacheService, socket.handshake.headers.authorization
     );
 
     const result = conversations.map((conversation, idx) => {
-      let name = conversation.name || "";
-      let avt = conversation.avatar || "";
-      if (conversation.type === "private" && finalFriendProfiles[idx]) {
-        name = finalFriendProfiles[idx]?.fullname || "";
-        avt = finalFriendProfiles[idx]?.avt || "";
-      }
-      const isUnread = unreadConversations.includes(conversation.id);
-      return {
-        conversation_id: conversation.id,
-        name,
-        avatar: avt,
-        last_message: lastMessages[idx],
-        list_user_id: permissionsList[idx],
-        is_unread: isUnread,
-        unread_count: unreadCounts[idx],
-        type: conversation.type,
-      };
-    });
+  let name = conversation.name || "";
+  let avt = conversation.avatar || "";
+  if (conversation.type === "private" && finalFriendProfiles[idx]) {
+    name = finalFriendProfiles[idx]?.fullname || "";
+    avt = finalFriendProfiles[idx]?.avt || "";
+  }
+  const isUnread = unreadConversations.includes(conversation.id);
 
+  // Lọc tất cả permission có conversationId trùng khớp
+  const flatPermissions = permissionsList.flat();
+
+  const conversationPermissions = flatPermissions.filter(item => {
+    return item.conversationId === conversation.id;
+  });
+
+  return {
+    conversation_id: conversation.id,
+    name,
+    avatar: avt,
+    last_message: lastMessages[idx],
+    list_user_id: conversationPermissions, // danh sách permission phù hợp
+    is_unread: isUnread,
+    unread_count: unreadCounts[idx],
+    type: conversation.type,
+  };
+});
     socket.emit("conversations", {
       status: "success",
       message: "Lấy danh sách hội thoại thành công",
