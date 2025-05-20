@@ -26,7 +26,7 @@ import { Socket } from 'socket.io-client';
 import { getPrivateConversation } from '../services/ConversationService';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
-
+import { useSocketFriendEvents } from '../hook/useSocketFriendEvents';
 
 
 const sampleGroups = [
@@ -45,7 +45,6 @@ const FriendScreen = () => {
   const [conversation,setConversation]= useState(null);
   const user = useSelector((state: any) => state.user.user);
   const socket = useSocket();
-
   const [chats, setChats] = useState([]);
 
 
@@ -127,6 +126,17 @@ const handleFindConversation = async (userId, friend) => {
 
       return () => clearTimeout(timeout);
   }, [socket]);
+  useEffect(() => {
+  return () => {
+    socket.off("friend_request_sent");
+    socket.off("friend_request_error");
+    socket.off("friend_request_deleted");
+    socket.off("friend_request_accepted");
+    socket.off("friend_request_accept_error");
+    socket.off("friend_request_rejected");
+    socket.off("error");
+  };
+}, []);
 {/*Nơi tạo biến lưu data và lấy data*/}
     {/*Data bạn bè*/}
     const [friendRequests, setFriendRequests] = useState([]);
@@ -222,77 +232,92 @@ const handleFindConversation = async (userId, friend) => {
             fetchFriendsWithDetails();
             fetchFriendsRequestWithDetails();
             fetchSendRequestWithDetails();
-    
+
           }, []);
     {/*các hàm xử lý thu hồi đồng ý và từ chối*/}
     {/*Gửi lời mời kết bạn*/}
-    const handleSendFriendRequest = async (friend_user_id) => {
-            try {
-              // user_id = người đang đăng nhập (hardcode ví dụ), bạn có thể lấy từ context hoặc AsyncStorage
-              // console.log(friend_user_id);
-              // friendsList.forEach(friend => {
-              //   console.log(friend.id);
-              // });
-              const isFriend = friendsList.some(friend => friend.friendInfo.id === friend_user_id);
-              console.log(isFriend);
-              if (isFriend) {
-                console.log("Đã là bạn bè");
-                Alert.alert("đã kết bạn với người này");
-                setModalVisible(false);
-              } else {
-                console.log("Chưa kết bạn");
-                const res = await sendFriendRequest(friend_user_id,user.id);      
-                await fetchSendRequestWithDetails();
-                 //alert(res); // hiển thị thông báo thành công
-                 Alert.alert("Gửi lời mời kết bạn thành công!");
-                 setModalVisible(false);
-               } 
-              }
-              catch (err) {
-                console.log(err);
-                alert(err.message || 'Gửi lời mời thất bại');
-              }
-              
-         
-          };
+   const handleSendFriendRequest = async (friend_user_id) => {
+  try {
+    const isFriend = friendsList.some(friend => friend.friendInfo.id === friend_user_id);
+    if (isFriend) {
+      Alert.alert("Đã kết bạn với người này");
+      setModalVisible(false);
+      return;
+    }
+
+    socket.emit("send_friend_request", {
+      user_id:friend_user_id ,
+      user_friend_id: user.id
+    });
+
+    socket.once("friend_request_sent", () => {
+      Alert.alert("Đã gửi lời mời kết bạn!");
+      fetchSendRequestWithDetails(); // cập nhật lại danh sách
+      setModalVisible(false);
+    });
+
+    socket.once("friend_request_error", (err) => {
+      Alert.alert("Lỗi", err.message || "Không thể gửi lời mời.");
+    });
+  } catch (err) {
+    console.error(err);
+    Alert.alert("Lỗi không xác định");
+  }
+};
     {/*tạo nhóm nè*/}
         const handleCreateGroup = () => {
           navigation.navigate("GroupCreate",{friendsList});
         };
     {/*từ chối nè*/}
-    const handleRejectRequest = async (user_friend_id: string) => {
-    try {
-          await rejectFriendRequest(user.id, user_friend_id);
-          fetchFriendsRequestWithDetails();
-        } 
-    catch (error) {
-              console.error("Lỗi khi từ chối:", error);
-              Alert.alert("Lỗi", "Không thể từ chối lời mời kết bạn.");
-        }
-    };
+   const handleRejectRequest = async (user_friend_id: string) => {
+  socket.emit("reject_friend_request", {
+    user_id:user_friend_id,
+    user_friend_id:user.id
+  });
+
+  socket.once("friend_request_rejected", () => {
+    fetchFriendsRequestWithDetails(); // cập nhật danh sách lời mời
+  });
+
+  socket.once("error", (err) => {
+    Alert.alert("Lỗi", err.message || "Không thể từ chối.");
+  });
+};
+
     {/*đồng ý nè*/}
       const handleAcceptRequest = async (user_friend_id: string) => {
-            try {
-              //
-              await acceptFriendRequest(user_friend_id,user.id);
-              Alert.alert("Thành công", "Đã chấp nhận lời mời kết bạn.");
-              // gọi lại fetchFriendRequestsWithDetails để cập nhật danh sách
-              fetchFriendsRequestWithDetails();
-            } catch (error) {
-              console.error("Lỗi khi chấp nhận:", error);
-              Alert.alert("Lỗi", "Không thể chấp nhận lời mời kết bạn.");
-            }
-          };
+  socket.emit("accept_friend_request", {
+    user_id: user.id,
+    user_friend_id: user_friend_id
+  });
+
+  socket.once("friend_request_accepted", () => {
+    Alert.alert("Thành công", "Đã chấp nhận lời mời.");
+    fetchFriendsRequestWithDetails();
+    fetchFriendsWithDetails(); // cập nhật danh sách bạn bè
+  });
+
+  socket.once("friend_request_accept_error", (err) => {
+    Alert.alert("Lỗi", err.message || "Không thể chấp nhận.");
+  });
+};
+
     {/*thu hồi nè*/}
-    const handleUndoRequest = async (user_friend_id: string) => {
-            try {
-              await rejectFriendRequest(user_friend_id,user.id);
-              fetchSendRequestWithDetails();
-            } catch (error) {
-              console.error("Lỗi khi thu hồi:", error);
-              Alert.alert("Lỗi", "Không thể thu hồi lời mời.");
-            }
-          };
+          const handleUndoRequest = async (user_friend_id: string) => {
+  socket.emit("cancel_friend_request", {
+    user_id: user.id,
+    user_friend_id: user_friend_id
+  });
+
+  socket.once("friend_request_deleted", () => {
+    fetchSendRequestWithDetails(); // cập nhật lại danh sách
+  });
+
+  socket.once("error", (err) => {
+    Alert.alert("Lỗi", err.message || "Không thể thu hồi.");
+  });
+};
+
           {/*quản lý search*/}
            const handleSearch = async () => {
                   if (!searchText) {
@@ -307,6 +332,14 @@ const handleFindConversation = async (userId, friend) => {
                       throw err;
                   }
                 };
+  useSocketFriendEvents({
+  userId: user.id,
+  fetchFriendRequests: fetchFriendsRequestWithDetails,
+  fetchSentRequests: fetchSendRequestWithDetails,
+  fetchFriendsList: fetchFriendsWithDetails,
+  });
+
+  
   const renderGroupItem = ({ item }) => (
       <View style={styles.groupItem}>
         <Image source={{ uri: item.avatar }} style={styles.groupAvatar} />
