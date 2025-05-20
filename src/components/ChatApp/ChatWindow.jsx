@@ -81,15 +81,20 @@ const ChatWindow = ({
 
 
   useEffect(() => {
-    if (!selectedChat?.conversation_id) return;
+    console.log("conversaton",selectedChat?.conversation_id);
+
+    if (!selectedChat?.conversation_id) {
+      setMessages([]);
+      return;
+    }
     socket.emit("get_messages", {
       conversation_id: selectedChat.conversation_id,
-      user_id: userMain.id, // Thêm dòng này để BE lọc đúng
+      user_id: userMain.id
 
     });
 
     socket.on("list_messages", (data) => {
-      console.log("List messages event received:", data);
+      // console.log("List messages event received:", data);
 
       const dataSort = data.sort(
         (a, b) => new Date(a.created_at) - new Date(b.created_at)
@@ -121,7 +126,8 @@ const ChatWindow = ({
   }, [selectedChat?.conversation_id, selectedChat?.user_id, userMain.id]);
 
   useEffect(() => {
-    socket.on("new_message", (msg) => {
+    const handleSocketNewMessage = (msg) => {
+      // Chỉ xử lý nếu đúng conversation đang mở
       console.log("New message event received:", msg);
       handleNewMessage(
         msg,
@@ -132,10 +138,12 @@ const ChatWindow = ({
         (conversationId) =>
           markAsRead(socket, conversationId, userMain.id, setChats)
       );
-    });
+    };
+
+    socket.on("new_message", handleSocketNewMessage);
 
     return () => {
-      socket.off("new_message");
+      socket.off("new_message", handleSocketNewMessage);
       socket.off("connect");
       socket.off("disconnect");
     };
