@@ -1012,13 +1012,5 @@ ConversationController.getConversationsRecent = async (req, res) => {
     res.status(500).json({ message: "Có lỗi khi lấy danh sách hội thoại gần đây" });
   }
 }
-ConversationController.deleteHistoryForUser = async (socket, data) => {
-  const { user_id, conversation_id } = data;
-  if (!user_id || !conversation_id) {
-    throw new Error("Thiếu tham số");
-  }
-  await messageModel.setDeleteHistory(user_id, conversation_id);
-};
-
 
 module.exports = ConversationController;
