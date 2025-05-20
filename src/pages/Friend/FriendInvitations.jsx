@@ -14,6 +14,7 @@ import { useSelector } from "react-redux";
 import { getUserById } from "../../services/UserService";
 import InfoFriend from "../../components/ChatApp/InfoFriend";
 import { getPrivateConversation } from "../../services/Conversation";
+import socket from "../../services/Socket";
 
 const FriendInvitations = () => {
   const user = useSelector((state) => state.user.user);
@@ -34,9 +35,6 @@ const FriendInvitations = () => {
     const fetchUserInfo = async () => {
       try {
         const response = await getUserById(user_friend_id);
-        console.log('====================================');
-        console.log(response);
-        console.log('====================================');
         if (response.status === "success") {
           setUserInfo(response.user); // Assuming the user data is in response.data.user
         } else {
@@ -44,7 +42,7 @@ const FriendInvitations = () => {
         }
       } catch (error) {
         console.error("Error fetching user info:", error);
-      }finally{
+      } finally {
         setOpenModalFriend(true);
       }
     };
@@ -103,61 +101,175 @@ const FriendInvitations = () => {
     fetchInvitations();
   }, [user.id]);
 
+  useEffect(() => {
+    const handleCreateFriendRequest = async (data) => {
+      console.log("Received friend request:", data);
+      if (data.code === 200) {
+        const receiver = await getUserById(data.to);
+        if (receiver) {
+          setSentInvitations((prev) => [...prev, receiver.user]);
+        }
+      } else {
+        console.error("Failed to send friend request:", data.message);
+      }
+    };
+    socket.on("friend_request_sent", handleCreateFriendRequest);
+    return () => {
+      socket.off("friend_request_sent", handleCreateFriendRequest);
+    };
+  }, [socket])
+
+  useEffect(() => {
+    const handleFriendRequest = async (data) => {
+      console.log("Received friend request:", data);
+      if (data.message) {
+        const sender = await getUserById(data.from);
+        console.log('====================================');
+        console.log(sender);
+        console.log('====================================');
+        if (sender) {
+          setReceivedInvitations((prev) => [...prev, sender.user]);
+        }
+      } else {
+        console.error("Failed to send friend request:", data.message);
+      }
+    };
+
+    socket.on("new_friend_request", handleFriendRequest);
+
+    return () => {
+      socket.off("new_friend_request", handleFriendRequest);
+    };
+  }, [socket])
   const handleWithdraw = async (id) => {
-    setSentInvitations(
-      sentInvitations.filter((invitation) => invitation.id !== id)
-    );
-
-    // Call API to withdraw the invitation if needed
-    try{
-      const res = await cancelFriendRequest(user.id, id);
-      console.log(res);
-
-      if (res.code === 200) {
-        console.log("Withdrawn friend request successfully");
-      } else {
-        console.error("Failed to withdraw friend request", res.message);
-      }
-
-    }catch (error) {
-      console.error("Error withdrawing invitation:", error);
-    }
-    
+    socket.emit("cancel_friend_request", {
+      user_id: user.id,
+      user_friend_id: id
+    })
   };
+  useEffect(() => {
+    const handleWithdraw = (data) => {
+      if (data.code === 200 && data.from) {
+        const acceptedId = data.from;
+        console.log('====================================');
+        console.log(acceptedId);
+        console.log('====================================');
+
+        // Loại bỏ lời mời kết bạn đã được chấp nhận khỏi danh sách
+        setReceivedInvitations((prevInvitations) =>
+          prevInvitations.filter((inv) => inv.id !== acceptedId)
+        );
+      }
+    };
+    socket.on("friend_request_deleted_notify", handleWithdraw);
+    return () => {
+      socket.off("friend_request_deleted_notify", handleWithdraw);
+    };
+  }, [socket]);
+  useEffect(() => {
+    const handleWithdraw = (data) => {
+      if (data.code === 200 && data.data?.user_friend_id) {
+        const acceptedId = data.data.user_friend_id;
+        console.log('====================================');
+        console.log(acceptedId);
+        console.log('====================================');
+        // Loại bỏ lời mời kết bạn đã được chấp nhận khỏi danh sách
+        setSentInvitations((prevInvitations) =>
+          prevInvitations.filter((inv) => inv.id !== acceptedId)
+        );
+      }
+    };
+    socket.on("friend_request_deleted", handleWithdraw);
+
+    return () => {
+      socket.off("friend_request_deleted", handleWithdraw);
+    };
+  }, [socket]);
+
   const handleAccept = async (id) => {
-    try {
-      const res = await acceptFriendRequest(user.id, id);
-      (res);
-
-      if (res.code === 200) {
-        console.log("Accepted friend request successfully");
-      } else {
-        console.error("Failed to accept friend request", res.message);
-      }
-      setReceivedInvitations(
-        receivedInvitations.filter((invitation) => invitation.id !== id)
-      );
-    } catch (error) {
-      console.error("Error accepting invitation:", error);
-    }
+    socket.emit("accept_friend_request", {
+      user_id: user.id,
+      user_friend_id: id
+    });
   };
+  useEffect(() => {
+    const handleAccept = (data) => {
+      if (data.code === 200 && data.data?.result?.user_id) {
+        const acceptedId = data.data.result.user_id;
+        // Loại bỏ lời mời kết bạn đã được chấp nhận khỏi danh sách
+        setReceivedInvitations((prevInvitations) =>
+          prevInvitations.filter((inv) => inv.id !== acceptedId)
+        );
+      }
+    };
+
+    socket.on("friend_request_accepted", handleAccept);
+
+    return () => {
+      socket.off("friend_request_accepted", handleAccept);
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    const handleAccept = (data) => {
+      if (data.status === "success" && data.from) {
+        const acceptedId = data.from;
+        // Loại bỏ lời mời kết bạn đã được chấp nhận khỏi danh sách
+        setSentInvitations((prevInvitations) =>
+          prevInvitations.filter((inv) => inv.id !== acceptedId)
+        );
+      }
+    };
+    socket.on("friend_request_accepted_notify", handleAccept);
+
+    return () => {
+      socket.off("friend_request_accepted_notify", handleAccept);
+    };
+  }, [socket])
+
   const handleReject = async (id) => {
-    try {
-      const res = await rejectFriendRequest(user.id, id);
-      console.log(res);
-
-      if (res.code === 200) {
-        console.log("Reject friend request successfully");
-      } else {
-        console.error("Failed to reject friend request", res.message);
-      }
-      setReceivedInvitations(
-        receivedInvitations.filter((invitation) => invitation.id !== id)
-      );
-    } catch (error) {
-      console.error("Error rejecting invitation:", error);
-    }
+    socket.emit("reject_friend_request", {
+      user_id: user.id,
+      user_friend_id: id
+    });
   };
+  useEffect(() => {
+    const handleReject = (data) => {
+      if (data.code === 200 && data.data?.user_friend_id) {
+        const acceptedId = data.data.user_friend_id;
+        // Loại bỏ lời mời kết bạn đã bị từ chối
+        setReceivedInvitations((prevInvitations) =>
+          prevInvitations.filter((inv) => inv.id !== acceptedId)
+        );
+      }
+    };
+    socket.on("friend_request_rejected", handleReject);
+    return () => {
+      socket.off("friend_request_rejected", handleReject);
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    const handleReject = (data) => {
+      if (data.code === 200 && data.from) {
+        const acceptedId = data.from;
+        // Loại bỏ lời mời kết bạn đã bị từ chối
+        setSentInvitations((prevInvitations) =>
+          prevInvitations.filter((inv) => inv.id !== acceptedId)
+        );
+      }
+    };
+
+    socket.on("friend_request_rejected", handleReject);
+
+    return () => {
+      socket.off("friend_request_rejected", handleReject);
+    };
+  }, [socket])
+
+
+
+
   const renderInvitations = (invitations, isReceived) => {
     if (invitations.length === 0) {
       return (
@@ -173,10 +285,10 @@ const FriendInvitations = () => {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {invitations.map((invitation) => (
-          <div 
-            onClick={()=>openInfoFriend(invitation.id)}
+          <div
+            onClick={() => openInfoFriend(invitation.id)}
             key={invitation.id}
-            className="flex flex-col items-center bg-white p-4 rounded-lg shadow-sm border border-gray-200"
+            className="flex flex-col items-center hover:cursor-pointer bg-white p-4 rounded-lg shadow-sm border border-gray-200"
           >
             <Avatar
               size={64}
@@ -224,36 +336,36 @@ const FriendInvitations = () => {
 
   return (
     <div className="flex flex-col h-full bg-white p-6">
-    <h1 className="text-xl font-semibold mb-4">Lời mời kết bạn</h1>
-    <Tabs defaultActiveKey="1">
-      <Tabs.TabPane
-        tab={`Lời mời đã gửi (${sentInvitations.length})`}
-        key="1"
-      >
-        {renderInvitations(sentInvitations, false)}
-      </Tabs.TabPane>
-      <Tabs.TabPane
-        tab={`Lời mời nhận được (${receivedInvitations.length})`}
-        key="2"
-      >
-        {renderInvitations(receivedInvitations, true)}
-      </Tabs.TabPane>
-    </Tabs>
-  
-    {openModalFriend && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-        <div className="bg-white p-2 rounded-2xl shadow-lg max-w-md w-full">
-          <InfoFriend
-            userInfo={userInfo}
-            handleBack={handleBack}
-            step={step}
+      <h1 className="text-xl font-semibold mb-4">Lời mời kết bạn</h1>
+      <Tabs defaultActiveKey="1">
+        <Tabs.TabPane
+          tab={`Lời mời đã gửi (${sentInvitations.length})`}
+          key="1"
+        >
+          {renderInvitations(sentInvitations, false)}
+        </Tabs.TabPane>
+        <Tabs.TabPane
+          tab={`Lời mời nhận được (${receivedInvitations.length})`}
+          key="2"
+        >
+          {renderInvitations(receivedInvitations, true)}
+        </Tabs.TabPane>
+      </Tabs>
 
-          />
+      {openModalFriend && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-2 rounded-2xl shadow-lg max-w-md w-full">
+            <InfoFriend
+              userInfo={userInfo}
+              handleBack={handleBack}
+              step={step}
+              isReceiveInvitation={true}
+            />
+          </div>
         </div>
-      </div>
-    )}
-  </div>
-  
+      )}
+    </div>
+
   );
 };
 

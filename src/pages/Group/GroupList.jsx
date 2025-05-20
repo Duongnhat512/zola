@@ -8,6 +8,9 @@ import ChatWindow from "../../components/ChatApp/ChatWindow";
 import InfoFriend from "../../components/ChatApp/InfoFriend";
 import Swal from "sweetalert2";
 import InfoGroup from "./InfoGroup";
+import socket from "../../services/Socket";
+import { getUserById } from "../../services/UserService";
+import { toast } from "react-toastify";
 
 const GroupList = () => {
   const [groups, setGroup] = useState([]);
@@ -47,12 +50,6 @@ const GroupList = () => {
   const handleBack = () => {
     setOpenModalFriend(false);
   }
-
-  const fetchConversations = () => {
-
-
-  }
-
   useEffect(() => {
     const fetchGroups = async () => {
       try {
@@ -69,35 +66,95 @@ const GroupList = () => {
 
     fetchGroups();
   }, [user.id]);
-  const handleDeleteFriend = async (friend) => {
-    const result = await Swal.fire({
-      title: 'Xác nhận xóa bạn',
-      text: `Bạn có muốn xóa ${friend.fullname} khỏi danh sách bạn bè không?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Xóa',
-      cancelButtonText: 'Hủy',
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
+  const grantPermission = (friend, permission, group) => {
+    // Gửi phân quyền cho người được chọn
+    socket.emit("set_permissions", {
+      conversation_id: group.id,
+      user_id: friend.id,
+      permissions: permission
     });
+  };
+  const handleOutGroup = async (group) => {
+    const confirmLeave = await Swal.fire({
+      title: "Bạn có chắc chắn muốn rời nhóm?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Rời nhóm",
+      cancelButtonText: "Hủy",
+    });
+    let members = group?.list_user_id || [];
+    members = await Promise.all(
+      members.map(async (member) => {
+        const res = await getUserById(member.user_id);
+        return res.status === "success" ? { ...member, ...res.user } : member;
+      })
+    );
+    let permission = group.list_user_id.find((member) => member.user_id === user.id).permission;
+    if (!confirmLeave.isConfirmed) return;
 
-    if (result.isConfirmed) {
-      try {
-        const response = await deleteFriend(user.id, friend.id);
-        if (response.code === 200) {
-          Swal.fire('Đã xóa!', 'Bạn đã xóa bạn thành công.', 'success');
-          setFriends((prevFriends) =>
-            prevFriends.filter((f) => f.id !== friend.id)
-          );
-        } else {
-          Swal.fire('Thất bại', 'Xóa bạn không thành công.', 'error');
-        }
-      } catch (error) {
-        console.error('Lỗi khi xóa bạn:', error);
-        Swal.fire('Lỗi', 'Đã xảy ra lỗi khi xóa bạn.', 'error');
+    // Nếu là owner, yêu cầu chuyển quyền trước
+    if (permission === "owner") {
+      const transferResult = await Swal.fire({
+        title: "Chuyển quyền trưởng nhóm cho ai?",
+        input: "select",
+        inputOptions: members.reduce((acc, member) => {
+          if (member.id !== user.id) {
+            acc[member.id] = member.fullname;
+          }
+          return acc;
+        }, {}),
+        inputPlaceholder: "Chọn người",
+        showCancelButton: true,
+        inputValidator: (value) => {
+          return !value ? "Bạn cần chọn một người!" : null;
+        },
+        confirmButtonText: "Chuyển quyền",
+        cancelButtonText: "Hủy",
+      });
+
+      if (!transferResult.isConfirmed) return;
+
+      const selectedUserId = transferResult.value;
+      const selectedUser = members.find((m) => m.id === selectedUserId);
+
+      console.log('====================================');
+      console.log(selectedUser);
+      console.log('====================================');
+
+      if (selectedUser) {
+        // ✅ CHỜ phân quyền hoàn tất
+        await grantPermission(selectedUser, "owner", group);
+      } else {
+        return Swal.fire("Không tìm thấy người dùng được chọn!", "", "error");
       }
     }
+
+    setTimeout(() => {
+      socket.emit("out_group", {
+        conversation_id: group.id,
+        user_id: user?.id,
+      });
+    }, 1000);
   };
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleOutGroup = async (data) => {
+      toast.success(data.message);
+      setGroup((prevGroups) =>
+        prevGroups.filter((group) => group.id !== data.conversation_id)
+      );
+    };
+
+    socket.on("out_group", handleOutGroup);
+
+    return () => {
+      socket.off("out_group", handleOutGroup);
+    };
+  }, [socket]);
+
+
   const handleFindConversation = async (conversation) => {
     try {
       setSelectedChat(conversation);
@@ -215,7 +272,6 @@ const GroupList = () => {
             : m
         )
       );
-      fetchConversations();
     });
 
     setInput("");
@@ -311,6 +367,17 @@ const GroupList = () => {
       setIsGroupSettingsVisible(false);
     }
   };
+  const filteredGroup = groups
+    .filter((group) =>
+      group.name?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (sortOrder === "A-Z") {
+        return a.name?.localeCompare(b.name || "");
+      } else {
+        return b.name?.localeCompare(a.name || "");
+      }
+    });
 
   return (
     <div className="flex h-screen">
@@ -340,14 +407,14 @@ const GroupList = () => {
 
           <div>
             <List
-              dataSource={groups}
+              dataSource={filteredGroup}
               renderItem={(group) => {
                 const menu = (
                   <Menu>
                     {/* <Menu.Item key="info" onClick={() => handleViewInfo(friend)}>
                         Xem thông tin
                       </Menu.Item> */}
-                    <Menu.Item key="remove" onClick={() => handleDeleteFriend(group)}>
+                    <Menu.Item key="remove" onClick={() => handleOutGroup(group)}>
                       Rời nhóm
                     </Menu.Item>
                   </Menu>
@@ -358,7 +425,7 @@ const GroupList = () => {
                     <div onClick={() => handleFindConversation(group)}
                       className="flex flex-1 items-center gap-2 hover:bg-gray-100 p-2 rounded cursor-pointer"
                     >
-                      <Avatar size={40} icon={<UserOutlined />} src={group.avatar} />
+                      <Avatar size={40} icon={<UserOutlined />} src={group.avatar || '/default.png'} />
                       <div>
                         <span>{group.name}</span>
                         <p className="text-sm text-gray-500">
@@ -385,7 +452,6 @@ const GroupList = () => {
           setMessages={setMessages}
           setInput={setInput}
           setChats={setChats}
-          fetchConversations={fetchConversations}
           setIsInfoGroupVisible={setIsInfoGroupVisible}
           isInfoGroupVisible={isInfoGroupVisible}
           isModalGroupVisible={isModalGroupVisible}

@@ -55,7 +55,7 @@ export const logoutUser = async (username) => {
   return await axios.post("/auth-service/auth/logout", { username });
 };
 export const getUserSdt = async (sdt) => {
-  return await axios.get(`/friend-service/friends/find?phoneNumber=${sdt}`);
+  return await axios.get(`/chat-service/friends/find?phoneNumber=${sdt}`);
 };
 
 export const getUserById = async (id) => {
