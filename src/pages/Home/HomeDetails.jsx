@@ -231,7 +231,7 @@ const HomeDetails = () => {
 
     const profile = await getProfile(user_id);
 
-    if (profile) {
+    if (profile && data.status === "success") {
       const displayName = profile.fullname || "Người dùng";
       sendMessage(null, true, `${displayName} đã trở thành ${permissionName}`);
     }
@@ -377,7 +377,7 @@ const HomeDetails = () => {
     const handleRemovedMember = async (data) => {
       const userToAdd = data.user_id;
       const profile = await getProfile(userToAdd);
-      if (profile) {
+      if (profile && data.status === "success") {
         sendMessage(null, true, `${userProfile?.fullname} đã bị xóa khỏi nhóm`);
       }
 
@@ -455,7 +455,7 @@ const HomeDetails = () => {
 
     const handleAddMember = async (data) => {
       const profile = await getProfile(data.user_id);
-      if (profile) {
+      if (profile && data.status === "success") {
         sendMessage(null, true, `${profile.fullname} đã được thêm vào nhóm`);
       }
 
@@ -546,14 +546,7 @@ const HomeDetails = () => {
         fetchConversations();
         return;
       }
-      console.log('====================================');
-      console.log(data);
-      console.log('====================================');
-
       const profile = await getProfile(data.user_id);
-      console.log('====================================');
-      console.log(profile);
-      console.log('====================================');
       if (profile && data.status === "success") {
         sendMessage(null, true, `${userProfile?.fullname} đã rời nhóm`);
       }
@@ -735,9 +728,16 @@ const HomeDetails = () => {
 
   useEffect(() => {
     const handleUnPinMessageClient = async (data) => {
-      console.log('====================================');
-      console.log(data);
-      console.log('====================================');
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === data.message_id
+            ? {
+              ...msg,
+              pinned: false,
+            }
+            : msg
+        )
+      );
     }
 
     socket.on("message_unpinned", handleUnPinMessageClient);
