@@ -47,7 +47,7 @@ const MessageActionModal = ({
             style={disablePin ? { opacity: 0.5 } : null}
           >
             <Text style={styles.modalOptionText}>
-              {disablePin ? 'Đã ghim' : 'Ghim tin nhan'}
+              {disablePin ? 'Đã ghim' : 'Ghim tin nhắn'}
             </Text>
           </TouchableOpacity>
 
@@ -59,7 +59,10 @@ const MessageActionModal = ({
           >
             <Text style={styles.modalOptionText}>Xóa ở phía bạn</Text>
           </TouchableOpacity>
-
+          
+  
+          
+            
           <TouchableOpacity onPress={onClose}>
             <Text style={styles.modalOptionText}>Hủy</Text>
           </TouchableOpacity>

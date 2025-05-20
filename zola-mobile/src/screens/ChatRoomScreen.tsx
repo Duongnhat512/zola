@@ -90,20 +90,40 @@ const [pinnedMessages, setPinnedMessages] = useState([]);
         console.log(formatted2.filter((msg) => msg.pinned === true))
 
       });
+        socketInstance.on('list_messages', (data) => {
+          const sortedData = data.sort((a, b) => a.created_at.localeCompare(b.created_at));
+          const formatted = sortedData.map((msg) => {
+            const isMe = msg.sender_id === currentUser.id;
+            return {
+              id: msg.id,
+              sender: isMe ? 'me' : 'other',
+              senderName: isMe ? currentUser.fullname : msg.sender_name,
+              text: msg.is_deleted ? 'Tin nhắn đã thu hồi' : msg.message,
+              avatar: isMe ? currentUser.avt : msg.sender_avatar,
+              time: dayjs(msg.created_at).fromNow(),
+              type: msg.is_deleted ? 'deleted' : msg.type,
+              file: msg.media ? { uri: msg.media, name: msg.media.split('/').pop() } : undefined,
+              status: 'sent',
+              pinned:msg.pinned||false
+            };
+          });
+          setMessages(formatted);
+          // console.log('Messages:', formatted);
+        });
 
       socketInstance.on('hidden_message', (data) => {
         setMessages((prev) => prev.filter((msg) => msg.id !== data.message_id));
       });
 
-      socketInstance.on('message_deleted', (data) => {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === data.message_id
-              ? { ...msg, text: 'Tin nhắn đã thu hồi', file: null, type: 'deleted' }
-              : msg
-          )
-        );
-      });
+        socketInstance.on('message_deleted', (data) => {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === data.message_id
+                ? { ...msg, text: 'Tin nhắn đã thu hồi', file: null, type: 'deleted' }
+                : msg
+            )
+          );
+        });
 
       socketInstance.on('new_message', (data) => {
         const isMe = data.sender_id === currentUser.id;
@@ -359,7 +379,9 @@ const getOriginalFileName = (fileName) => {
     <TouchableOpacity
       onLongPress={() => {
         if (item.sender === 'me') {
+     
           setSelectedMessage(item);
+          console.log("--------------"+item.text);
           setModalVisible(true);
         }
       
@@ -384,7 +406,10 @@ const getOriginalFileName = (fileName) => {
             <View style={[
               item.type === 'deleted' ? styles.deletedMessage : styles.messageBubble,
               item.sender === 'me' ? styles.myMessage : styles.theirMessage
-            ]}>
+            ]}>   
+              {item.pinned && (
+              <Text style={{ fontSize: 12, color: '#ff9900' }}>📌</Text>
+              )}
              {item.file && item.type !== 'deleted' && (
               <TouchableOpacity onPress={() => {
                 if (item.type === 'image') {
@@ -600,7 +625,7 @@ const getOriginalFileName = (fileName) => {
           styles={styles}
           message={selectedMessage}
           conversations={conversations}
-          disablePin={selectedMessage?.pinned === true}
+          disablePin={pinnedMessages.some((msg) => msg.id === selectedMessage.id)}
         />
       </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
