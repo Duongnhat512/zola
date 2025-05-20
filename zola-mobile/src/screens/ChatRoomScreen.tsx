@@ -75,6 +75,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
               type: msg.is_deleted ? 'deleted' : msg.type,
               file: msg.media ? { uri: msg.media, name: msg.media.split('/').pop() } : undefined,
               status: 'sent',
+              pinned:msg.pinned||false
             };
           });
           setMessages(formatted);
@@ -94,6 +95,35 @@ const ChatRoomScreen = ({ route, navigation }) => {
             )
           );
         });
+        // socketInstance.on('pin_message_success', (data) => {
+        // Alert.alert("📌 Tin nhắn đã ghim:");
+        // //   const { message_id } = data;
+
+        // // setMessages((prev) =>
+        // // prev.map((msg) =>
+        // // msg.id === message_id ? { ...msg, isPinned: true } : msg
+        // // )
+        // // );
+        // // // Tuỳ bạn muốn lưu đâu (ví dụ hiển thị đầu đoạn chat hoặc đánh dấu nó)
+        // });
+        socketInstance.on('message_pinned', (data) => {
+        const { message_id } = data;
+        setMessages((prev) =>
+        prev.map((msg) =>
+        msg.id === message_id ? { ...msg, pinned: true } : msg
+        )
+        );
+        });
+        socketInstance.on('message_unpinned', (data) => {
+        const { message_id } = data;
+          
+        setMessages((prev) =>
+          prev.map((msg) =>
+          msg.id === message_id ? { ...msg, pinned: false } : msg
+          )
+          );
+          });
+
 
         socketInstance.on('new_message', (data) => {
           const isMe = data.sender_id === currentUser.id;
@@ -143,6 +173,58 @@ const handleEmojiSelect = (emoji) => {
   // KHÔNG đóng modal ở đây!
   // setShowEmojiPicker(false);
   inputRef.current?.focus();
+};
+const handleUnpinMessage = () => {
+  if (!selectedMessage) return;
+
+  socket.emit("unpin_message", {
+    message_id: selectedMessage.id,
+    conversation_id: chats.conversation_id,
+    message_text: selectedMessage.text,
+  });
+
+  socket.once("unpin_message_success", () => {
+    Alert.alert("🔓", "Đã bỏ ghim tin nhắn.");
+
+    // Cập nhật local
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.id === selectedMessage.id ? { ...msg, pinned: false } : msg
+      )
+    );
+
+    setModalVisible(false);
+  });
+
+  socket.once("error", (err) => {
+    Alert.alert("Lỗi", err.message || "Không thể bỏ ghim.");
+  });
+};
+
+const handlePinMessage = () => {
+  if (!selectedMessage) return;
+  socket.emit("pin_message", {
+    message_id: selectedMessage.id,
+    conversation_id: chats.conversation_id,
+    message_text: selectedMessage.text,
+  });
+
+  socket.once("pin_message_success", (res) => {
+      const  message_id  = res.result.pinned_message.id;
+      setMessages((prev) =>
+      prev.map((msg) =>
+      msg.id === message_id ? { ...msg, pinned: true } : msg
+    )
+  );
+   Alert.alert("🔖", "Tin nhắn đã được ghim.");
+    // Bạn có thể xử lý thêm logic nếu cần
+  });
+
+  socket.once("error", (err) => {
+    Alert.alert("Lỗi", err.message || "Không thể ghim tin nhắn.");
+  });
+
+  setModalVisible(false);
 };
 
   const pickFile = async () => {
@@ -293,7 +375,9 @@ const getOriginalFileName = (fileName) => {
     <TouchableOpacity
       onLongPress={() => {
         if (item.sender === 'me') {
+     
           setSelectedMessage(item);
+          console.log("--------------"+item.text);
           setModalVisible(true);
         }
       
@@ -318,7 +402,10 @@ const getOriginalFileName = (fileName) => {
             <View style={[
               item.type === 'deleted' ? styles.deletedMessage : styles.messageBubble,
               item.sender === 'me' ? styles.myMessage : styles.theirMessage
-            ]}>
+            ]}>   
+              {item.pinned && (
+              <Text style={{ fontSize: 12, color: '#ff9900' }}>📌</Text>
+              )}
              {item.file && item.type !== 'deleted' && (
   <TouchableOpacity onPress={() => {
     // Nếu là ảnh hoặc video thì preview, còn lại thì mở file (nếu muốn)
@@ -527,6 +614,8 @@ const getOriginalFileName = (fileName) => {
           styles={styles}
           message={selectedMessage}
           conversations={conversations}
+          onPin={handlePinMessage}
+          onUnpin={handleUnpinMessage}
         />
       </KeyboardAvoidingView>
       </TouchableWithoutFeedback>

@@ -10,6 +10,8 @@ const MessageActionModal = ({
   navigation,
   message,
   conversations,
+  onPin,
+  onUnpin
 }) => {
   return (
     <Modal visible={visible} transparent animationType="fade">
@@ -37,7 +39,26 @@ const MessageActionModal = ({
           >
             <Text style={styles.modalOptionText}>Xóa ở phía bạn</Text>
           </TouchableOpacity>
+          
+           {message?.pinned ? (
+            <TouchableOpacity onPress={()=>{
+            onClose();
+            onUnpin();
+            }}>
 
+
+            <Text style={styles.modalOptionText}>Gỡ ghim tin nhắn</Text>
+             </TouchableOpacity>
+            ):
+            (   
+            <TouchableOpacity onPress={()=>{
+            onClose();
+            onPin();
+            }}>
+            <Text style={styles.modalOptionText}>Ghim tin nhắn</Text>
+            </TouchableOpacity>)
+          }
+            
           <TouchableOpacity onPress={onClose}>
             <Text style={styles.modalOptionText}>Hủy</Text>
           </TouchableOpacity>
