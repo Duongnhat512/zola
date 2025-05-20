@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   },
   
   theirMessage: {
-    backgroundColor: '#ccc',
+    backgroundColor: '#DCF8C6',
     alignSelf: 'flex-start',
     borderTopLeftRadius: 0,
   },

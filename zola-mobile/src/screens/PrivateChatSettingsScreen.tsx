@@ -32,9 +32,20 @@ export default function PrivateChatSettingsScreen({ navigation  }) {
     );
   }
   const fetchMemberDetails = async () => {
-    const fetched = await GetUserById(conversation.list_user_id[0].user_id);
-    setMemberDetails(fetched?.user);
-  };
+  let userId = null;
+  console.log('conversation.list_user_id', conversation.list_user_id);
+  if (Array.isArray(conversation.list_user_id)) {
+    if (typeof conversation.list_user_id[0] === "string") {
+      userId = conversation.list_user_id.find(id => id !== currentUserId);
+    } else {
+      const otherUser = conversation.list_user_id.find(user => user.user_id !== currentUserId);
+      userId = otherUser?.user_id;
+    }
+  } 
+
+  const fetched = await GetUserById(userId);
+  setMemberDetails(fetched?.user);
+};
   const handleBlockUser = () => {
     Alert.alert('Đã chặn người dùng', `${memberDetails.fullname||'lp'} đã bị chặn.`);
   };

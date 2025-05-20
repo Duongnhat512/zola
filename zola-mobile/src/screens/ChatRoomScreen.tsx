@@ -3,6 +3,8 @@ import MessageActionModal from './modal/MessageActionModal';
 import EmojiPickerModal from './modal/EmojiPickerModal';
 import VideoPreviewModal from './modal/VideoPreviewModal';
 import ImagePreviewModal from './modal/ImagePreviewModal';
+import PinnedMessagePanel from './modal/PinnedMessagePanel';
+import { useSocket } from "../context/SocketContext";
 import {
   View,
   Text,
@@ -49,82 +51,106 @@ const ChatRoomScreen = ({ route, navigation }) => {
   const isValidInput = inputText.trim().length > 0 || file !== null;
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const inputRef = useRef(null);
-  console.log('chat.list_user_id', chats.list_user_id);
+  const SocketContext = useSocket();
+  // console.log('chat.list_user_id', conversations);
+const [pinnedMessages, setPinnedMessages] = useState([]);
 
   useEffect(() => {
-    const initSocket = async () => {
-      try {
-        const socketInstance = await setupSocket();
-        setSocket(socketInstance);
+  const initSocket = async () => {
+    try {
+      const socketInstance = await setupSocket();
+      setSocket(socketInstance);
+  
+      socketInstance.on('connect', () => {
+        socketInstance.emit('get_messages', { conversation_id: chats.conversation_id });
+        socketInstance.emit('get_pinned_messages', { conversation_id: chats.conversation_id }); // Lấy danh sách tin nhắn ghim
+      });
 
-        socketInstance.on('connect', () => {
-          socketInstance.emit('get_messages', { conversation_id: chats.conversation_id });
-        });
-
-        socketInstance.on('list_messages', (data) => {
-          const sortedData = data.sort((a, b) => a.created_at.localeCompare(b.created_at));
-          const formatted = sortedData.map((msg) => {
-            const isMe = msg.sender_id === currentUser.id;
-            return {
-              id: msg.id,
-              sender: isMe ? 'me' : 'other',
-              senderName: isMe ? currentUser.fullname : msg.sender_name,
-              text: msg.is_deleted ? 'Tin nhắn đã thu hồi' : msg.message,
-              avatar: isMe ? currentUser.avt : msg.sender_avatar,
-              time: dayjs(msg.created_at).fromNow(),
-              type: msg.is_deleted ? 'deleted' : msg.type,
-              file: msg.media ? { uri: msg.media, name: msg.media.split('/').pop() } : undefined,
-              status: 'sent',
-            };
-          });
-          setMessages(formatted);
-          // console.log('Messages:', formatted);
-        });
-
-        socketInstance.on('hidden_message', (data) => {
-          setMessages((prev) => prev.filter((msg) => msg.id !== data.message_id));
-        });
-
-        socketInstance.on('message_deleted', (data) => {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === data.message_id
-                ? { ...msg, text: 'Tin nhắn đã thu hồi', file: null, type: 'deleted' }
-                : msg
-            )
-          );
-        });
-
-        socketInstance.on('new_message', (data) => {
-          const isMe = data.sender_id === currentUser.id;
-          const newMessage = {
-            id: data.id,
+      socketInstance.on('list_messages', (data) => {
+        console.log('Received messages:', data);
+        const sortedData = data.sort((a, b) => a.created_at.localeCompare(b.created_at));
+        const formatted1 = sortedData.map((msg) => {
+          const isMe = msg.sender_id === currentUser.id;
+          return {
+            id: msg.id,
             sender: isMe ? 'me' : 'other',
-            senderName: isMe ? currentUser.fullname : data.sender_name,
-            text: data.is_deleted ? 'Tin nhắn đã thu hồi' : data.message,
-            avatar: isMe ? currentUser.avt : data.sender_avatar,
-            time: dayjs(data.created_at).fromNow(),
-            type: data.is_deleted ? 'deleted' : data.type,
-            file: data.media ? { uri: data.media, name: data.media.split('/').pop() } : undefined,
+            senderName: isMe ? currentUser.fullname : msg.sender_name,
+            text: msg.is_deleted ? 'Tin nhắn đã thu hồi' : msg.message,
+            avatar: isMe ? currentUser.avt : msg.sender_avatar,
+            time: dayjs(msg.created_at).fromNow(),
+            type: msg.is_deleted ? 'deleted' : msg.type,
+            file: msg.media ? { uri: msg.media, name: msg.media.split('/').pop() } : undefined,
             status: 'sent',
-          };
-          setMessages((prev) => [...prev, newMessage]);
+            pinned:msg.pinned,
+          };    
         });
+        const formatted2 = JSON.parse(JSON.stringify(formatted1));
+        setMessages(formatted1)
+        setPinnedMessages(formatted2.filter((msg) => msg.pinned === true));
+        console.log(formatted2.filter((msg) => msg.pinned === true))
 
-        return () => {
-          socketInstance.off('connect');
-          socketInstance.off('list_messages');
-          socketInstance.off('hidden_message');
-          socketInstance.off('message_deleted');
-          socketInstance.off('new_message');
+      });
+
+      socketInstance.on('hidden_message', (data) => {
+        setMessages((prev) => prev.filter((msg) => msg.id !== data.message_id));
+      });
+
+      socketInstance.on('message_deleted', (data) => {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === data.message_id
+              ? { ...msg, text: 'Tin nhắn đã thu hồi', file: null, type: 'deleted' }
+              : msg
+          )
+        );
+      });
+
+      socketInstance.on('new_message', (data) => {
+        const isMe = data.sender_id === currentUser.id;
+        const newMessage = {
+          id: data.id,
+          sender: isMe ? 'me' : 'other',
+          senderName: isMe ? currentUser.fullname : data.sender_name,
+          text: data.is_deleted ? 'Tin nhắn đã thu hồi' : data.message,
+          avatar: isMe ? currentUser.avt : data.sender_avatar,
+          time: dayjs(data.created_at).fromNow(),
+          type: data.is_deleted ? 'deleted' : data.type,
+          file: data.media ? { uri: data.media, name: data.media.split('/').pop() } : undefined,
+          status: 'sent',
         };
-      } catch (error) {
-        console.error('Socket init error:', error);
-      }
-    };
+        setMessages((prev) => [...prev, newMessage]);
+      });
 
-    initSocket();
-  }, [chats.conversation_id]);
+
+
+      socketInstance.on('message_pinned', (data) => {
+        console.log('📌 Tin nhắn mới được ghim:', data);
+        if (data.status === 'success') {
+          setPinnedMessages((prev) => {
+            const exists = prev.some((msg) => msg.id === data.message_id);
+            if (!exists) return [...prev, data.pinned_message];
+            return prev;
+          });
+        }
+      });
+
+      return () => {
+        socketInstance.off('connect');
+        socketInstance.off('list_messages');
+        socketInstance.off('hidden_message');
+        socketInstance.off('message_deleted');
+        socketInstance.off('new_message');
+        
+
+      };
+    } catch (error) {
+      console.error('Socket init error:', error);
+    }
+  };
+  
+  initSocket();
+}, [chats.conversation_id]);
+
 
 
   useEffect(() => {
@@ -137,6 +163,41 @@ const ChatRoomScreen = ({ route, navigation }) => {
     }
   }, [socket, chats.conversation_id]);
  
+
+const handlePinMessage = () => {
+  if (!selectedMessage) return;
+  socket.emit("pin_message", {
+    message_id: selectedMessage.id,
+    conversation_id: chats.conversation_id,
+    message_text: selectedMessage.text,
+  });
+  setPinnedMessages((prev) => [
+    ...prev,
+    {
+        id: selectedMessage.id,
+        senderName: selectedMessage.senderName,
+        text: selectedMessage.text,
+    },
+  ]);
+  console.log('Pinned messages aaaaaaaaaa:', pinnedMessages);
+};
+
+// Hàm xử lý bỏ ghim tin nhắn
+const handleUnpinMessage = (messageId) => {
+  const message = pinnedMessages.find((msg) => msg.id === messageId);
+  if (!message) return;
+  socket.emit("unpin_message", {
+    message_id: message.id,
+    conversation_id: chats.conversation_id,
+    message_text: message.text,
+  });
+
+  setPinnedMessages((prev) => prev.filter((msg) => msg.id !== messageId));
+};
+
+
+
+
 const handleEmojiSelect = (emoji) => {
   if (!emoji) return;
   setInputText((prev) => prev + emoji); // Thêm emoji vào input
@@ -288,7 +349,12 @@ const getOriginalFileName = (fileName) => {
       )
     );
   };
-
+   const handleSelectPinnedMessage = (messageId) => {
+    const index = messages.findIndex(msg => msg.id === messageId);
+    if (index !== -1 && flatListRef.current) {
+      flatListRef.current.scrollToIndex({ index, animated: true });
+    }
+  };
   const renderMessage = ({ item }) => (
     <TouchableOpacity
       onLongPress={() => {
@@ -306,7 +372,7 @@ const getOriginalFileName = (fileName) => {
             <Text style={styles.notifyText}>{item.text}</Text>
           </View>
         ) : (
-          <>
+          <View>
             <View style={[
               styles.senderInfo,
               item.sender === 'me' ? styles.rowReverse : styles.rowNormal
@@ -320,39 +386,37 @@ const getOriginalFileName = (fileName) => {
               item.sender === 'me' ? styles.myMessage : styles.theirMessage
             ]}>
              {item.file && item.type !== 'deleted' && (
-  <TouchableOpacity onPress={() => {
-    // Nếu là ảnh hoặc video thì preview, còn lại thì mở file (nếu muốn)
-    if (item.type === 'image') {
-      setSelectedImage(item.file.uri);
-      setImagePreviewVisible(true);
-    } else if (item.type === 'video') {
-      setSelectedVideo(item.file.uri);
-      setVideoPreviewVisible(true);
-    } else {
-      // Có thể mở file bằng Linking.openURL(item.file.uri) nếu muốn
-      Alert.alert('File', `Tên file: ${item.file.name}`);
-    }
-  }}>
-    {item.type === 'image' ? (
-      <Image source={{ uri: item.file.uri }} style={styles.mediaPreview} />
-    ) : item.type === 'video' ? (
-      <Video
-        source={{ uri: item.file.uri }}
-        rate={1.0}
-        volume={1.0}
-        isMuted={false}
-        resizeMode="contain"
-        useNativeControls
-        style={styles.mediaPreview}
-      />
-    ) : (
-      <View style={{ flexDirection: 'row', alignItems: 'center', padding: 8 }}>
-        <Feather name="file" size={20} color="#007BFF" style={{ marginRight: 6 }} />
-        <Text>{getOriginalFileName(item.file.name)}</Text>
-      </View>
-    )}
-  </TouchableOpacity>
-)}
+              <TouchableOpacity onPress={() => {
+                if (item.type === 'image') {
+                  setSelectedImage(item.file.uri);
+                  setImagePreviewVisible(true);
+                } else if (item.type === 'video') {
+                  setSelectedVideo(item.file.uri);
+                  setVideoPreviewVisible(true);
+                } else {
+                  Alert.alert('File', `Tên file: ${item.file.name}`);
+                }
+              }}>
+              {item.type === 'image' ? (
+                <Image source={{ uri: item.file.uri }} style={styles.mediaPreview} />
+              ) : item.type === 'video' ? (
+                <Video
+                  source={{ uri: item.file.uri }}
+                  rate={1.0}
+                  volume={1.0}
+                  isMuted={false}
+                  resizeMode="contain"
+                  useNativeControls
+                  style={styles.mediaPreview}
+                />
+              ) : (
+                <View style={{ flexDirection: 'row', alignItems: 'center', padding: 8 }}>
+                  <Feather name="file" size={20} color="#007BFF" style={{ marginRight: 6 }} />
+                  <Text>{getOriginalFileName(item.file.name)}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+        )}
               <Text style={[styles.messageText, item.type === 'deleted' && styles.deletedText]}>
                 {item.text}
               </Text>
@@ -360,7 +424,7 @@ const getOriginalFileName = (fileName) => {
                 {item.time} {item.status === 'pending' ? '🕓' : item.status === 'sent' ? '✅' : '❌'}
               </Text>
             </View>
-          </>
+          </View>
         )}
       </View>
     </TouchableOpacity>
@@ -405,6 +469,11 @@ const getOriginalFileName = (fileName) => {
           </TouchableOpacity>
         </View>
         <View style={styles.bodyContainer}>
+        <PinnedMessagePanel
+        pinnedMessages={pinnedMessages}
+        onSelectMessage={(id) => handleSelectPinnedMessage(id)}
+        onUnpinMessage={(id) => handleUnpinMessage(id)}
+      />
         <FlatList
           ref={flatListRef}
           data={messages}
@@ -523,10 +592,15 @@ const getOriginalFileName = (fileName) => {
             deleteMessage(selectedMessage.id);
             setModalVisible(false);
           }}
+          onPin={() => {
+            handlePinMessage();
+            setModalVisible(false);
+          }}
           navigation={navigation}
           styles={styles}
           message={selectedMessage}
           conversations={conversations}
+          disablePin={selectedMessage?.pinned === true}
         />
       </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
