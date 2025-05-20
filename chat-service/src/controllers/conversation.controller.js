@@ -4,6 +4,8 @@ const MessageModel = require("../models/message.model");
 const { uploadFile } = require("../services/file.service");
 const axios = require("axios");
 const UserCacheService = require("../services/user-cache.service");
+const messageModel = require("../models/message.model");
+
 const { getMembersAndPermissions, getLastMessages, getUnreadCounts, getFriendProfiles } = require("../utils/conversation.helper");
 const ConversationController = {};
 
@@ -178,17 +180,17 @@ ConversationController.updateGroupAvt = async (socket, data) => {
     );
 
     members.forEach(async (member) => {
-  const socketIds = await redisClient.smembers(`sockets:${member}`);
-  console.log(socketIds, `socketIds for member ${member}`);
-  
-  socketIds.forEach((socketId) => {
-    socket.to(socketId).emit("update_avt_group", {
-      conversation_id: data.conversation_id,
-      message: "Ảnh đại diện đã được cập nhật",
-      result,
+      const socketIds = await redisClient.smembers(`sockets:${member}`);
+      console.log(socketIds, `socketIds for member ${member}`);
+
+      socketIds.forEach((socketId) => {
+        socket.to(socketId).emit("update_avt_group", {
+          conversation_id: data.conversation_id,
+          message: "Ảnh đại diện đã được cập nhật",
+          result,
+        });
+      });
     });
-  });
-  });
   } catch (error) {
     console.error("Có lỗi khi cập nhật ảnh đại diện nhóm:", error);
     socket.emit("error", { message: "Có lỗi khi cập nhật ảnh đại diện nhóm" });
@@ -212,7 +214,7 @@ ConversationController.updateGroupName = async (socket, data) => {
     );
 
     console.log(result, "result");
-    
+
 
     socket.emit("update_name_group", {
       status: "success",
@@ -226,18 +228,18 @@ ConversationController.updateGroupName = async (socket, data) => {
     );
 
     members.forEach(async (member) => {
-  const socketIds = await redisClient.smembers(`sockets:${member}`);
-  console.log(socketIds, `socketIds for member ${member}`);
-  
-  socketIds.forEach((socketId) => {
-    socket.to(socketId).emit("update_name_group", {
-      conversation_id: data.conversation_id,
-      message: "Tên nhóm đã được cập nhật",
-      name: data.name,
-      result,
+      const socketIds = await redisClient.smembers(`sockets:${member}`);
+      console.log(socketIds, `socketIds for member ${member}`);
+
+      socketIds.forEach((socketId) => {
+        socket.to(socketId).emit("update_name_group", {
+          conversation_id: data.conversation_id,
+          message: "Tên nhóm đã được cập nhật",
+          name: data.name,
+          result,
+        });
+      });
     });
-  });
-});
 
 
   } catch (error) {
@@ -287,7 +289,7 @@ ConversationController.getConversationsByUserId = async (req, res) => {
       const last_message_id = await ConversationModel.getLastMessage(
         conversation.conversation_id
       );
-      
+
 
       let last_message = {};
 
@@ -371,7 +373,7 @@ ConversationController.findPrivateConversation = async (req, res) => {
 
       newConversation.name = user_friend.fullname;
       newConversation.avatar = user_friend.avt;
-      
+
       return res.status(200).json({
         status: "success",
         message: "Lấy cuộc hội thoại thành công",
@@ -512,6 +514,7 @@ ConversationController.removeMember = async (socket, data) => {
       message: `Thành viên đã bị xóa khỏi nhóm`,
       user_id: user_id,
       conversation_id: conversation_id,
+      status: "success",
     });
 
     // Thông báo cho tất cả thành viên trong nhóm
@@ -538,7 +541,7 @@ ConversationController.removeMember = async (socket, data) => {
 ConversationController.getConversations = async (socket, data) => {
   const user_id = socket.user.id;
   try {
-    const conversationIds = await redisClient.zrevrange(`chatlist:${user_id}`, 0, 49);    
+    const conversationIds = await redisClient.zrevrange(`chatlist:${user_id}`, 0, 49);
     if (conversationIds.length === 0) {
       return socket.emit("conversations", {
         status: "success",
@@ -863,16 +866,41 @@ ConversationController.getGroupConversationByUserId = async (req, res) => {
   if (!user_id) {
     return res.status(400).json({ message: "Thiếu user_id" });
   }
+  const conversationIds = await redisClient.zrevrange(`chatlist:${user_id}`, 0, 49);    
+    if (conversationIds.length === 0) {
+      return socket.emit("conversations", {
+        status: "success",
+        message: "Không có hội thoại nào",
+        conversations: [],
+      });
+    }
 
   try {
     const conversations = await ConversationModel.getGroupConversationByUserId(
       user_id
     );
 
+    const permissionsList = await getMembersAndPermissions(conversationIds, redisClient, UserCacheService);
+
+    const result = conversations.map((conversation, idx) => {
+      let name = conversation.name || "";
+      let avt = conversation.avatar || "";
+      return {
+        ...conversation,
+        id: conversation.id,
+        name,
+        avatar: avt,
+        list_user_id: permissionsList[idx],
+        type: conversation.type,
+        created_at: conversation.created_at,
+        created_by: conversation.created_by,
+      };
+    });   
+    
     res.status(200).json({
       status: "success",
       message: "Lấy danh sách hội thoại thành công",
-      conversations,
+      conversations: result,
     });
   } catch (error) {
     console.error("Có lỗi khi lấy danh sách hội thoại:", error);
@@ -941,6 +969,9 @@ ConversationController.getConversationById = async (req, res) => {
     console.error(`Lỗi khi xử lý hội thoại ${conversation_id}:`, err);
     return null;
   }
+}
+// Lấy danh sách trò chuyện gần đây
+ConversationController.getConversationsRecent = async (req, res) => {
 
   const { user_id } = req.query;
 
@@ -962,6 +993,7 @@ ConversationController.getConversationById = async (req, res) => {
 
     // Lấy thông tin hội thoại
     const conversations = await ConversationModel.getConversationsByIds(conversationIds);
+
     // Trả về kết quả
     const result = conversations.map((conversation, idx) => ({
       conversation_id: conversation.id,
@@ -980,7 +1012,13 @@ ConversationController.getConversationById = async (req, res) => {
     res.status(500).json({ message: "Có lỗi khi lấy danh sách hội thoại gần đây" });
   }
 }
-
+ConversationController.deleteHistoryForUser = async (socket, data) => {
+  const { user_id, conversation_id } = data;
+  if (!user_id || !conversation_id) {
+    throw new Error("Thiếu tham số");
+  }
+  await messageModel.setDeleteHistory(user_id, conversation_id);
+};
 
 
 module.exports = ConversationController;

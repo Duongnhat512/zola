@@ -29,6 +29,7 @@ app.use((req, res, next) => {
 // Routes
 app.use("/conversations", require("./routes/conversation.route"));
 app.use("/messages", require("./routes/message.route"));
+app.use("/friends", require("./routes/friend.route"));
 
 // Health check route
 app.get("/", (req, res) => {
