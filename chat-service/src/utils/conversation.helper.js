@@ -11,7 +11,7 @@ const getMembersAndPermissions = async (conversationIds, redisClient, UserCacheS
       return Promise.all(
         members.map(async (memberId) => {
           const permission = await UserCacheService.getConversationPermissions(memberId, id);
-          return { user_id: memberId, permission };
+          return { user_id: memberId, permission, conversationId: id };
         })
       );
     })
