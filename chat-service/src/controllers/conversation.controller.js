@@ -442,7 +442,8 @@ ConversationController.addMember = async (socket, data) => {
     socket.emit("add_member", {
       message: "Thành viên mới vừa được thêm",
       user_id: user_id,
-      conversation_id: conversation_id
+      conversation_id: conversation_id,
+      status: "success"
     });
 
     const timestamp = Date.now();
@@ -460,7 +461,7 @@ ConversationController.addMember = async (socket, data) => {
       });
     });
 
-    members = await redisClient.smembers(`group:${conversation_id}`);
+    let members = await redisClient.smembers(`group:${conversation_id}`);
 
     members = members.filter(member => member !== user_id);
     for (const member of members) {
@@ -473,9 +474,6 @@ ConversationController.addMember = async (socket, data) => {
         });
       }
     }
-
-
-
   } catch (error) {
     console.error("Có lỗi khi thêm thành viên:", error);
     socket.emit("error", { message: "Có lỗi khi thêm thành viên" });
@@ -521,10 +519,8 @@ ConversationController.removeMember = async (socket, data) => {
 
     // Thông báo cho tất cả thành viên trong nhóm
     const members = await redisClient.smembers(`group:${conversation_id}`);
-    members.push(user_id);
     for (const member of members) {
       const socketIds = await redisClient.smembers(`sockets:${member}`);
-      console.log(socketIds, "socketIds");
       for (const socketId of socketIds) {
         socket.to(socketId).emit("removed_member", {
           conversation_id: conversation_id,
@@ -637,7 +633,6 @@ ConversationController.setPermisstions = async (socket, data) => {
     const members = await redisClient.smembers(`group:${conversation_id}`);
     members.forEach(async (member) => {
       const socketIds = await redisClient.smembers(`sockets:${member}`);
-      console.log(socketIds, "socketIds");
       socketIds.forEach((socketId) => {
         socket.to(socketId).emit("update_permissions", {
           conversation_id: conversation_id,
@@ -699,9 +694,6 @@ ConversationController.deleteConversation = async (socket, data) => {
 
   const permissions = await UserCacheService.getConversationPermissions(socket.user.id, conversation_id);
 
-  console.log('====================================');
-  console.log(permissions);
-  console.log('====================================');
   if (permissions !== 'owner') {
     return socket.emit("error", { message: "Bạn không có quyền giải tán nhóm" });
   }
@@ -786,6 +778,9 @@ ConversationController.outGroup = async (socket, data) => {
     const members = await redisClient.smembers(`group:${conversation_id}`);
     for (const member of members) {
       const socketIds = await redisClient.smembers(`sockets:${member}`);
+      if(member === user_id) {
+        continue;
+      }
       for (const socketId of socketIds) {
         socket.to(socketId).emit("user_left_group", {
           conversation_id: conversation_id,
