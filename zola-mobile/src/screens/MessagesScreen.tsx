@@ -87,7 +87,7 @@ const MessagesScreen = () => {
         socketInstance.on("conversations", (response) => {
           if (response.status === "success") {
             setChats(response.conversations);
-            console.log("🗨️ Danh sách hội thoại:", response.conversations);
+            // console.log("🗨️ Danh sách hội thoại:", response.conversations);
           } else {
             console.error("Lỗi khi lấy danh sách hội thoại:", response.message);
           }
@@ -132,7 +132,6 @@ const MessagesScreen = () => {
   const renderChatItem = ({ item }) => (
     <TouchableOpacity
   onPress={() => {
-    console.log("👉 chats:", item);
     navigation.navigate('ChatRoom', {
       chats: item,
       conversations: chats,

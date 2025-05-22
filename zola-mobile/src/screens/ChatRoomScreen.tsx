@@ -51,9 +51,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
   const isValidInput = inputText.trim().length > 0 || file !== null;
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const inputRef = useRef(null);
-  const SocketContext = useSocket();
-  // console.log('chat.list_user_id', conversations);
-const [pinnedMessages, setPinnedMessages] = useState([]);
+  const [pinnedMessages, setPinnedMessages] = useState([]);
 
   useEffect(() => {
   const initSocket = async () => {
@@ -67,7 +65,6 @@ const [pinnedMessages, setPinnedMessages] = useState([]);
       });
 
       socketInstance.on('list_messages', (data) => {
-        console.log('Received messages:', data);
         const sortedData = data.sort((a, b) => a.created_at.localeCompare(b.created_at));
         const formatted1 = sortedData.map((msg) => {
           const isMe = msg.sender_id === currentUser.id;
@@ -87,7 +84,6 @@ const [pinnedMessages, setPinnedMessages] = useState([]);
         const formatted2 = JSON.parse(JSON.stringify(formatted1));
         setMessages(formatted1)
         setPinnedMessages(formatted2.filter((msg) => msg.pinned === true));
-        console.log(formatted2.filter((msg) => msg.pinned === true))
 
       });
         socketInstance.on('list_messages', (data) => {
@@ -108,7 +104,6 @@ const [pinnedMessages, setPinnedMessages] = useState([]);
             };
           });
           setMessages(formatted);
-          // console.log('Messages:', formatted);
         });
 
       socketInstance.on('hidden_message', (data) => {
@@ -144,7 +139,6 @@ const [pinnedMessages, setPinnedMessages] = useState([]);
 
 
       socketInstance.on('message_pinned', (data) => {
-        console.log('📌 Tin nhắn mới được ghim:', data);
         if (data.status === 'success') {
           setPinnedMessages((prev) => {
             const exists = prev.some((msg) => msg.id === data.message_id);
@@ -199,7 +193,6 @@ const handlePinMessage = () => {
         text: selectedMessage.text,
     },
   ]);
-  console.log('Pinned messages aaaaaaaaaa:', pinnedMessages);
 };
 
 // Hàm xử lý bỏ ghim tin nhắn
@@ -330,8 +323,6 @@ const getOriginalFileName = (fileName) => {
         console.error('Lỗi tải tệp:', error);
       }
     } else {
-      console.log('Gửi tin nhắn văn bản:', chats);
-      console.log('Gửi tin nhắn văn bản:',  chats.list_user_id?.filter(user => user.user_id !== currentUser.id)[0]?.user_id);
       const msg = {
         conversation_id: chats.conversation_id,
         sender_id: currentUser.id,
@@ -381,7 +372,6 @@ const getOriginalFileName = (fileName) => {
         if (item.sender === 'me') {
      
           setSelectedMessage(item);
-          console.log("--------------"+item.text);
           setModalVisible(true);
         }
       
@@ -469,7 +459,7 @@ const getOriginalFileName = (fileName) => {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Feather name="arrow-left" size={30} color="#ffffff"/>
           </TouchableOpacity>
-          <Image source={{ uri: chats.avatar }} style={styles.avartarHeader} />
+          <Image source={{ uri: chats.avatar || 'https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg' }} style={styles.avartarHeader} />
           <Text style={styles.header}>{chats.name || 'Người dùng không xác định'}</Text>
           <TouchableOpacity
             onPress={() => {
@@ -496,7 +486,7 @@ const getOriginalFileName = (fileName) => {
         <View style={styles.bodyContainer}>
         <PinnedMessagePanel
         pinnedMessages={pinnedMessages}
-        onSelectMessage={(id) => handleSelectPinnedMessage(id)}
+        onSelectMessage={(id) => handleSelectPinnedMessage(id)} 
         onUnpinMessage={(id) => handleUnpinMessage(id)}
       />
         <FlatList
@@ -625,7 +615,7 @@ const getOriginalFileName = (fileName) => {
           styles={styles}
           message={selectedMessage}
           conversations={conversations}
-          disablePin={pinnedMessages.some((msg) => msg.id === selectedMessage.id)}
+         disablePin={selectedMessage ? pinnedMessages.some((msg) => msg.id === selectedMessage.id) : false}
         />
       </KeyboardAvoidingView>
       </TouchableWithoutFeedback>

@@ -192,7 +192,7 @@ const TabNavigator = () => {
           ),
         }}
       />
-      <Tab.Screen
+      {/* <Tab.Screen
         name="Groups"
         component={GroupsScreen}
         options={{
@@ -202,7 +202,7 @@ const TabNavigator = () => {
           ),
           // tabBarBadge: 2,
         }}
-      />
+      /> */}
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
