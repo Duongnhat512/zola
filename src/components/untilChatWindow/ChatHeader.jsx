@@ -6,6 +6,11 @@ import {
   SearchOutlined,
   InfoCircleOutlined,
   EditTwoTone,
+  PhoneOutlined,
+  UserAddOutlined,
+  PlusCircleFilled,
+  TeamOutlined,
+  PlusOutlined,
 } from "@ant-design/icons";
 import { useSelector } from "react-redux";
 import socket from "../../services/Socket";
@@ -59,18 +64,42 @@ const ChatHeader = ({ selectedChat, handleOpen, setIsInfoGroupVisible }) => {
       </div>
 
       <div className="flex items-center space-x-3">
-        <Tooltip title="Thành viên">
-          <Button type="text" icon={<UserOutlined />} onClick={handleOpen} />
-        </Tooltip>
+        {selectedChat.type !== 'private' && (
+          <Tooltip title="Thành viên">
+            <Button
+              type="text"
+              icon={
+                <span style={{ position: 'relative', display: 'inline-block' }}>
+                  <TeamOutlined style={{ fontSize: '20px' }} />
+                  <PlusOutlined
+                    style={{
+                      fontSize: '8px',
+                      position: 'absolute',
+                      top: -4,
+                      right: -4,
+                    }}
+                  />
+                </span>
+              }
+              onClick={handleOpen}
+            />          </Tooltip>
+        )}
+        {selectedChat.type === 'private' && (
+          <Tooltip title="Cuộc gọi thoại">
+            <Button type="text" icon={<PhoneOutlined style={{ fontSize: '20px' }} />} onClick={handleOpen} />
+          </Tooltip>
+        )}
+
         <Tooltip title="Video Call">
-          <Button type="text" icon={<VideoCameraOutlined />} onClick={() => setShowVideoCall(true)} />
+          <Button type="text" icon={<VideoCameraOutlined style={{ fontSize: '20px' }} />} onClick={() => setShowVideoCall(true)} />
         </Tooltip>
         <Tooltip title="Tìm kiếm">
-          <Button type="text" icon={<SearchOutlined />} />
+          <Button type="text" icon={<SearchOutlined style={{ fontSize: '20px' }} />} />
         </Tooltip>
         <Tooltip title="Thông tin hội thoại">
-          <Button type="text" icon={<InfoCircleOutlined />} onClick={() => setIsInfoGroupVisible((prev) => !prev)} />
+          <Button type="text" icon={<InfoCircleOutlined style={{ fontSize: '20px' }} />} onClick={() => setIsInfoGroupVisible((prev) => !prev)} />
         </Tooltip>
+
       </div>
 
       <Modal

@@ -187,7 +187,7 @@ const PinnedListBlock = ({
                                         color: "#444",
                                         fontSize: 15,
                                         marginTop: 2,
-                                        maxWidth: 260,
+                                        maxWidth: 400,
                                         whiteSpace: "nowrap",
                                         overflow: "hidden",
                                         textOverflow: "ellipsis",
@@ -226,18 +226,7 @@ const PinnedListBlock = ({
                 }}
             />
 
-            <div
-                style={{
-                    background: "#fff",
-                    borderTop: "1px solid #f0f0f0",
-                    textAlign: "center",
-                    padding: 10,
-                }}
-            >
-                <Button type="link" style={{ color: "#1890ff", fontWeight: 500 }} onClick={onViewAll}>
-                    Xem tất cả ở bảng tin nhóm &gt;
-                </Button>
-            </div>
+
         </div>
     );
 };

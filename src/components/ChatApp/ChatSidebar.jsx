@@ -107,7 +107,7 @@ const ChatSidebar = ({
 
       {/* Chat List */}
       <div className="overflow-y-auto flex-1">
-        {chats.map((chat) => (
+        {chats?.map((chat) => (
           <div
             key={chat?.conversation_id}
             className="px-4 py-3 border-b border-gray-100 hover:bg-gray-100 cursor-pointer transition-all duration-200"

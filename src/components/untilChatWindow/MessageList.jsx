@@ -27,6 +27,14 @@ const MessageList = ({
     pinned = messages.find((msg) => msg.id === pinnedMessage.id);
   }
 
+  useState(() => {
+    if (pinnedMessage === null) {
+      pinned = messages.find((msg) => msg.pinned);
+    } else {
+      pinned = messages.find((msg) => msg.id === pinnedMessage.id);
+    }
+  }, [pinnedMessage])
+
   const [isPinnedModal, setIsPinnedModal] = useState(false);
   const [pinnedMessages, setPinnedMessages] = useState([]);
 
@@ -40,6 +48,7 @@ const MessageList = ({
     } else {
       setPinnedMessages([]);
     }
+
   }, [messages]); // thay vì [pinned], dùng [messages] để luôn cập nhật khi có thay đổi
   return (
     <div className="flex-1 overflow-y-auto py-2 px-4 space-y-4 message-list-container relative">
@@ -51,7 +60,7 @@ const MessageList = ({
               <PushpinFilled className="text-orange-500 text-lg mr-2" />
               <div className="flex flex-col">
                 <div className="font-medium text-gray-700 mr-2">Tin nhắn đã ghim</div>
-                <div className="font-semibold text-gray-900 truncate max-w-[220px]">
+                <div className="font-semibold text-gray-900 truncate max-w-[300px]">
                   {pinned.text}
                 </div>
               </div>
@@ -69,11 +78,20 @@ const MessageList = ({
                   const el = document.getElementById(`msg-${pinned.id}`);
                   if (el) {
                     el.scrollIntoView({ behavior: "smooth", block: "center" });
+
+                    // Thêm lớp nền highlight
+                    el.classList.add("text-red-600");
+
+                    // Xóa highlight sau 2 giây (hoặc thời gian tùy chọn)
+                    setTimeout(() => {
+                      el.classList.remove("text-red-600");
+                    }, 2000);
                   }
                 }}
               >
                 Xem
               </a>
+
             </div>
           </div>
         </div>

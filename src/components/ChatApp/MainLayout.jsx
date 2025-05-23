@@ -13,7 +13,22 @@ import FriendInvitations from "../../pages/Friend/FriendInvitations";
 import FriendList from "../../pages/Friend/FriendList";
 import GroupList from "../../pages/Group/GroupList";
 
-const MainLayout = () => {
+const MainLayout = (
+  {
+    selectedChat,
+    setSelectedChat,
+    setChats,
+    chats,
+    isInfoGroupVisible,
+    fetchConversations,
+    setIsInfoGroupVisible,
+    infoPermissions,
+    isModalAddMemberVisible,
+    setIsModalAddMemberVisible,
+    messages,
+    setMessages
+  }
+) => {
   const [layout, setLayout] = useState("default"); // State to manage layout type
   const menuItems = [
     {
@@ -101,7 +116,20 @@ const MainLayout = () => {
       </div>
       <div className="flex-1 p-4 bg-gray-50">
         {layout === "default" ? (
-          <FriendList />
+          <FriendList fetchConversations={fetchConversations}
+            infoPermissions={infoPermissions}
+            isModalAddMemberVisible={isModalAddMemberVisible}
+            setIsModalAddMemberVisible={setIsModalAddMemberVisible}
+            selectedChat={selectedChat}
+            setChats={setChats}
+            setMessages={setMessages}
+            messages={messages}
+            setSelectedChat={setSelectedChat}
+            setIsInfoGroupVisible={setIsInfoGroupVisible}
+            isModalGroupVisible={isModalGroupVisible}
+            chats={chats}
+            isInfoGroupVisible={isInfoGroupVisible}
+          />
         ) : layout === "friend-invitations" ? (
           <FriendInvitations />
         ) : (

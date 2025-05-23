@@ -81,7 +81,7 @@ const ChatWindow = ({
 
 
   useEffect(() => {
-    console.log("conversaton",selectedChat?.conversation_id);
+    console.log("conversaton", selectedChat?.conversation_id);
 
     if (!selectedChat?.conversation_id) {
       setMessages([]);
@@ -274,7 +274,7 @@ const ChatWindow = ({
       return;
     }
     const tempId = `msg-${Date.now()}`;
-    const isGroup = selectedChat?.list_user_id?.length > 2;
+    const isGroup = selectedChat?.type === "group"
 
     setMessages((prev) => [
       ...prev,
@@ -296,7 +296,6 @@ const ChatWindow = ({
         uploadProgress: notify ? null : 0, // Notify không cần uploadProgress
       },
     ]);
-
     const msg = {
       conversation_id: selectedChat?.conversation_id || null,
       receiver_id:
@@ -331,6 +330,7 @@ const ChatWindow = ({
     };
 
     const event = isGroup ? "send_group_message" : "send_private_message";
+
     socket.emit(event, msg, () => { });
     socket.on("message_sent", (msg) => {
       console.log(msg);
@@ -434,6 +434,8 @@ const ChatWindow = ({
           : m
       )
     );
+    setPinnedMessageNew(null);
+
   }
 
   if (!selectedChat) {

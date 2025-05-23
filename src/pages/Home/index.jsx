@@ -102,7 +102,7 @@ const Home = () => {
   ];
   const toggleCollapsed = () => {
     console.log(collapsed);
-    
+
     setCollapsed(!collapsed);
   };
 

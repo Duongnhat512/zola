@@ -31,6 +31,11 @@ const FriendList = () => {
   const handleBack = () => {
     setOpenModalFriend(false);
   }
+  const fetchConversations = () => {
+    console.log('====================================');
+    console.log('No log')
+    console.log('====================================');
+  };
   useEffect(() => {
     const fetchFriends = async () => {
       try {
@@ -151,6 +156,9 @@ const FriendList = () => {
       }
     }
     );
+    console.log('====================================');
+    console.log(chat);
+    console.log('====================================');
     setSelectedChat(chat);
     // try {
     //   const updatedChats = await Promise.all(
@@ -297,7 +305,11 @@ const FriendList = () => {
           setInput={setInput}
           setChats={setChats}
           setIsInfoGroupVisible={setIsInfoGroupVisible}
-          isInfoGroupVisible={isInfoGroupVisible} />
+          isInfoGroupVisible={isInfoGroupVisible}
+          fetchConversations={fetchConversations}
+        />
+
+
       )}
       {isInfoGroupVisible && (
         <InfoGroup
