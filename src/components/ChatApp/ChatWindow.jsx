@@ -155,6 +155,8 @@ const ChatWindow = ({
   }, [messages]);
   useEffect(() => {
     if (selectedChat?.conversation_id) {
+      console.log("Marking messages as read");
+      
       markAsRead(socket, selectedChat.conversation_id, userMain.id, setChats);
     }
   }, [selectedChat]);

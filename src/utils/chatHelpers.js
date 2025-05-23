@@ -1,5 +1,5 @@
 // Hàm đánh dấu tin nhắn đã đọc
-export const markAsRead = (socket, conversationId, userId, setChats) => {
+export const markAsRead = (socket, conversationId, userId) => {
   socket.emit("mark_as_read", {
     conversation_id: conversationId,
     user_id: userId,

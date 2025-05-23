@@ -150,6 +150,7 @@ const MessageList = ({
                   fontSize: "14px",
                   color: "#888",
                   maxWidth: "80%",
+                  wordBreak: "break-word",
                 }}
               >
                 {msg.text}
@@ -188,6 +189,8 @@ const MessageList = ({
                           msg.sender === "me" ? "#d1e7ff" : "#ffffff",
                         boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
                         textAlign: "center",
+                        wordBreak: "break-word",
+
                       }}
                     >
                       {msg.status === "pending" && msg.type != "text" ? (
@@ -199,6 +202,7 @@ const MessageList = ({
                             flexDirection: "column",
                             height: "100px",
                             width: "100px",
+                            wordBreak: "break-word",
                           }}
                         >
                           <Progress

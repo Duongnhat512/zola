@@ -76,7 +76,8 @@ const HomeDetails = () => {
           const dateB = new Date(b.last_message?.updated_at || b.last_message?.created_at || 0);
           return dateB - dateA;
         });
-
+        console.log("Sorted conversations:", sortedConversations);
+        
         setChats(sortedConversations);
       } else {
         console.error("Lỗi khi lấy danh sách hội thoại:", response.message);
