@@ -202,7 +202,27 @@ const PinnedListBlock = ({
                             overlay={
                                 <Menu>
                                     <Menu.Item key="view" onClick={() => onViewMessage(item)}>
-                                        Xem
+                                        <a
+                                            href={`#msg-${item.id}`}
+                                            className="text-blue-500"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                const el = document.getElementById(`msg-${item.id}`);
+                                                if (el) {
+                                                    el.scrollIntoView({ behavior: "smooth", block: "center" });
+
+                                                    // Thêm lớp nền highlight
+                                                    el.classList.add("text-red-600");
+
+                                                    // Xóa highlight sau 2 giây (hoặc thời gian tùy chọn)
+                                                    setTimeout(() => {
+                                                        el.classList.remove("text-red-600");
+                                                    }, 2000);
+                                                }
+                                            }}
+                                        >
+                                            Xem
+                                        </a>
                                     </Menu.Item>
                                     {permission !== "member" && (
                                         <Menu.Item key="unpin" onClick={() => onUnpin(item)}>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import ChatSidebar from "../../components/ChatApp/ChatSidebar";
 import ChatWindow from "../../components/ChatApp/ChatWindow";
 import socket from "../../services/Socket";
@@ -11,9 +11,11 @@ import { getUserById } from "../../services/UserService";
 import Swal from "sweetalert2";
 const HomeDetails = () => {
   const [selectedChat, setSelectedChat] = useState(null);
+  const chatRef = useRef(null);
   const [chats, setChats] = useState([]);
   const user = useSelector((state) => state.user.user);
   const [isLoading, setIsLoading] = useState(false);
+  const [userMain, setUserMain] = useState(null);
   const [isInfoGroupVisible, setIsInfoGroupVisible] = useState(false);
   const [isModalGroupVisible, setIsModalGroupVisible] = useState(false);
   const [IsGroupSettingsVisible, setIsGroupSettingsVisible] = useState(false)
@@ -27,7 +29,6 @@ const HomeDetails = () => {
   const [input, setInput] = useState("");
   const [userProfile, setUserProfile] = useState(null);
   const [members, setMembers] = useState([]);
-  const [userMain, setUserMain] = useState(null);
   const [disabledModalGroup, setDisabledModalGroup] = useState(false);
   const [groupSettings, setGroupSettings] = useState({
     leaders: [],
@@ -44,7 +45,8 @@ const HomeDetails = () => {
   });
 
   const openChat = (chat) => {
-    localStorage.setItem("selectedChat", JSON.stringify(chat));
+    // localStorage.setItem("selectedChat", JSON.stringify(chat));
+    chatRef.current = chat;
     setSelectedChat(chat);
     setIsInfoGroupVisible(false);
     setIsModalGroupVisible(false);
@@ -246,11 +248,15 @@ const HomeDetails = () => {
     }
     setMembers((prev) =>
       prev.map((member) => {
+
         if (member.id === user_id) {
+          console.log('====================================');
+          console.log("hello");
+          console.log('====================================');
           return { ...member, permission: permissions };
         }
-        if (permissions === "owner" && user_id !== userMain.id) {
-          if (member.id === userMain.id) {
+        if (permissions === "owner" && user_id !== user.id) {
+          if (member.id === user.id) {
             return { ...member, permission: "member" };
           }
         }
@@ -482,7 +488,6 @@ const HomeDetails = () => {
         };
       });
     };
-
     socket.on("add_member", handleAddMember);
     return () => socket.off("add_member", handleAddMember);
   }, [socket, selectedChat]);
@@ -542,13 +547,18 @@ const HomeDetails = () => {
     if (!socket) return;
 
     const handleOutGroup = async (data) => {
+      console.log('====================================');
+      console.log(data);
+      console.log('====================================');
       if (!selectedChat || selectedChat.conversation_id !== data.conversation_id) {
+
         fetchConversations();
         return;
       }
+
       const profile = await getProfile(data.user_id);
       if (profile && data.status === "success") {
-        sendMessage(null, true, `${userProfile?.fullname} đã rời nhóm`);
+        sendMessage(null, true, `${profile.fullname} đã rời nhóm`);
       }
 
       setChats((prev) =>
@@ -560,7 +570,7 @@ const HomeDetails = () => {
 
     socket.on("out_group", handleOutGroup);
     return () => socket.off("out_group", handleOutGroup);
-  }, [socket]);
+  }, [socket, selectedChat]);
 
   // Xóa thành viên khỏi nhóm
   useEffect(() => {

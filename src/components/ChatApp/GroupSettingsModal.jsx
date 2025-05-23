@@ -101,11 +101,11 @@ const GroupSettingsModal = ({ visible, onClose, groupSettings, grantPermission, 
   const handleDeleteGroup = async () => {
     if (seletedChat && seletedChat.conversation_id) {
       const result = await Swal.fire({
-        title: 'Xác nhận xóa nhóm?',
+        title: 'Xác nhận giải tán nhóm?',
         text: 'Bạn sẽ không thể khôi phục lại nhóm này!',
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: 'Xóa',
+        confirmButtonText: 'Xác nhận',
         cancelButtonText: 'Hủy',
         reverseButtons: true,
       });
