@@ -219,7 +219,8 @@ const ConversationModel = {
     try {
       const result = await dynamodb.get(params).promise();
       console.log('====================================');
-      console.log(result.id + "Hiep");
+      console.log(result, "Hiep");
+
       console.log('====================================');
       return result.Item;
     } catch (error) {

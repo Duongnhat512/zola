@@ -381,16 +381,16 @@ ConversationController.findPrivateConversation = async (req, res) => {
       });
     }
 
-    const list_user_id_raw = redisClient.smembers(`group:${conversation.id}`);
+    const list_user_id_raw = await redisClient.smembers(`group:${conversation.id}`);
 
-    const last_message_id = ConversationModel.getLastMessage(
+    const last_message_id = await ConversationModel.getLastMessage(
       conversation.id
     );
 
     let last_message = {};
     if (!last_message_id) {
       conversation.last_message = last_message;
-      conversation.list_user_id = list_user_id_raw;
+    conversation.list_user_id = list_user_id_raw.map(id => ({ user_id: id }));
       conversation.conversation_id = conversation.id;
     } else {
       console.log("last_message_id", last_message_id);
@@ -398,7 +398,7 @@ ConversationController.findPrivateConversation = async (req, res) => {
     }
 
     conversation.last_message = last_message;
-    conversation.list_user_id = list_user_id_raw;
+    conversation.list_user_id = list_user_id_raw.map(id => ({ user_id: id }));
     conversation.conversation_id = conversation.id;
 
     return res.status(200).json({
@@ -417,9 +417,9 @@ ConversationController.addMember = async (socket, data) => {
 
   const permissions = await UserCacheService.getConversationPermissions(socket.user.id, conversation_id);
 
-  if (permissions === 'member') {
-    return socket.emit("error", { message: "Bạn không có quyền thêm thành viên" });
-  }
+  // if (permissions === 'member') {
+  //   return socket.emit("error", { message: "Bạn không có quyền thêm thành viên" });
+  // }
 
   if (!permissions) {
     return socket.emit("error", { message: "Thiếu quyền truy cập" });
@@ -703,9 +703,6 @@ ConversationController.muteMember = async (socket, data) => {
 // Giải tán nhóm
 ConversationController.deleteConversation = async (socket, data) => {
   const { conversation_id } = data;
-
-
-
   const permissions = await UserCacheService.getConversationPermissions(socket.user.id, conversation_id);
   if (permissions !== 'owner') {
     return socket.emit("error", { message: "Bạn không có quyền giải tán nhóm" });
@@ -786,23 +783,31 @@ ConversationController.outGroup = async (socket, data) => {
       conversation_id: conversation_id,
       user_id: socket.user.id,
     });
-
     // Thông báo cho tất cả thành viên trong nhóm
     const members = await redisClient.smembers(`group:${conversation_id}`);
-    for (const member of members) {
+    // for (const member of members) {
+    //   const socketIds = await redisClient.smembers(`sockets:${member}`);
+    //   for (const socketId of socketIds) {
+    //     socket.to(socketId).emit("user_left_group", {
+    //       conversation_id: conversation_id,
+    //       user_id: socket.user.id,
+    //       message: "Người dùng đã rời nhóm",
+    //     });
+    //   }
+    // }
+    members.forEach(async (member) => {
       const socketIds = await redisClient.smembers(`sockets:${member}`);
-      if(member === user_id) {
-        continue;
+      if (member === socket.user.id) {
+        return;
       }
-      for (const socketId of socketIds) {
+      socketIds.forEach((socketId) => {
         socket.to(socketId).emit("user_left_group", {
-          conversation_id: conversation_id,
-          user_id: socket.user.id,
+          conversation_id: data.conversation_id,
           message: "Người dùng đã rời nhóm",
+          user_id: socket.user.id,
         });
-      }
-    }
-
+      });
+    });
   } catch (error) {
     console.error("Có lỗi khi rời nhóm:", error);
     socket.emit("error", { message: "Có lỗi khi rời nhóm" });
