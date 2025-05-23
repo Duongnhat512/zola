@@ -71,9 +71,13 @@ const HomeDetails = () => {
 
     const handleConversations = (response) => {
       if (response.status === "success") {
-        console.log(response.conversations);
+        const sortedConversations = response.conversations.sort((a, b) => {
+          const dateA = new Date(a.last_message?.updated_at || a.last_message?.created_at || 0);
+          const dateB = new Date(b.last_message?.updated_at || b.last_message?.created_at || 0);
+          return dateB - dateA;
+        });
 
-        setChats(response.conversations);
+        setChats(sortedConversations);
       } else {
         console.error("Lỗi khi lấy danh sách hội thoại:", response.message);
       }

@@ -110,8 +110,9 @@ const ChatSidebar = ({
         {chats.map((chat) => (
           <div
             key={chat.conversation_id}
-            className="px-4 py-3 border-b border-gray-100 hover:bg-gray-100 cursor-pointer transition-all duration-200"
-            onClick={() => openChat(chat)}
+            className={`px-4 py-3 border-b border-gray-100 cursor-pointer transition-all duration-200
+            ${selectedChat?.conversation_id === chat.conversation_id ? "bg-gray-100" : "hover:bg-gray-100"}
+          `} onClick={() => openChat(chat)}
             onMouseEnter={() => setHoveredId(chat.conversation_id)}
             onMouseLeave={() => setHoveredId(null)}
             style={{
