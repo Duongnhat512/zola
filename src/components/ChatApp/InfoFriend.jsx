@@ -7,7 +7,7 @@ import { getPrivateConversation } from '../../services/Conversation';
 import { setSelectedChat } from '../../redux/UserChatSlice';
 import socket from '../../services/Socket';
 
-const InfoFriend = ({ userInfo, handleBack, step, isReceiveInvitation }) => {
+const InfoFriend = ({ userInfo, handleBack, step, setSelectedChat, setUserInfo }) => {
   const user = useSelector((state) => state.user.user);
   const [showMessage, setShowMessage] = useState(false);
   const [changeButton, setchangeButton] = useState(false);
@@ -53,45 +53,60 @@ const InfoFriend = ({ userInfo, handleBack, step, isReceiveInvitation }) => {
       socket.off("new_friend_request");
     };
   }, [socket]);
+  const fetchUserDetails = async (chat, friendId) => {
+    console.log("Fetching user details...", chat);
+    chat.name = userInfo.fullname || "N/A";
+    chat.avatar = userInfo.avt || "/default-avatar.jpg";
 
-  const handleMessageClick = async () => {
+    setSelectedChat(chat);
+  };
+  const handleFindConversation = async (userId, friend) => {
+    setUserInfo(friend);
     try {
-      // Fetch conversation data if it exists
-      const response = await getPrivateConversation(user.id, userInfo.id);
+      const response = await getPrivateConversation(userId, friend.id);
       console.log("Private conversation response:", response);
-
-      let chatData;
-
-      // Prepare chat data based on conversation response
       if (response.status === "success") {
-        if (response.conversation === null) {
-          // No existing conversation, create new chat data
-          chatData = {
-            conversation_id: null,
-            list_user_id: [userInfo.id],
+        // Handle successful conversation retrieval
+        handleBack();
+        if (response.newConversation) {
+          console.log("newConversation  : " + response.newConversation);
+          setSelectedChat({
+            conversation_id: response.newConversation.id,
+            list_user_id: response.newConversation.members,
             list_message: [],
-            user: userInfo,
-          };
+            avatar: response.newConversation.avatar,
+            name: response.newConversation.name,
+            created_by: response.newConversation.created_by,
+            unread_count: 0,
+            is_unread: false,
+          });
+          // setChats((prevChats) =>
+          //   prevChats.map((c) =>
+          //     c.conversation_id === response.conversation.conversation_id
+          //       ? { ...c, unread_count: 0 }
+          //       : c
+          //   )
+          // );
         } else {
-          // Use existing conversation data
-          chatData = {
-            ...response.conversation,
-            user: userInfo,
-          };
+          console.log("Conversation : " + response.conversation);
+
+          setSelectedChat(response.conversation);
+
+          // setChats((prevChats) =>
+          //   prevChats.map((c) =>
+          //     c.conversation_id === response.conversation.conversation_id
+          //       ? { ...c, unread_count: 0 }
+          //       : c
+          //   )
+          // );
         }
-
-        // Dispatch to Redux store - change the structure to match what your action creator expects
-        dispatch(setSelectedChat(chatData));
-
-        // Close the modal
-        onClose();
-
-        // Navigation will happen automatically if your app is set up to listen to the Redux store
+        fetchUserDetails(response.conversation, friend.id);
       } else {
         console.error("Error fetching conversation:", response.message);
       }
+
     } catch (error) {
-      console.error("Error setting up conversation:", error);
+      console.error("Error fetching conversation:", error);
     }
   };
 
@@ -130,15 +145,13 @@ const InfoFriend = ({ userInfo, handleBack, step, isReceiveInvitation }) => {
 
   const handleAccept = async () => {
     socket.emit("accept_friend_request", {
-      user_id: user.id,
-      user_friend_id: userInfo.id,
+      user: user,
+      user_friend: userInfo,
     });
   };
   useEffect(() => {
     const handleAccept = (data) => {
-      console.log('====================================');
-      console.log(data);
-      console.log('====================================');
+
       if (data.code === 200 && data.data?.result?.user_id) {
         // Cập nhật trạng thái của nút
         setchangeButton("accepted");
@@ -294,7 +307,7 @@ const InfoFriend = ({ userInfo, handleBack, step, isReceiveInvitation }) => {
           <Button onClick={handleDeleteFriend}>Hủy kết bạn</Button>
         )}
 
-        <Button type="primary" onClick={handleMessageClick}>
+        <Button type="primary" onClick={() => handleFindConversation(user.id, userInfo)}>
           Nhắn tin
         </Button>
       </div>

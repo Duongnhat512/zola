@@ -101,3 +101,13 @@ export const updateAvt = async (username, base64File) => {
     throw error;
   }
 };
+
+export const getUsersByListUserId = async (listUserId)=>{
+   try {
+    const response = await axios.get(`/auth-service/me/get-users-by-list-user-id?listUserId=${listUserId}`);
+    return response;
+  } catch (error) {
+    console.error("Failed to get user by ID", error);
+    throw error;
+  }
+}
