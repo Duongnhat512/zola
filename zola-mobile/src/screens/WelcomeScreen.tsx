@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Alert,Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import styles from '../styles/WelcomeScreen.styles';
 
 // Add navigation types
@@ -10,13 +11,26 @@ type WelcomeScreenProps = {
 };
 
 const WelcomeScreen = ({ navigation }: WelcomeScreenProps) => {
+  const [permission, requestPermission] = useCameraPermissions();
+  const [showScanner, setShowScanner] = useState(false);
+
+  useEffect(() => {
+    if (showScanner && !permission?.granted) {
+      requestPermission();
+    }
+  }, [showScanner]);
+
+  const handleBarcodeScanned = ({ data, type }: any) => {
+    setShowScanner(false);
+    Alert.alert('Mã đã quét', `Loại: ${type}\nDữ liệu: ${data}`);
+  };
+
   return (
     <View style={styles.rootContainer}>
       <StatusBar style="dark" />
       <SafeAreaView style={styles.container}>
         
         {/* Language Selector */}
-        {/* Cần code lại với combobox */}
         <View style={styles.languageSelector}>
           <TouchableOpacity style={styles.languageButton}>
             <Text style={styles.languageText}>Tiếng Việt</Text>
@@ -26,14 +40,12 @@ const WelcomeScreen = ({ navigation }: WelcomeScreenProps) => {
         
         {/* Main Content */}
         <View style={styles.mainContent}>
-          {/* City Skyline Background - Using a View for the illustration shown in the image */}
           <View style={styles.illustrationContainer}>
-            {/* Zalo Logo */}
             <View style={styles.logoContainer}>
               <Text style={styles.logoText}>Zola</Text>
             </View>
           </View>
-          
+
           {/* Pagination Dots */}
           <View style={styles.paginationContainer}>
             <View style={styles.paginationDot} />
@@ -59,8 +71,31 @@ const WelcomeScreen = ({ navigation }: WelcomeScreenProps) => {
           >
             <Text style={styles.registerButtonText}>Tạo tài khoản mới</Text>
           </TouchableOpacity>
+
+          {/* QR Scanner Button */}
+          <TouchableOpacity
+            style={styles.qrButton}
+            onPress={() => setShowScanner(true)}
+          >
+            <Image
+              source={require('../assets/zalo-icon/qr-code.png')}
+              style={styles.qrIcon}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
+
+      {/* Camera View */}
+      {showScanner && (
+        <CameraView
+          style={StyleSheet.absoluteFillObject}
+          onBarcodeScanned={handleBarcodeScanned}
+          barcodeScannerSettings={{
+            barcodeTypes: ['qr'],
+          }}
+        />
+      )}
     </View>
   );
 };
