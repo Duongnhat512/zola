@@ -12,6 +12,7 @@ import {
   Menu,
   Alert,
   Upload,
+  Image,
 } from "antd";
 import {
   BellOutlined,
@@ -24,6 +25,7 @@ import {
   CalendarOutlined,
   MoreOutlined,
   CameraOutlined,
+  FileOutlined,
 } from "@ant-design/icons";
 import { getUserById, updateAvt } from "../../services/UserService";
 import socket from "../../services/Socket";
@@ -31,6 +33,8 @@ import GroupSettingsModal from "../../components/ChatApp/GroupSettingsModal";
 import { useSelector } from "react-redux";
 import Swal from "sweetalert2";
 import { setSelectedChat } from "../../redux/UserChatSlice";
+import { getCommonConversation, getMessageTypeImageAndVideo } from "../../services/Conversation";
+import MediaLibraryModal from "../../components/untilChatWindow/MediaLibraryModal";
 
 const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
   onClose, isGroupSettingsVisible, setIsGroupSettingsVisible,
@@ -41,8 +45,11 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
   const [isMemberModalVisible, setIsMemberModalVisible] = useState(false);
   const [userOwner, setUserOwner] = useState(null);
   const user = useSelector((state) => state.user.user);
+  const [commonGroup, setCommonGroup] = useState([]);
+  const [isModalCommonGroup, setIsModalCommonGroup] = useState(false);
+  const [imageAndVideo, setImageAndVideo] = useState([])
+  const [isVisibleMediaLibrary, setIsVisibleMediaLibrary] = useState(false);
   // const [disabledModalGroup,setDisabledModalGroup] = useState(false);
-
   const [isTyped, setIsTyped] = useState(selectedChat?.type === "group" ? true : false);
 
   const handleOpenAddMember = () => {
@@ -60,8 +67,20 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
       setIsGroupSettingsVisible(true);
     }
   }
+  const handleOpenMediaLibrary = (activeTab) => {
+    console.log('====================================');
+    console.log(activeTab);
+    console.log('====================================');
+    setIsVisibleMediaLibrary(true);
+  };
+  const handleCloseMediaLibrary = () => {
+    setIsVisibleMediaLibrary(false);
+  };
   const handleCloseModelSetting = () => {
     setIsGroupSettingsVisible(false);
+  }
+  const handleOpenCommonGroup = () => {
+    setIsModalCommonGroup(true);
   }
 
   const fetchMembers = async () => {
@@ -153,12 +172,14 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
   }, [selectedChat?.list_user_id, selectedChat]);
 
   const handleOpen = () => {
-
+    console.log('====================================');
+    console.log(imageAndVideo);
+    console.log('====================================');
     setIsMemberModalVisible(true);
-
   };
   const handleClose = () => {
     setIsMemberModalVisible(false);
+    setIsModalCommonGroup(false);
   };
 
   const handleUpdateSettings = (updatedSettings) => {
@@ -166,6 +187,34 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
     console.log("Updated group settings:", updatedSettings);
   };
 
+  useEffect(() => {
+    if (selectedChat?.type === "private") {
+      const fetchCommonGroup = async () => {
+        try {
+          const response = await getCommonConversation(user?.id, selectedChat?.list_user_id[0]?.user_id);
+          if (response.status === "success") {
+            setCommonGroup(response.group);
+          }
+
+        } catch (error) {
+          console.error("Error fetching common group:", error);
+        }
+      };
+      fetchCommonGroup();
+    }
+  }, [selectedChat]);
+  useEffect(() => {
+    const fetchMessageType = async () => {
+      const response = await getMessageTypeImageAndVideo(selectedChat?.conversation_id);
+      if (response.status === "success") {
+        console.log('====================================');
+        console.log(response);
+        console.log('====================================');
+        setImageAndVideo(response);
+      }
+    };
+    fetchMessageType();
+  }, [selectedChat]);
   const out_group = async () => {
     const confirmLeave = await Swal.fire({
       title: "Bạn có chắc chắn muốn rời nhóm?",
@@ -358,8 +407,8 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
       <Divider className="my-4" />
 
 
-      <div className="grid grid-cols-4 gap-4 px-6 mb-6 text-center">
-        <Tooltip title="Tắt thông báo">
+      <div className="grid grid-cols-2 gap-4 px-6 mb-6 text-center">
+        {/* <Tooltip title="Tắt thông báo">
           <Button
             icon={<BellOutlined />}
             type="ghost"
@@ -368,8 +417,8 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
           >
             <span className="text-xs mt-1">Thông báo</span>
           </Button>
-        </Tooltip>
-        <Tooltip title="Ghim hội thoại">
+        </Tooltip> */}
+        {/* <Tooltip title="Ghim hội thoại">
           <Button
             icon={<PushpinOutlined />}
             type="ghost"
@@ -378,7 +427,7 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
           >
             <span className="text-xs mt-1">Ghim</span>
           </Button>
-        </Tooltip>
+        </Tooltip> */}
         <Tooltip title="Thêm thành viên">
           <Button
             icon={<UserAddOutlined />}
@@ -447,41 +496,90 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
             </a>
           </div>
         </div>
+        <div >
+          <Collapse ghost className="text-sm" defaultActiveKey={['1', '2', '3']}>
+            <Collapse.Panel
+              header={
+                <span className="flex items-center gap-2">
+                  <HomeOutlined /> Bảng tin
+                </span>
+              }
+              key="1"
+            >
+              <ul className="list-disc list-inside space-y-1 text-gray-700">
+                <li>Danh sách nhắc hẹn</li>
+              </ul>
+            </Collapse.Panel>
+            <Collapse.Panel
+              header={
+                <span className="flex items-center gap-2">
+                  <CalendarOutlined /> Ảnh / Video
+                </span>
+              }
+              key="2"
+
+            >
+              <div className="grid grid-cols-3 gap-2 px-2 py-2">
+                {(imageAndVideo?.images?.slice(0, 6) || []).map((img, idx) => (
+                  <Image
+                    key={img.id || idx}
+                    src={img.media}
+                    alt="img"
+                    className="object-cover rounded-md border-2 border-gray-300 cursor-pointer"
+                  />
+                ))}
+
+                {(imageAndVideo?.videos?.slice(0, 6 - (imageAndVideo?.images?.length || 0)) || []).map((vid, idx) => (
+                  <video
+                    key={vid.id || idx}
+                    src={vid.media || vid}
+                    className="w-14 h-14 object-cover rounded-md border-2 border-gray-300 cursor-pointer"
+                    style={{ background: '#f3f4f6' }}
+                  />
+                ))}
+
+              </div>
+              <div className="flex justify-center pb-2">
+                <Button onClick={() => handleOpenMediaLibrary("files")} type="text" className="bg-slate-300 w-full text-gray-600 font-medium">Xem tất cả</Button>
+              </div>
+            </Collapse.Panel>
+            <Collapse.Panel
+              header={
+                <span className="flex items-center gap-2">
+                  <FileOutlined /> File
+                </span>
+              }
+              key="3"
+            >
+              <div className="divide-y divide-gray-100">
+                {(imageAndVideo?.files?.slice(0, 3) || []).map((file, idx) => (
+                  <div key={file.id || idx} className="flex items-center px-2 py-2 gap-3">
+                    <FileOutlined ></FileOutlined>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-800 truncate">{file.name || file.file_name}</div>
+                      <div className="text-xs text-gray-500 flex gap-2">
+                        <span>{file.date || file.created_at ? new Date(file.date || file.created_at).toLocaleDateString() : ''}</span>
+                      </div>
+                    </div>
+                    <span className="bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded">{(file.type || file.file_type || '').split('/').pop().toUpperCase()}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-center pb-2">
+                <Button onClick={() => handleOpenMediaLibrary("files")} type="text" className="bg-slate-300 w-full text-gray-600 font-medium">Xem tất cả</Button>
+              </div>
+
+            </Collapse.Panel>
+          </Collapse>
+
+        </div>
       </div>
+
 
       <Divider className="my-4" />
 
-      {/* Extra Features */}
-      <div className="px-6 pb-6">
-        <Collapse ghost className="text-sm">
-          <Collapse.Panel
-            header={
-              <span className="flex items-center gap-2">
-                <HomeOutlined /> Bảng tin nhóm
-              </span>
-            }
-            key="1"
-          >
-            <ul className="list-disc list-inside space-y-1 text-gray-700">
-              <li>Danh sách nhắc hẹn</li>
-              <li>Ghi chú, ghim, bình chọn</li>
-            </ul>
-          </Collapse.Panel>
-          <Collapse.Panel
-            header={
-              <span className="flex items-center gap-2">
-                <CalendarOutlined /> Ảnh / Video
-              </span>
-            }
-            key="2"
-          >
-            <p className="text-gray-500 italic">
-              Chưa có ảnh/video được chia sẻ trong hội thoại này.
-            </p>
-          </Collapse.Panel>
-        </Collapse>
 
-      </div>
+
       <Tooltip title="Rời nhóm">
         <Button
           type="ghost"
@@ -530,10 +628,18 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
         />
       </Modal>
 
-    </div>
+      {/* Ảnh/Video và File */}
+      <MediaLibraryModal
+        visible={isVisibleMediaLibrary}
+        mediaData={imageAndVideo}
+        onClose={handleCloseMediaLibrary}
+      >
+      </MediaLibraryModal>
+
+    </div >
   ) : (
     <div
-      className="w-1/4 border-r border-gray-300 flex flex-col bg-white shadow-lg "
+      className="w-1/5 border-r border-gray-300 flex flex-col bg-white shadow-lg "
       style={{ zIndex: 1000 }}
     >
       {/* Header */}
@@ -560,8 +666,8 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
       <Divider className="my-4" />
 
 
-      <div className="mt-3 flex justify-between px-6 mb-6 text-center">
-        <Tooltip title="Tắt thông báo">
+      <div className="mt-3 flex justify-center px-6 mb-6 text-center">
+        {/* <Tooltip title="Tắt thông báo">
           <Button
             icon={<BellOutlined />}
             type="ghost"
@@ -581,7 +687,7 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
           >
             <span className="text-xs mt-2">Ghim hội <br></br> thoại </span>
           </Button>
-        </Tooltip>
+        </Tooltip> */}
 
         <Tooltip title="Quản lý nhóm">
           <Button
@@ -598,14 +704,14 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
 
 
       <Divider className="my-4" />
-      <div className="space-y-6 px-6 text-sm flex-1 overflow-y-auto">
+      <div className="space-y-6 px-3 text-sm flex-1 overflow-y-auto">
         <div
-          onClick={handleOpen}
+          onClick={handleOpenCommonGroup}
           className="flex items-start gap-3 hover:bg-gray-50 p-2 rounded-lg transition-colors cursor-pointer"
         >
           <TeamOutlined className="text-blue-500 text-lg" />
           <div>
-            <h3 className="font-semibold text-gray-800"> 30 Nhóm chung</h3>
+            <h3 className="font-semibold text-gray-800"> {commonGroup.length} nhóm chung</h3>
           </div>
         </div>
 
@@ -623,40 +729,90 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
             </a>
           </div>
         </div>
+        <div >
+          <Collapse ghost className="text-sm" defaultActiveKey={['1', '2', '3']}>
+            <Collapse.Panel
+              header={
+                <span className="flex items-center gap-2">
+                  <HomeOutlined /> Bảng tin
+                </span>
+              }
+              key="1"
+            >
+              <ul className="list-disc list-inside space-y-1 text-gray-700">
+                <li>Danh sách nhắc hẹn</li>
+              </ul>
+            </Collapse.Panel>
+            <Collapse.Panel
+              header={
+                <span className="flex items-center gap-2">
+                  <CalendarOutlined /> Ảnh / Video
+                </span>
+              }
+              key="2"
+
+            >
+              <div className="grid grid-cols-3 gap-2 px-2 py-2">
+                {(imageAndVideo?.images?.slice(0, 6) || []).map((img, idx) => (
+                  <Image
+                    key={img.id || idx}
+                    src={img.media}
+                    alt="img"
+                    className="object-cover rounded-md border-2 border-gray-300 cursor-pointer"
+                  />
+                ))}
+
+                {(imageAndVideo?.videos?.slice(0, 6 - (imageAndVideo?.images?.length || 0)) || []).map((vid, idx) => (
+                  <video
+                    key={vid.id || idx}
+                    src={vid.media || vid}
+                    className="w-14 h-14 object-cover rounded-md border-2 border-gray-300 cursor-pointer"
+                    style={{ background: '#f3f4f6' }}
+                  />
+                ))}
+
+              </div>
+              <div className="flex justify-center pb-2">
+                <Button onClick={() => handleOpenMediaLibrary("images")} type="text" className="bg-slate-300 w-full text-gray-600 font-medium">Xem tất cả</Button>
+              </div>
+            </Collapse.Panel>
+            <Collapse.Panel
+              header={
+                <span className="flex items-center gap-2">
+                  <FileOutlined /> File
+                </span>
+              }
+              key="3"
+            >
+              <div className="divide-y divide-gray-100">
+                {(imageAndVideo?.files?.slice(0, 3) || []).map((file, idx) => (
+                  <div key={file.id || idx} className="flex items-center px-2 py-2 gap-3">
+                    <FileOutlined ></FileOutlined>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-800 truncate">{file.name || file.file_name}</div>
+                      <div className="text-xs text-gray-500 flex gap-2">
+                        <span>{file.date || file.created_at ? new Date(file.date || file.created_at).toLocaleDateString() : ''}</span>
+                      </div>
+                    </div>
+                    <span className="bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded">{(file.type || file.file_type || '').split('/').pop().toUpperCase()}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-center pb-2">
+                <Button onClick={() => handleOpenMediaLibrary("files")} type="text" className="bg-slate-300 w-full text-gray-600 font-medium">Xem tất cả</Button>
+              </div>
+
+            </Collapse.Panel>
+          </Collapse>
+
+        </div>
       </div>
+
 
       <Divider className="my-4" />
 
       {/* Extra Features */}
-      <div className="px-6 pb-6">
-        <Collapse ghost className="text-sm">
-          <Collapse.Panel
-            header={
-              <span className="flex items-center gap-2">
-                <HomeOutlined /> Bảng tin
-              </span>
-            }
-            key="1"
-          >
-            <ul className="list-disc list-inside space-y-1 text-gray-700">
-              <li>Danh sách nhắc hẹn</li>
-            </ul>
-          </Collapse.Panel>
-          <Collapse.Panel
-            header={
-              <span className="flex items-center gap-2">
-                <CalendarOutlined /> Ảnh / Video
-              </span>
-            }
-            key="2"
-          >
-            <p className="text-gray-500 italic">
-              Chưa có ảnh/video được chia sẻ trong hội thoại này.
-            </p>
-          </Collapse.Panel>
-        </Collapse>
 
-      </div>
       <Tooltip title="Rời nhóm">
         <Button
           type="ghost"
@@ -667,9 +823,39 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
         </Button>
       </Tooltip>
 
+      {/* Member Modal */}
+      <Modal
+        title="Nhóm chung"
+        visible={isModalCommonGroup}
+        onCancel={handleClose}
+        footer={null}
+      >
+        <List
+          itemLayout="horizontal"
+          dataSource={commonGroup}
+          renderItem={(group) => (
+            <List.Item
+              key={group.id}
+              className="items-center hover:bg-gray-50 p-2 rounded-lg transition-colors cursor-pointer"
+            >
+              <List.Item.Meta
+                avatar={<Avatar src={group.avatar || "default-avatar.jpg"} />}
+                title={group.name}
 
+              />
+            </List.Item>
+          )}
+        />
+      </Modal>
 
+      <MediaLibraryModal
+        visible={isVisibleMediaLibrary}
+        mediaData={imageAndVideo}
+        onClose={handleCloseMediaLibrary}
+      >
+      </MediaLibraryModal>
     </div>
+
   );
 };
 

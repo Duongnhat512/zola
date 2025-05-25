@@ -83,3 +83,26 @@ export const getConversationRecent = async (userId) => {
     throw error;
   }
 }
+export const getCommonConversation = async (userId, userFriendId) => {
+  try {
+    const response = await axios.get(
+      `/chat-service/conversations/get-common-conversation?user_id=${userId}&friend_id=${userFriendId}`
+    );
+    return response;
+  } catch (error) {
+    console.error("Failed to get common conversation", error);
+    throw error;
+  }
+}
+export const getMessageTypeImageAndVideo = async (conversationId) => {
+
+  try {
+    const response = await axios.get(
+      `/chat-service/conversations/get-messages-type-image-or-video?conversation_id=${conversationId}`
+    );
+    return response;
+  } catch (error) {
+    console.error("Failed to get message type image and video", error);
+    throw error;
+  }
+}
