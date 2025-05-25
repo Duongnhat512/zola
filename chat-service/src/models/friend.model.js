@@ -59,14 +59,14 @@ const FriendModel = {
   },
   
 
-  acceptFriendRequest: async (user_id, user_friend_id) => {
+  acceptFriendRequest: async (user, user_friend) => {
     try {
       // Truy vấn trực tiếp bằng khoá chính và khoá phân loại
       const getParams = {
         TableName: friendRequestTableName,
         Key: {
-          user_id: user_friend_id,
-          user_friend_id: user_id,
+          user_id: user_friend.id,
+          user_friend_id:  user.id,
         },
       };
 
@@ -79,8 +79,8 @@ const FriendModel = {
       const updateParams = {
         TableName: friendRequestTableName,
         Key: {
-          user_id: user_friend_id,
-          user_friend_id: user_id,
+          user_id: user_friend.id,
+          user_friend_id: user.id,
         },
         UpdateExpression: "set #status = :status, updatedAt = :updatedAt",
         ExpressionAttributeNames: {
@@ -98,18 +98,22 @@ const FriendModel = {
       const friend1Params = {
         TableName: friendTableName,
         Item: {
-          user_id: user_id,
-          user_friend_id: user_friend_id,
+          user_id: user.id,
+          user_friend_id: user_friend.id,
           createdAt: new Date().toISOString(),
+          fullname: user_friend.fullname,
+          avt: user_friend.avt,
         },
       };
 
       const friend2Params = {
         TableName: friendTableName,
         Item: {
-          user_id: user_friend_id,
-          user_friend_id: user_id,
+          user_id: user_friend.id,
+          user_friend_id: user.id,
           createdAt: new Date().toISOString(),
+          fullname: user.fullname,
+          avt: user.avt,
         },
       };
 
@@ -289,7 +293,7 @@ const FriendModel = {
     }
   },
   
-  deleteFriend : async (user_id, user_friend_id) => {
+    deleteFriend : async (user_id, user_friend_id) => {
     const params1 = {
       TableName: friendTableName,
       Key: {
@@ -305,6 +309,9 @@ const FriendModel = {
         user_friend_id: user_id,
       },
     };
+    console.log("params1", params1);
+    console.log("params2", params2);
+    
   
     try {
       await Promise.all([
