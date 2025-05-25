@@ -1031,5 +1031,67 @@ ConversationController.getConversationsRecent = async (req, res) => {
     res.status(500).json({ message: "Có lỗi khi lấy danh sách hội thoại gần đây" });
   }
 }
+  //Tính số lượng nhóm chung
+ConversationController.getCommonGroups = async (req, res) => {
+    const { user_id, friend_id } = req.query;
+
+    if (!user_id || !friend_id) {
+      return res.status(400).json({ message: "Thiếu user_id hoặc friend_id" });
+    }
+
+    try {
+      // Lấy danh sách group của từng user
+      const userGroups = await redisClient.zrevrange(`chatlist:${user_id}`, 0, -1);
+      const friendGroups = await redisClient.zrevrange(`chatlist:${friend_id}`, 0, -1);
+
+      // Lấy các group chung (loại bỏ hội thoại private)
+      const commonGroup = [];
+      for (const groupId of userGroups) {
+        if (friendGroups.includes(groupId)) {
+          const conversation = await ConversationModel.getConversationById(groupId);
+          if (conversation && conversation.type === "group") {
+            commonGroup.push(conversation);
+          }
+        }
+      }
+
+      res.status(200).json({
+        status: "success",
+        message: "Lấy số lượng nhóm chung thành công",
+        count: commonGroup.length,
+        group: commonGroup,
+      });
+    } catch (error) {
+      console.error("Có lỗi khi lấy số lượng nhóm chung:", error);
+      res.status(500).json({ message: "Có lỗi khi lấy số lượng nhóm chung" });
+    }
+}
+ConversationController.getMessageTypeImageAndVideo = async (req, res) => {
+  const { conversation_id } = req.query;
+
+  if (!conversation_id) {
+    return res.status(400).json({ message: "Thiếu conversation_id" });
+  }
+
+  try {
+    const messages = await MessageModel.getMessagesByConversationId(conversation_id);
+
+    const imageMessages = messages.filter(msg => msg.type === 'image');
+    const videoMessages = messages.filter(msg => msg.type === 'video');
+    const fileMessages = messages.filter(msg => msg.type === 'document');
+
+    res.status(200).json({
+      status: "success",
+      message: "Lấy danh sách tin nhắn hình ảnh và video thành công",
+      images: imageMessages,
+      videos: videoMessages,
+      files: fileMessages,
+
+    });
+  } catch (error) {
+    console.error("Có lỗi khi lấy danh sách tin nhắn hình ảnh và video:", error);
+    res.status(500).json({ message: "Có lỗi khi lấy danh sách tin nhắn hình ảnh và video" });
+  }
+}
 
 module.exports = ConversationController;

@@ -34,6 +34,6 @@ router.get(
   isAuthExpress,
   ConversationController.getConversationsRecent
 );
-
-
+router.get("/get-common-conversation", isAuthExpress, ConversationController.getCommonGroups);
+router.get("/get-messages-type-image-or-video", isAuthExpress, ConversationController.getMessageTypeImageAndVideo);
 module.exports = router;

@@ -525,7 +525,7 @@ const ConversationModel = {
     console.error("Có lỗi khi kiểm tra hội thoại nhóm:", error);
     throw new Error("Có lỗi khi kiểm tra hội thoại nhóm");
   }
-}
+},
 
 };
   
