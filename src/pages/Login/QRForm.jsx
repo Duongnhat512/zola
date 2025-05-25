@@ -1,6 +1,52 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { getQrSession, loginQR } from "../../services/UserService";
+import { QRCodeCanvas } from "qrcode.react";
 
 export default function QRForm({ setIsQR, isQR }) {
+  const [sessionId, setSessionId] = useState("");
+  const [status, setStatus] = useState("pending");
+
+  useEffect(() => {
+    // Gọi API tạo session QR khi mount
+    const createQrSession = async () => {
+      try {
+        const response = await loginQR();
+        console.log("QR session response:", response);
+        
+        if (response.sessionId) {
+          setSessionId(response.sessionId);
+          setStatus("pending");
+        } else {
+          console.error("Không thể tạo mã QR, vui lòng thử lại sau.");
+        }
+      } catch (error) {
+        console.error("Lỗi khi tạo mã QR:", error);
+      }
+    };
+    createQrSession();
+  }, []);
+
+  useEffect(() => {
+    if (!sessionId) return;
+    const interval = setInterval(() => {
+      getQrSession(sessionId).then((response) => {
+        if (response.status === "authenticated") {
+          setStatus("authenticated");
+          clearInterval(interval);
+        } else if (response.status === "expired") {
+          setStatus("expired");
+          clearInterval(interval);
+        } else {
+          setStatus("pending");
+        }
+      }).catch((error) => {
+        console.error("Error fetching QR session:", error);
+      });
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [sessionId]);
+
   return (
     <div>
       <div className="flex">
@@ -8,22 +54,22 @@ export default function QRForm({ setIsQR, isQR }) {
           Mở ứng dụng Zalo trên điện thoại và quét mã QR bên dưới để đăng nhập
         </p>
       </div>
-
       <div className="flex flex-col items-center justify-center mb-6 border rounded-lg p-4 bg-white shadow-md">
-        <img
-          src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/QR_code_for_mobile_English_Wikipedia.svg/1200px-QR_code_for_mobile_English_Wikipedia.svg.png"
-          alt="QR Code"
-          className="w-40 h-40"
-        />
+        {sessionId ? (
+          <QRCodeCanvas value={sessionId} size={160} />
+        ) : (
+          <div>Đang tạo mã QR...</div>
+        )}
         <div className="text-center text-blue-600">Chỉ dùng để đăng nhập</div>
         <div className="text-center text-gray-600">T1 Zola trên máy tính</div>
+        {status === "authenticated" && (
+          <div className="text-green-600 font-bold mt-2">Đăng nhập thành công!</div>
+        )}
       </div>
       <div className="text-center">
         <button
           className="text-blue-500 text-sm font-medium hover:underline"
-          onClick={() => {
-            setIsQR(!isQR); // Toggle to password login
-          }}
+          onClick={() => setIsQR(!isQR)}
         >
           Đăng nhập qua mật khẩu
         </button>

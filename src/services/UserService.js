@@ -68,11 +68,11 @@ export const getUserById = async (id) => {
   }
 };
 
-export const hiddenMessage = async (idMessage,idUser) => {
+export const hiddenMessage = async (idMessage, idUser) => {
   try {
     const response = await axios.post(`/chat-service/messages/set-hidden-message`, {
-      message_id:idMessage,
-      user_id:idUser
+      message_id: idMessage,
+      user_id: idUser
     });
     return response;
   } catch (error) {
@@ -102,12 +102,31 @@ export const updateAvt = async (username, base64File) => {
   }
 };
 
-export const getUsersByListUserId = async (listUserId)=>{
-   try {
+export const getUsersByListUserId = async (listUserId) => {
+  try {
     const response = await axios.get(`/auth-service/me/get-users-by-list-user-id?listUserId=${listUserId}`);
     return response;
   } catch (error) {
     console.error("Failed to get user by ID", error);
+    throw error;
+  }
+}
+
+export const loginQR = async () => {
+  try {
+    const response = await axios.post("/auth-service/auth/qr-session");
+    return response;
+  } catch (error) {
+    console.error("Login QR failed", error);
+    throw error;
+  }
+}
+export const getQrSession = async (sessionId) => {
+  try {
+    const response = await axios.get(`/auth-service/auth/qr-session/${sessionId}`);
+    return response;
+  } catch (error) {
+    console.error("Get QR session failed", error);
     throw error;
   }
 }

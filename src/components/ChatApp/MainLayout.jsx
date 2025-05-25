@@ -76,6 +76,8 @@ const MainLayout = (
   const closeModalGroup = () => {
     setIsModalGroupVisible(false);
   };
+
+
   return (
     <div className="flex h-screen w-full bg-gray-100">
       <div className="w-1/4 border-r border-gray-300 flex flex-col bg-white shadow-lg">

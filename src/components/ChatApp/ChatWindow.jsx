@@ -39,7 +39,7 @@ const ChatWindow = ({
   isModalAddMemberVisible,
   setIsModalAddMemberVisible,
   messages,
-  setMessages
+  setMessages,
 }) => {
   const [showVideoCall, setShowVideoCall] = useState(false);
   const selectedChatRef = useRef();
@@ -64,6 +64,7 @@ const ChatWindow = ({
   const [permission, setPermission] = useState(null);
   const [pinnedMessageNew, setPinnedMessageNew] = useState(null);
   const userMain = useSelector((state) => state.user.user);
+  console.log("Selected chat:", selectedChat);
 
   useEffect(() => {
     selectedChatRef.current = selectedChat;
@@ -156,7 +157,7 @@ const ChatWindow = ({
   useEffect(() => {
     if (selectedChat?.conversation_id) {
       console.log("Marking messages as read");
-      
+
       markAsRead(socket, selectedChat.conversation_id, userMain.id, setChats);
     }
   }, [selectedChat]);
@@ -493,14 +494,26 @@ const ChatWindow = ({
       )}
       <div className="p-4 bg-white border-t">
         {previewImage && (
-          <div className="mb-4">
+          <div className="mb-4 relative inline-block">
             <img
               src={previewImage}
               alt="Preview"
               className="max-w-xs rounded-lg"
             />
+            <button
+              onClick={() => {
+                setPreviewImage(null);
+                setSelectedImage(null);
+              }}
+              className="absolute top-1 right-1 bg-gray-200 hover:bg-red-400 rounded-full p-1"
+              title="Xóa ảnh"
+              type="button"
+            >
+              <span className="text-lg font-bold text-gray-700">×</span>
+            </button>
           </div>
         )}
+        
         {selectedFile && (
           <div className="mb-4">
             <p className="text-gray-600">File: {selectedFile.file_name}</p>
