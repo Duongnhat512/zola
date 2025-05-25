@@ -1161,4 +1161,36 @@ ConversationController.unpinConversation = async (socket, data) => {
   }
 }
 
+ConversationController.checkIsGroup = async (req, res) => {
+  const { conversation_id } = req.params;
+
+  try {
+    const conversation = await ConversationModel.getConversationById(conversation_id);
+    if (!conversation) {
+      return res.status(404).json({
+        status: "error",
+        message: "Không tìm thấy hội thoại",
+        isGroup: false,
+      });
+    }
+
+    const isGroup = conversation.type === "group";
+
+    return res.status(200).json({
+      status: "success",
+      message: "Kiểm tra thành công",
+      isGroup,
+      conversation,
+    });
+  } catch (error) {
+    console.error("Có lỗi khi kiểm tra hội thoại nhóm:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Có lỗi khi kiểm tra hội thoại nhóm",
+      isGroup: false,
+    });
+  }
+};
+
+
 module.exports = ConversationController;
