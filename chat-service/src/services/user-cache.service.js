@@ -11,7 +11,12 @@ const UserCacheService = {
     getUserProfile: async (userId, token) => {
         const key = `user:${userId}`;
         let user = await redis.get(key);
+        
+        if (token?.startsWith("Bearer ")) {
+  token = token.slice(7); // Bỏ "Bearer " ra khỏi token
+}
 
+        
         if (!user) {
             try {
                 const response = await axios.get(

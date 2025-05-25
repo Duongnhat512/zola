@@ -76,7 +76,7 @@ MessageController.sendGroupMessage = async (socket, data) => {
     };
     
     console.log('====================================');
-    console.log(fileMessage);
+    console.log(fileMessage, "Hehehehe");
     console.log('====================================');
 
     const [savedMessage, sender, members] = await Promise.all([

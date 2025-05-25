@@ -526,6 +526,65 @@ const ConversationModel = {
     throw new Error("Có lỗi khi kiểm tra hội thoại nhóm");
   }
 },
+pinConversation: async (userId, conversationId) => {
+  const params = {
+    TableName: "pinned_conversations",
+    Item: {
+      user_id: userId,
+      conversation_id: conversationId,
+      pinned_at: new Date().toISOString(),
+    },
+  };
+  try {
+    const res =  await dynamodb.put(params).promise();
+    console.log('====================================');
+    console.log(res);
+    console.log('====================================');
+    return { message: "Đã ghim hội thoại thành công" };
+  } catch (error) {
+    console.error("Có lỗi khi ghim hội thoại:", error);
+    throw new Error("Có lỗi khi ghim hội thoại");
+  }
+},
+getPinnedConversations: async (userId) => {
+  console.log('====================================');
+  console.log(userId);
+  console.log('====================================');
+  const params = {
+    TableName: "pinned_conversations",
+    KeyConditionExpression: "user_id = :userId",
+    ExpressionAttributeValues: {
+      ":userId": userId,
+    },
+  };
+
+  try {
+ const result = await dynamodb.query(params).promise();
+const conversationIds = (result.Items || []).map(item => item.conversation_id);
+return conversationIds;
+
+  } catch (error) {
+    console.error("Có lỗi khi lấy hội thoại đã ghim:", error);
+    throw new Error("Có lỗi khi lấy hội thoại đã ghim");
+  }
+},
+unpinConversation: async (userId, conversationId) => {
+  const params = {
+    TableName: "pinned_conversations",
+    Key: {
+      user_id: userId,
+      conversation_id: conversationId,
+    },
+  };
+
+  try {
+    await dynamodb.delete(params).promise();
+    return { message: "Đã bỏ ghim hội thoại thành công" };
+  } catch (error) {
+    console.error("Có lỗi khi bỏ ghim hội thoại:", error);
+    throw new Error("Có lỗi khi bỏ ghim hội thoại");
+  }
+},
 
 };
   
