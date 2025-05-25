@@ -14,7 +14,7 @@ import socket from "../../services/Socket"; // Import your socket instance
 import "react-toastify/dist/ReactToastify.css"; // Import CSS cho Toastify
 import { toast } from "react-toastify"; // Import react-toastify
 
-const AddGroupModal = ({ onClose, visible = true }) => {
+const AddGroupModal = ({ onClose, visible = true, isFriend, friend }) => {
   const [groupName, setGroupName] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedContacts, setSelectedContacts] = useState([]);
@@ -24,7 +24,7 @@ const AddGroupModal = ({ onClose, visible = true }) => {
   const user = useSelector((state) => state.user.user);
 
   const [contacts, setContacts] = useState([]);
-  
+
   const handleFindContact = async () => {
     try {
       const response = await getFriendByPhoneAndName(user.id, searchTerm);
@@ -55,12 +55,14 @@ const AddGroupModal = ({ onClose, visible = true }) => {
   useEffect(() => {
     const fetchFriends = async () => {
       try {
+
         const response = await getListFriend(user.id);
         if (response.code === 200 && Array.isArray(response.data)) {
           const detailedUsers = await Promise.all(
             response.data.map(async (request) => {
               try {
                 const userDetail = await getUserById(request.user_friend_id);
+
                 return userDetail?.user || null; // Ensure safe access to data
               } catch (error) {
                 console.error("Error fetching user details:", error);
@@ -70,27 +72,33 @@ const AddGroupModal = ({ onClose, visible = true }) => {
           );
           setContacts(detailedUsers.filter((user) => user !== null)); // Filter out null values
         }
+        if (!isFriend && friend) {
+          const userDetail = await getUserById(friend);
+          if (userDetail?.user) {
+            setContacts((prevContacts) => [...prevContacts, userDetail.user]);
+          }
+        }
       } catch (error) {
         console.error("Error fetching friend list:", error);
       }
     };
 
     fetchFriends();
-  }, [user.id]);
+  }, [user.id, friend]);
 
-  
+
 
   const handleCreateGroup = () => {
     if (!groupName || selectedContacts.length < 2) {
       console.error("Group name or members are missing.");
       return;
     }
-  
+
     if (imageFile) {
       const reader = new FileReader();
       reader.onload = () => {
         const base64Data = reader.result.split(",")[1]; // Extract base64 data
-  
+
         const groupData = {
           name: groupName,
           members: selectedContacts,
@@ -99,14 +107,14 @@ const AddGroupModal = ({ onClose, visible = true }) => {
           file_size: imageFile.size,
           file_data: base64Data,
         };
-  
+
         console.log("Group data to be sent:", groupData);
-  
+
         socket.emit("create_group", groupData, (response) => {
           if (response.status === "success") {
             console.log("Group created successfully:", response);
             onClose();
-            
+
           } else {
             console.error("Failed to create group:", response.message);
           }
@@ -119,7 +127,7 @@ const AddGroupModal = ({ onClose, visible = true }) => {
       const groupData = {
         name: groupName,
         members: selectedContacts,
-      };  
+      };
       socket.emit("create_group", groupData, (response) => {
         if (response.status === "success") {
           console.log("Group created successfully:", response);
@@ -130,17 +138,18 @@ const AddGroupModal = ({ onClose, visible = true }) => {
         }
       });
     }
+    onClose();
   };
-  
+
 
   const handleContactSelect = (contactId) => {
-    
-    
+
+
     if (selectedContacts.includes(contactId)) {
-        setSelectedContacts(selectedContacts.filter((id) => id !== contactId));
-      } else {
-        setSelectedContacts([...selectedContacts, contactId]);
-      }
+      setSelectedContacts(selectedContacts.filter((id) => id !== contactId));
+    } else {
+      setSelectedContacts([...selectedContacts, contactId]);
+    }
   };
 
   return (
@@ -224,11 +233,11 @@ const AddGroupModal = ({ onClose, visible = true }) => {
                 </p>
               </div>
               <Checkbox
-                 value={contact.id}
-                 checked={selectedContacts.includes(contact.id)}
-                 onChange={() => handleContactSelect(contact.id)}
-                 className="scale-125"
-/>
+                value={contact.id}
+                checked={selectedContacts.includes(contact.id)}
+                onChange={() => handleContactSelect(contact.id)}
+                className="scale-125"
+              />
             </div>
           ))}
         </div>

@@ -72,12 +72,12 @@ const HomeDetails = () => {
     const handleConversations = (response) => {
       if (response.status === "success") {
         const sortedConversations = response.conversations.sort((a, b) => {
-          const dateA = new Date(a.last_message?.updated_at || a.last_message?.created_at || 0);
-          const dateB = new Date(b.last_message?.updated_at || b.last_message?.created_at || 0);
-          return dateB - dateA;
+          // const dateA = new Date(a.last_message?.updated_at || a.last_message?.created_at || 0);
+          // const dateB = new Date(b.last_message?.updated_at || b.last_message?.created_at || 0);
+          // return dateB - dateA;
         });
         console.log("Sorted conversations:", sortedConversations);
-        
+
         setChats(sortedConversations);
       } else {
         console.error("Lỗi khi lấy danh sách hội thoại:", response.message);
@@ -89,7 +89,53 @@ const HomeDetails = () => {
     return () => {
       socket.off("conversations", handleConversations);
     };
-  }, []);
+  }, [socket]);
+
+  useEffect(() => {
+    if (!socket) return;
+    const handlePinConversationEvent = (data) => {
+      if (data.conversation_id === selectedChat.conversation_id) {
+        setSelectedChat((prev) => ({
+          ...prev,
+          pinned: true,
+        }));
+      }
+      // cập nhật lại conversation này lên đầu chats
+      setChats((prev) =>
+        prev.map((chat) =>
+          chat.conversation_id === data.conversation_id
+            ? { ...chat, pinned: true }
+            : chat
+        ).sort((a, b) => b.pinned - a.pinned) // Sắp xếp lại để ghim lên đầu
+      );
+
+    }
+    // Lắng nghe sự kiện ghim hội thoại từ server
+    socket.on("pin_conversation", handlePinConversationEvent);
+    // Hủy lắng nghe khi component unmount
+    return () => {
+      socket.off("pin_conversation", handlePinConversationEvent);
+    }
+  }, [socket, selectedChat])
+  useEffect(() => {
+    if (!socket) return;
+    const handleUnPinConversationEvent = (data) => {
+      if (data.conversation_id === selectedChat.conversation_id) {
+        setSelectedChat((prev) => ({
+          ...prev,
+          pinned: false,
+        }));
+      }
+      // cập nhật lại Chat 
+      fetchConversations()
+    }
+    // Lắng nghe sự kiện ghim hội thoại từ server
+    socket.on("unpin_conversation", handleUnPinConversationEvent);
+    // Hủy lắng nghe khi component unmount
+    return () => {
+      socket.off("unpin_conversation", handleUnPinConversationEvent);
+    }
+  }, [socket, selectedChat])
 
   const sendMessage = (
     fileData = null,
@@ -109,6 +155,7 @@ const HomeDetails = () => {
     } else {
       selectedChat = null;
     }
+
     if (
       !notify &&
       !input.trim() &&
@@ -147,9 +194,8 @@ const HomeDetails = () => {
 
     const msg = {
       conversation_id: selectedChat?.conversation_id || null,
-      receiver_id: !isGroup
-        ? selectedChat?.list_user_id?.find(u => u.user_id !== user.id)?.user_id
-        : null,
+      receiver_id: selectedChat?.list_user_id?.find((user) => user.user_id !== user.id)
+        .user_id || null,
       message: notify ? messageNotify : input || null,
       file_name:
         selectedVideo?.file_name ||
@@ -180,6 +226,8 @@ const HomeDetails = () => {
     const event = isGroup ? "send_group_message" : "send_private_message";
     socket.emit(event, msg, () => { });
     socket.on("message_sent", (msg) => {
+      console.log(msg);
+
       setMessages((prev) =>
         prev.map((m) =>
           m.id === tempId
@@ -301,6 +349,7 @@ const HomeDetails = () => {
       setIsGroupSettingsVisible(false);
     }
   };
+
   // tạo nhóm
   useEffect(() => {
     if (!socket) return;

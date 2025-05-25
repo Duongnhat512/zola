@@ -38,14 +38,15 @@ const MediaLibraryModal = ({ visible, onClose, mediaData }) => {
         if (item.type?.includes('video') || item.file_type?.includes('video')) {
             return (
                 <div className="relative">
-                    <img
-                        src={item.thumbnail || item.media}
-                        alt="Video thumbnail"
-                        className="w-full h-full object-cover rounded-md"
+                    <video
+                        src={item.media}
+                        controls
+                        style={{
+                            maxWidth: "100%",
+                            borderRadius: "8px",
+                        }}
                     />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <PlayCircleFilled style={{ fontSize: 36, color: 'white' }} />
-                    </div>
+
                 </div>
             );
         }
@@ -55,7 +56,7 @@ const MediaLibraryModal = ({ visible, onClose, mediaData }) => {
                 src={item.media}
                 alt="Media"
                 className="w-full h-full object-cover rounded-md"
-                preview={false}
+                preview={true}
             />
         );
     };

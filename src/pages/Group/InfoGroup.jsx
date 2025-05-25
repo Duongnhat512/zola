@@ -26,6 +26,8 @@ import {
   MoreOutlined,
   CameraOutlined,
   FileOutlined,
+  PushpinFilled,
+  PlayCircleFilled,
 } from "@ant-design/icons";
 import { getUserById, updateAvt } from "../../services/UserService";
 import socket from "../../services/Socket";
@@ -35,6 +37,8 @@ import Swal from "sweetalert2";
 import { setSelectedChat } from "../../redux/UserChatSlice";
 import { getCommonConversation, getMessageTypeImageAndVideo } from "../../services/Conversation";
 import MediaLibraryModal from "../../components/untilChatWindow/MediaLibraryModal";
+import AddGroupModal from "../../components/ChatApp/AddGroupModal";
+import { getListFriend } from "../../services/FriendService";
 
 const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
   onClose, isGroupSettingsVisible, setIsGroupSettingsVisible,
@@ -52,6 +56,9 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
   // const [disabledModalGroup,setDisabledModalGroup] = useState(false);
   const [isTyped, setIsTyped] = useState(selectedChat?.type === "group" ? true : false);
 
+  const [isVisibleAddGroup, setIsVisibleAddGroup] = useState(false);
+  const [isFriend, setIsFriend] = useState(false);
+  const [friend, setFriend] = useState(null);
   const handleOpenAddMember = () => {
     setIsModalAddMemberVisible(true);
   }
@@ -81,7 +88,7 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
   }
   const handleOpenCommonGroup = () => {
     setIsModalCommonGroup(true);
-  }
+  };
 
   const fetchMembers = async () => {
     try {
@@ -172,9 +179,6 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
   }, [selectedChat?.list_user_id, selectedChat]);
 
   const handleOpen = () => {
-    console.log('====================================');
-    console.log(imageAndVideo);
-    console.log('====================================');
     setIsMemberModalVisible(true);
   };
   const handleClose = () => {
@@ -186,6 +190,30 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
     setGroupSettings(updatedSettings);
     console.log("Updated group settings:", updatedSettings);
   };
+  const handleOpenAddGroup = async (selectedChat) => {
+    // kiểm tra có phải bạn bè hay không
+    const response = await getListFriend(user?.id);
+    if (selectedChat?.type === "private" && response.code === 200) {
+      let user_friend = selectedChat?.list_user_id?.find(u => u.user_id !== user.id);
+      const friend = response.data.find(friend =>
+        selectedChat?.list_user_id?.some(u => u.user_id === friend.user_friend_id) &&
+        friend.user_friend_id !== user.id
+      );
+
+      if (friend) {
+        setIsFriend(true);
+      } else {
+        setIsFriend(false);
+        setFriend(user_friend.user_id);
+      }
+
+    }
+
+    setIsVisibleAddGroup(true);
+  }
+  const handleCloseAddGroup = () => {
+    setIsVisibleAddGroup(false);
+  }
 
   useEffect(() => {
     if (selectedChat?.type === "private") {
@@ -281,6 +309,18 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
       handleClose();
     }
   };
+  const handlePinConversation = () => {
+    socket.emit("pin_conversation", {
+      conversation_id: selectedChat.conversation_id,
+      user_id: user?.id,
+    });
+  }
+  const handleUnpinConversation = () => {
+    socket.emit("unpin_conversation", {
+      conversation_id: selectedChat.conversation_id,
+      user_id: user?.id,
+    });
+  }
 
   const grantPermission = (friend, permission) => {
     console.log(permission);
@@ -405,29 +445,33 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
       </div>
 
       <Divider className="my-4" />
+      <div className="grid grid-cols-3 gap-4 px-6 mb-6 text-center">
+
+        <Tooltip title={selectedChat?.pinned ? "Bỏ ghim hội thoại" : "Ghim hội thoại"}>
+          {selectedChat?.pinned ? (
+            <Button
+              icon={<PushpinFilled />}
+              type="ghost"
+              className="flex flex-col items-center justify-center"
+              size="large"
+              onClick={handleUnpinConversation}
+            >
+              <span className="text-xs mt-1">Bỏ ghim</span>
+            </Button>
+          ) : (
+            <Button
+              icon={<PushpinOutlined />}
+              type="ghost"
+              className="flex flex-col items-center justify-center"
+              size="large"
+              onClick={handlePinConversation}
+            >
+              <span className="text-xs mt-1">Ghim</span>
+            </Button>
+          )}
+        </Tooltip>
 
 
-      <div className="grid grid-cols-2 gap-4 px-6 mb-6 text-center">
-        {/* <Tooltip title="Tắt thông báo">
-          <Button
-            icon={<BellOutlined />}
-            type="ghost"
-            className="flex flex-col items-center justify-center"
-            size="large"
-          >
-            <span className="text-xs mt-1">Thông báo</span>
-          </Button>
-        </Tooltip> */}
-        {/* <Tooltip title="Ghim hội thoại">
-          <Button
-            icon={<PushpinOutlined />}
-            type="ghost"
-            className="flex flex-col items-center justify-center"
-            size="large"
-          >
-            <span className="text-xs mt-1">Ghim</span>
-          </Button>
-        </Tooltip> */}
         <Tooltip title="Thêm thành viên">
           <Button
             icon={<UserAddOutlined />}
@@ -667,27 +711,31 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
 
 
       <div className="mt-3 flex justify-center px-6 mb-6 text-center">
-        {/* <Tooltip title="Tắt thông báo">
-          <Button
-            icon={<BellOutlined />}
-            type="ghost"
-            className="flex flex-col items-center justify-center py-4"
-            size="large"
-          >
-            <span className="text-xs mt-2">Tắt thông <br></br> báo</span>
-          </Button>
-        </Tooltip>
 
-        <Tooltip title="Ghim hội thoại">
-          <Button
-            icon={<PushpinOutlined />}
-            type="ghost"
-            className="flex flex-col items-center justify-center py-4"
-            size="large"
-          >
-            <span className="text-xs mt-2">Ghim hội <br></br> thoại </span>
-          </Button>
-        </Tooltip> */}
+
+        <Tooltip title={selectedChat?.pinned ? "Bỏ ghim hội thoại" : "Ghim hội thoại"}>
+          {selectedChat?.pinned ? (
+            <Button
+              icon={<PushpinFilled />}
+              type="ghost"
+              className="flex flex-col items-center justify-center"
+              size="large"
+              onClick={handleUnpinConversation}
+            >
+              <span className="text-xs mt-1">Bỏ ghim</span>
+            </Button>
+          ) : (
+            <Button
+              icon={<PushpinOutlined />}
+              type="ghost"
+              className="flex flex-col items-center justify-center"
+              size="large"
+              onClick={handlePinConversation}
+            >
+              <span className="text-xs mt-1">Ghim</span>
+            </Button>
+          )}
+        </Tooltip>
 
         <Tooltip title="Quản lý nhóm">
           <Button
@@ -695,7 +743,7 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
             type="ghost"
             className="flex flex-col items-center justify-center py-4"
             size="large"
-            onClick={handleOpenModelSetting}
+            onClick={() => handleOpenAddGroup(selectedChat)}
           >
             <span className="text-xs mt-2">Tạo nhóm <br></br> trò chuyện</span>
           </Button>
@@ -763,12 +811,18 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
                 ))}
 
                 {(imageAndVideo?.videos?.slice(0, 6 - (imageAndVideo?.images?.length || 0)) || []).map((vid, idx) => (
-                  <video
+                  <div
                     key={vid.id || idx}
-                    src={vid.media || vid}
-                    className="w-14 h-14 object-cover rounded-md border-2 border-gray-300 cursor-pointer"
+                    className="relative w-28 h-28 rounded-md border-2 border-gray-300 cursor-pointer overflow-hidden"
                     style={{ background: '#f3f4f6' }}
-                  />
+                  >
+                    <video
+                      src={vid.media || vid}
+                      className="w-full h-full object-cover pointer-events-none" // pointer-events-none để tránh auto play khi click
+                      controls
+                      preload="metadata"
+                    />
+                  </div>
                 ))}
 
               </div>
@@ -854,8 +908,14 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
         onClose={handleCloseMediaLibrary}
       >
       </MediaLibraryModal>
-    </div>
+      <AddGroupModal
+        visible={isVisibleAddGroup}
+        onClose={handleCloseAddGroup}
+        isFriend={isFriend}
+        friend={friend}
 
+      />
+    </div>
   );
 };
 
