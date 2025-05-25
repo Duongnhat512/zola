@@ -110,6 +110,38 @@ UserController.getUserById = async (req, res) => {
   }
 };
 
+UserController.getUsersByListUserId = async (req, res) => {
+  const { listUserId } = req.query;
+
+  if (!listUserId || !Array.isArray(listUserId)) {
+    return res.status(400).send({ message: "Thiếu listUserId." });
+  }
+
+  try {
+    const users = await UserModel.getUsersByListUserId(listUserId);
+    if (!users) {
+      return res.status(400).send({ message: "Người dùng không tồn tại." });
+    }
+    return res.json({
+      status: "success",
+      message: "Lấy thông tin người dùng thành công",
+      users: users.map(user => ({
+        username: user.username,
+        fullname: user.fullname,
+        dob: user.dob,
+        avt: user.avt,
+        gender: user.gender,
+        id: user.id,
+      })),
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send({
+      message: "Có lỗi xảy ra trong quá trình lấy thông tin người dùng.",
+    });
+  }
+}
+
 UserController.getUserByUsername = async (req, res) => {
   const { username } = req.query;
 

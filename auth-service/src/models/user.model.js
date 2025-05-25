@@ -235,6 +235,26 @@ const UserModel = {
       throw error;
     }
   },
+  getUsersByListUserId: async (listUserId) => {
+    try {
+    const params = {
+      RequestItems: {
+        [tableName]: {
+          Keys: listUserId.map(id => ({ id })),
+          ProjectionExpression: "id, username, fullname"
+        }
+      }
+    };
+
+    const result = await dynamodb.batchGet(params).promise();
+    console.log(result);
+    
+    return result.Responses[tableName] || [];
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    throw error;
+  }
+  },
 
   /**
    * Cập nhật trạng thái cho user

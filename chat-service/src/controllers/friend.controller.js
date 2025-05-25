@@ -116,8 +116,8 @@ const FriendController = {
    * Body: { user_id, user_friend_id }
    */
   acceptFriendRequest: async (socket, data) => {
-  const { user_id, user_friend_id } = data;  
-  if (!user_id || !user_friend_id) {
+  const { user, user_friend } = data;  
+  if (!user || !user_friend) {
     return socket.emit("friend_request_accept_error", {
       code: 400,
       message: "Thiếu thông tin người dùng",
@@ -125,7 +125,7 @@ const FriendController = {
   }
 
   try {
-    const result = await FriendModel.acceptFriendRequest(user_id, user_friend_id);
+    const result = await FriendModel.acceptFriendRequest(user, user_friend);
 
     // Gửi phản hồi về cho người chấp nhận
     socket.emit("friend_request_accepted", {
@@ -135,13 +135,13 @@ const FriendController = {
     });
 
     // Gửi thông báo đến người đã gửi lời mời kết bạn
-    const socketIds = await redisClient.smembers(`sockets:${user_friend_id}`);
+    const socketIds = await redisClient.smembers(`sockets:${user_friend.id}`);
     console.log("senderSocketId", socketIds);
     
     if (socketIds && socketIds.length > 0) {
       socketIds.forEach(id => {
         socket.to(id).emit("friend_request_accepted_notify", {
-          from: user_id,
+          from: user.id,
           message: "Lời mời kết bạn của bạn đã được chấp nhận",
           data: result,
           status: "success"
@@ -331,6 +331,9 @@ rejectFriendRequest: async (socket, data) => {
   deleteFriend: async (socket, data) => {
   const { user_id, user_friend_id } = data;
 
+  console.log("user_id", user_id);
+  console.log("user_friend_id", user_friend_id);
+  
   if (!user_id || !user_friend_id) {
     return socket.emit("error", {
       code: 400,
