@@ -68,7 +68,7 @@ const HomeDetails = () => {
   };
   const fetchConversations = () => {
     console.log(1);
-    
+
     if (!socket || !user?.id) return;
     socket.emit("get_conversations", { user_id: user.id });
   };
@@ -77,7 +77,7 @@ const HomeDetails = () => {
 
     const handleConversations = (response) => {
       console.log(2);
-      
+
       if (response.status === "success") {
         const sortedConversations = response.conversations;
         console.log("Sorted conversations:", sortedConversations);
@@ -180,8 +180,6 @@ const HomeDetails = () => {
         uploadProgress: notify ? null : 0, // Notify không cần uploadProgress
       },
     ]);
-
-    console.log(userMain.id);
     const msg = {
       conversation_id: selectedChat?.conversation_id || null,
       receiver_id: selectedChat?.list_user_id?.find((userMain) => userMain.user_id !== user.id)
