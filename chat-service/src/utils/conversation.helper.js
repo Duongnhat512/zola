@@ -5,14 +5,12 @@ const generateConversationId = (user1Id, user2Id) => {
 
 // Lấy danh sách thành viên và quyền
 const getMembersAndPermissions = async (conversationIds, redisClient, UserCacheService) => {
-  // 1. Pipeline lấy tất cả members
   const pipeline = redisClient.pipeline();
   conversationIds.forEach(id => {
     pipeline.smembers(`group:${id}`);
   });
   const memberResults = await pipeline.exec();
 
-  // 2. Collect unique user-conversation pairs
   const permissionKeys = [];
   const membersByConv = {};
 
@@ -25,21 +23,18 @@ const getMembersAndPermissions = async (conversationIds, redisClient, UserCacheS
     });
   });
 
-  // 3. Batch lấy permissions
   const permissionPipeline = redisClient.pipeline();
   permissionKeys.forEach(({ key }) => {
     permissionPipeline.get(key);
   });
   const permissionResults = await permissionPipeline.exec();
 
-  // 4. Map results back
   const permissionMap = new Map();
   permissionKeys.forEach(({ userId, convId }, index) => {
     const permission = permissionResults[index][1] || 'member';
     permissionMap.set(`${userId}:${convId}`, permission);
   });
 
-  // 5. Build final result
   return conversationIds.map(convId => {
     const members = membersByConv[convId] || [];
     return members.map(memberId => ({
@@ -50,12 +45,18 @@ const getMembersAndPermissions = async (conversationIds, redisClient, UserCacheS
   });
 }
 
-// Lấy last messages
 const getLastMessages = async (conversations, MessageModel) => {
-  return Promise.all(
-    conversations.map(c =>
-      c.last_message_id ? MessageModel.getMessageById(c.last_message_id) : Promise.resolve(null)
-    )
+  const messageIds = conversations
+    .filter(c => c.last_message_id)
+    .map(c => c.last_message_id);
+    
+  if (messageIds.length === 0) return conversations.map(() => null);
+  
+  const messages = await MessageModel.getMessagesByIds(messageIds);
+  const messageMap = new Map(messages.map(m => [m.id, m]));
+  
+  return conversations.map(c => 
+    c.last_message_id ? messageMap.get(c.last_message_id) || null : null
   );
 }
 

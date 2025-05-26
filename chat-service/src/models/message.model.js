@@ -42,6 +42,67 @@ const MessageModel = {
             throw new Error("Error sending message");
         }
     },
+
+    getMessagesByIds: async (message_ids) => {
+        if (!Array.isArray(message_ids) || message_ids.length === 0) {
+            return [];
+        }
+    
+        // Loại bỏ duplicates và null/undefined
+        const uniqueIds = [...new Set(message_ids.filter(Boolean))];
+        
+        if (uniqueIds.length === 0) {
+            return [];
+        }
+    
+        const batchSize = 100;
+        const results = [];
+    
+        try {
+            for (let i = 0; i < uniqueIds.length; i += batchSize) {
+                const batch = uniqueIds.slice(i, i + batchSize);
+                
+                const params = {
+                    RequestItems: {
+                        [tableName]: {
+                            Keys: batch.map(id => ({ id }))
+                        }
+                    }
+                };
+    
+                const data = await dynamodb.batchGet(params).promise();
+                const batchMessages = data.Responses[tableName] || [];
+                
+                results.push(...batchMessages);
+    
+                if (data.UnprocessedKeys && Object.keys(data.UnprocessedKeys).length > 0) {
+                    console.warn("Some messages were not processed, retrying...");
+                }
+            }
+    
+            const processedMessages = results.map(message => {
+                if (message?.is_deleted) {
+                    return {
+                        ...message,
+                        message: "Tin nhắn đã thu hồi",
+                        file_name: null,
+                        is_deleted: true,
+                        media: null,
+                    };
+                }
+                return message;
+            });
+    
+            const messageMap = new Map(processedMessages.map(msg => [msg.id, msg]));
+            
+            return message_ids.map(id => messageMap.get(id) || null);
+    
+        } catch (error) {
+            console.error("Error in getMessagesByIds:", error);
+            throw new Error("Failed to get messages by IDs");
+        }
+    },
+    
     /**`
      * Lấy danh sách tin nhắn trong cuộc hội thoại theo conversation_id
      * @param {String} conversation_id 
