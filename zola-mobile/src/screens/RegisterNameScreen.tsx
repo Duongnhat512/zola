@@ -24,10 +24,10 @@ const RegisterNameScreen = ({ route, navigation }: RegisterNameScreenProps) => {
   console.log('phoneNumber', phoneNumber);
 
   const isValidName = (name: string) => {
-    const lengthValid = name.length >= 2 && name.length <= 40;
-    const noNumbers = /^[^\d]+$/.test(name);
-    return lengthValid && noNumbers;
-  };
+  // Regex: chỉ cho phép chữ cái tiếng Việt, khoảng trắng, dài 2-40 ký tự
+  const regex = /^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂĐĨŨƠẶẾỤƯăđĩũơưặếụưýỵỹỳÝỴỸỲ\s]{2,40}$/;
+  return regex.test(name.trim());
+};
 
   const handleContinue = () => {
     if (isValidName(userName)) {

@@ -25,9 +25,9 @@ const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
   const [phoneError, setPhoneError] = useState('');
 
   const validatePhoneNumber = (number: string) => {
-    const regex = /^0\d{9}$/;
-    return regex.test(number);
-  };
+  const regex = /^(\+84|84|0)(3[2-9]|5[689]|7[06-9]|8[1-689]|9[0-46-9])[0-9]{7}$/;
+  return regex.test(number);
+};
 
   const handleRegister = () => {
     if (!validatePhoneNumber(phoneNumber)) {

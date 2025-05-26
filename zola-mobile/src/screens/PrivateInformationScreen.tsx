@@ -31,16 +31,27 @@ const PrivateInformationScreen = ({ route, navigation }: PrivateInformationScree
   };
 
   const handleContinue = () => {
-    if (gender && date) {
-  
-       const birthday = date.toLocaleDateString('vi-VN')
-       console.log('Ngày sinh:', birthday,gender,userName, phoneNumber);
-       navigation.navigate('Password', { userName, phoneNumber, gender, birthday });
-  
-    } else {
-      alert('Vui lòng điền đầy đủ thông tin.');
-    }
-  };
+  // Validate ngày sinh: phải >13 tuổi
+  const today = new Date();
+  let age = today.getFullYear() - date.getFullYear();
+  const m = today.getMonth() - date.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < date.getDate())) {
+    age--;
+  }
+  if (age < 13) {
+    alert('Bạn phải trên 13 tuổi để đăng ký.');
+    return;
+  }
+  // Validate giới tính
+  if (!gender || !['Nam', 'Nữ', 'Khác'].includes(gender)) {
+    alert('Vui lòng chọn giới tính hợp lệ.');
+    return;
+  }
+
+  const pad = (n: number) => n < 10 ? '0' + n : n;
+const birthday = `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+  navigation.navigate('Password', { userName, phoneNumber, gender, birthday });
+};
 
   return (
     <SafeAreaView style={styles.container}>

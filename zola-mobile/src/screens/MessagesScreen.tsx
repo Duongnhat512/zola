@@ -237,8 +237,12 @@ const MessagesScreen = () => {
                   : item.last_message?.type === 'video'
                     ? 'Đã gửi một video'
                     : item.last_message?.type === 'document'
-                      ? 'Đã gửi một tệp'
-                      : 'Chưa có tin nhắn'}
+                      ? 'Đã gửi một tài liệu'
+                      : item.last_message?.type === 'multiple_files'
+                        ? 'Đã gửi nhiều ảnh'
+                        : item.last_message?.type === 'notify'
+                          ? "Đã gửi một thông báo"
+                          : 'Tin nhắn không xác định'}
             </Text>
             <Text style={styles.chatTime}>
               {formatRelativeTime(item.last_message?.created_at)}

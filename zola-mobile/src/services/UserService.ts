@@ -67,9 +67,10 @@ export const registerUser = async (data) => {
   try {
     console.log("Registering user with data:", data);
     const response = await axios.post("/auth-service/auth/register", {
-      username: data.userName,
+      username: data.username,
       password: data.password,
       fullname: data.fullname,
+      phone: data.phone,
       dob: data.dob,
       gender: data.gender,
       status: data.status

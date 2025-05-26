@@ -26,17 +26,24 @@ const PasswordScreen = ({ route, navigation }) => {
   const { userName, phoneNumber, gender, birthday } = route.params;
 
   const validatePassword = (password: string) => {
-    const regex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[A-Za-z0-9!@#$%^&*]{6,}$/;
-    const year = birthday.split('/')[2];
-    const forbiddenWords = ['Zalo', userName, year];
-    if (forbiddenWords.some(word => password.includes(word))) {
-      return "Mật khẩu không được chứa 'Zalo', tên của bạn hoặc năm sinh.";
-    }
-    if (!regex.test(password)) {
-      return "Mật khẩu phải chứa ít nhất 6 ký tự, bao gồm ít nhất một số và một ký tự đặc biệt.";
-    }
-    return null;
-  };
+  // Regex: ít nhất 8 ký tự, có chữ và số, có thể có ký tự đặc biệt
+  const regex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&.#_-]{8,}$/;
+  // Lấy năm sinh (hỗ trợ cả dd/mm/yyyy và yyyy-mm-dd)
+  let year = '';
+  if (birthday.includes('/')) {
+    year = birthday.split('/')[2];
+  } else if (birthday.includes('-')) {
+    year = birthday.split('-')[0];
+  }
+  const forbiddenWords = ['Zalo', userName, year];
+  if (forbiddenWords.some(word => word && password.toLowerCase().includes(word.toLowerCase()))) {
+    return "Mật khẩu không được chứa 'Zalo', tên của bạn hoặc năm sinh.";
+  }
+  if (!regex.test(password)) {
+    return "Mật khẩu phải có ít nhất 8 ký tự, gồm chữ và số.";
+  }
+  return null;
+};
 
   const handleContinue = async () => {
     const error = validatePassword(password);
@@ -49,7 +56,8 @@ const PasswordScreen = ({ route, navigation }) => {
     } else {
       try {
         const data = {
-          userName: phoneNumber,
+          username: phoneNumber,
+          phone: phoneNumber,
           password,
           fullname: userName,
           dob: birthday,
