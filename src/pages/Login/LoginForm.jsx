@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { LockClosedIcon, PhoneIcon } from "@heroicons/react/outline";
 
 export const LoginForm = ({
@@ -9,6 +10,11 @@ export const LoginForm = ({
   setPassword,
   handleLogin,
 }) => {
+  // Cho phép: SĐT 10 số hoặc nhập đúng chữ "admin"
+  const isPhoneValid = /^\d{10}$/.test(phoneNumber) || phoneNumber === "admin";
+  const isPasswordValid = password.length > 0;
+  const canLogin = isPhoneValid && isPasswordValid;
+
   return (
     <form className="space-y-4">
       {/* Input số điện thoại */}
@@ -21,7 +27,8 @@ export const LoginForm = ({
           placeholder="0123456789"
           className="flex-1 px-4 py-2 outline-none"
           value={phoneNumber}
-          onChange={(e) => setPhoneNumber(e.target.value)}
+          onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9a-zA-Z]/g, ""))}
+          maxLength={10}
         />
       </div>
 
@@ -41,14 +48,19 @@ export const LoginForm = ({
 
       <button
         type="submit"
-        onClick={handleLogin}
-        className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-lg"
+        onClick={canLogin ? handleLogin : (e) => e.preventDefault()}
+        className={`w-full font-semibold py-2 rounded-lg text-white ${
+          canLogin
+            ? "bg-blue-500 hover:bg-blue-600 cursor-pointer"
+            : "bg-gray-300 cursor-not-allowed"
+        }`}
+        disabled={!canLogin}
       >
         Đăng nhập với mật khẩu
       </button>
 
       <div className="text-center text-gray-600 mb-4 flex items-center justify-between">
-        <a href="#" className="text-blue-500 text-sm hover:underline">
+        <a href="forgot" className="text-blue-500 text-sm hover:underline">
           Quên mật khẩu
         </a>
         <a href="/register" className="text-blue-500 text-sm hover:underline">
@@ -59,7 +71,7 @@ export const LoginForm = ({
       <div className="text-center">
         <a
           className="text-blue-500 text-sm font-medium hover:underline"
-          onClick={() => setIsQR(!isQR)} // Toggle to QR login
+          onClick={() => setIsQR(!isQR)}
         >
           Đăng nhập qua mã QR
         </a>

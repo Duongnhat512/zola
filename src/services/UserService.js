@@ -130,3 +130,26 @@ export const getQrSession = async (sessionId) => {
     throw error;
   }
 }
+
+export const sendOtpForgot = async (phoneNumber) => {
+  try {
+    const response = await axios.post(`/auth-service/auth/forgot-password`,{username:phoneNumber});
+    return response;
+  } catch (error) {
+    console.error("Get QR session failed", error);
+    throw error;
+  }
+}
+export const resetPassword = async (username,otp,newPassword)=>{
+  console.log("username",username);
+  console.log("otp",otp);
+  console.log("newPassword",newPassword);
+  
+   try {
+    const response = await axios.post(`/auth-service/auth/reset-password`,{username,otp,newPassword});
+    return response;
+  } catch (error) {
+    console.error("Get QR session failed", error);
+    throw error;
+  }
+}

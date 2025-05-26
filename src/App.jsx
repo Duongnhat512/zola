@@ -11,6 +11,7 @@ import Register from "./pages/Register/Register";
 import { Spin } from "antd";
 import { LoadingOutlined } from "@ant-design/icons";
 import "antd/dist/reset.css";
+import ForgotPassword from "./pages/Home/ForgotPassword";
 
 
 function App() {
@@ -55,6 +56,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/forgot" element={<ForgotPassword />} />
       </Routes>
     </Router>
   );

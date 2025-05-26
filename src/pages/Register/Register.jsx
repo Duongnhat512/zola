@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Input, Button, Form, Radio, DatePicker, message } from "antd";
+import { Input, Button, Form, Radio, DatePicker } from "antd";
 import { useNavigate } from "react-router-dom";
 import { registerUser, sendOtp } from "../../services/UserService";
 
@@ -23,15 +23,14 @@ function Register() {
         setFormMessage("OTP đã được gửi thành công!");
         setMessageType("success");
         setServerOtp(res.otp);
-        setOtpExpireTime(Date.now() + 120 * 1000); // Lưu thời gian hết hạn (120 giây)
-        setCountdown(120); // Bắt đầu countdown từ 120 giây
+        setOtpExpireTime(Date.now() + 120 * 1000);
+        setCountdown(120);
         setStep(2);
 
-        // Khởi động countdown
         const interval = setInterval(() => {
           setCountdown((prev) => {
             if (prev <= 1) {
-              clearInterval(interval); // Dừng countdown khi hết thời gian
+              clearInterval(interval);
               return 0;
             }
             return prev - 1;
@@ -57,7 +56,7 @@ function Register() {
     if (otp === serverOtp) {
       setFormMessage("Xác nhận OTP thành công!");
       setMessageType("success");
-      setStep(3); // Chuyển sang bước nhập thông tin cá nhân
+      setStep(3);
     } else {
       setFormMessage("OTP không chính xác. Vui lòng thử lại.");
       setMessageType("error");
@@ -68,6 +67,7 @@ function Register() {
     const { fullname, password, dob, gender } = values;
     const data = {
       username: phoneNumber,
+      phone: phoneNumber,
       password,
       fullname,
       dob: dob.format("DD/MM/YYYY"),
@@ -76,7 +76,11 @@ function Register() {
     };
 
     try {
+      console.log("Registering user with data:", data);
+
       let res = await registerUser(data);
+      console.log("Register response:", res);
+
       setFormMessage("Đăng ký thành công!");
       setMessageType("success");
       navigate("/login");
@@ -98,30 +102,48 @@ function Register() {
             <Form layout="vertical">
               <Form.Item
                 label="Số điện thoại"
+                required
                 rules={[
                   { required: true, message: "Vui lòng nhập số điện thoại!" },
                   {
                     pattern: /^[0-9]{10}$/,
-                    message: "Số điện thoại không hợp lệ!",
+                    message: "Số điện thoại phải đủ 10 số!",
                   },
                 ]}
+                validateStatus={
+                  phoneNumber && !/^[0-9]{10}$/.test(phoneNumber)
+                    ? "error"
+                    : ""
+                }
+                help={
+                  phoneNumber && !/^[0-9]{10}$/.test(phoneNumber)
+                    ? "Số điện thoại phải đủ 10 số!"
+                    : ""
+                }
               >
                 <Input
                   placeholder="Nhập số điện thoại"
                   value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  maxLength={10}
+                  onChange={(e) =>
+                    setPhoneNumber(e.target.value.replace(/\D/g, ""))
+                  }
                 />
               </Form.Item>
-              <Button type="primary" block onClick={handleSendOtp}>
+              <Button
+                type="primary"
+                block
+                onClick={handleSendOtp}
+                disabled={!/^[0-9]{10}$/.test(phoneNumber)}
+              >
                 Gửi OTP
               </Button>
               {formMessage && (
                 <p
-                  className={`mt-2 text-center ${
-                    messageType === "success"
+                  className={`mt-2 text-center ${messageType === "success"
                       ? "text-green-600"
                       : "text-red-600"
-                  }`}
+                    }`}
                 >
                   {formMessage}
                 </p>
@@ -135,12 +157,30 @@ function Register() {
             <Form layout="vertical">
               <Form.Item
                 label="Nhập mã OTP"
-                rules={[{ required: true, message: "Vui lòng nhập mã OTP!" }]}
+                required
+                rules={[
+                  { required: true, message: "Vui lòng nhập mã OTP!" },
+                  {
+                    pattern: /^[0-9]{4,6}$/,
+                    message: "OTP phải là 4-6 số!",
+                  },
+                ]}
+                validateStatus={
+                  otp && !/^[0-9]{4,6}$/.test(otp) ? "error" : ""
+                }
+                help={
+                  otp && !/^[0-9]{4,6}$/.test(otp)
+                    ? "OTP phải là 4-6 số!"
+                    : ""
+                }
               >
                 <Input
                   placeholder="Nhập mã OTP"
                   value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
+                  maxLength={6}
+                  onChange={(e) =>
+                    setOtp(e.target.value.replace(/\D/g, ""))
+                  }
                 />
               </Form.Item>
               <div className="flex justify-between">
@@ -148,7 +188,7 @@ function Register() {
                 <Button
                   type="primary"
                   onClick={handleVerifyOtp}
-                  disabled={countdown === 0}
+                  disabled={countdown === 0 || !/^[0-9]{4,6}$/.test(otp)}
                 >
                   Xác nhận OTP
                 </Button>
@@ -160,11 +200,10 @@ function Register() {
               </p>
               {formMessage && (
                 <p
-                  className={`mt-2 text-center ${
-                    messageType === "success"
+                  className={`mt-2 text-center ${messageType === "success"
                       ? "text-green-600"
                       : "text-red-600"
-                  }`}
+                    }`}
                 >
                   {formMessage}
                 </p>
@@ -181,6 +220,10 @@ function Register() {
                 name="fullname"
                 rules={[
                   { required: true, message: "Vui lòng nhập họ và tên!" },
+                  {
+                    pattern: /^[A-Za-zÀ-ỹà-ỹ\s.'-]{2,50}$/,
+                    message: "Họ tên chỉ chứa chữ cái, khoảng trắng, dấu và dài 2-50 ký tự!",
+                  },
                 ]}
               >
                 <Input placeholder="Nhập họ và tên" />
@@ -188,7 +231,14 @@ function Register() {
               <Form.Item
                 label="Mật khẩu"
                 name="password"
-                rules={[{ required: true, message: "Vui lòng nhập mật khẩu!" }]}
+                rules={[
+                  { required: true, message: "Vui lòng nhập mật khẩu!" },
+                  {
+                    pattern: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&.#_-]{8,}$/,
+                    message:
+                      "Mật khẩu tối thiểu 8 ký tự, gồm chữ và số, có thể có ký tự đặc biệt!",
+                  },
+                ]}
               >
                 <Input.Password placeholder="Nhập mật khẩu" />
               </Form.Item>
@@ -221,11 +271,10 @@ function Register() {
               </div>
               {formMessage && (
                 <p
-                  className={`mt-2 text-center ${
-                    messageType === "success"
+                  className={`mt-2 text-center ${messageType === "success"
                       ? "text-green-600"
                       : "text-red-600"
-                  }`}
+                    }`}
                 >
                   {formMessage}
                 </p>
