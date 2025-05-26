@@ -84,10 +84,11 @@ const FriendList = () => {
       if (response.status === "success") {
         // Handle successful conversation retrieval
         if (response.newConversation) {
-          console.log("newConversation  : " + response.newConversation);
+          console.log("newConversation  : ", response.newConversation);
           setSelectedChat({
             conversation_id: response.newConversation.id,
             list_user_id: response.newConversation.members,
+            last_message: null,
             list_message: [],
             avatar: response.newConversation.avatar,
             name: response.newConversation.name,
@@ -103,7 +104,7 @@ const FriendList = () => {
             )
           );
         } else {
-          console.log("Conversation : " + response.conversation);
+          console.log("Conversation : ", response.conversation);
 
           setSelectedChat(response.conversation);
 
