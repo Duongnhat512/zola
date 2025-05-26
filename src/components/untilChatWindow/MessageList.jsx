@@ -50,6 +50,8 @@ const MessageList = ({
     }
 
   }, [messages]); // thay vì [pinned], dùng [messages] để luôn cập nhật khi có thay đổi
+  console.log(messages);
+
   return (
     <div className="flex-1 overflow-y-auto py-2 px-4 space-y-4 message-list-container relative">
       {/* Pinned message block */}
@@ -184,7 +186,7 @@ const MessageList = ({
                             ? "8px 12px"
                             : "0",
                         borderRadius: "12px",
-                        maxWidth: "300px",
+                        maxWidth: "500px",
                         backgroundColor:
                           msg.sender === "me" ? "#d1e7ff" : "#ffffff",
                         boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
@@ -223,41 +225,137 @@ const MessageList = ({
                         </div>
                       ) : (
                         <>
-                          {msg.type === "image" && msg.media && (
-                            <Image
-                              src={msg.media}
-                              alt="Đã gửi ảnh"
+                          <>
+                            {/* Hiển thị nhiều ảnh nếu có (kiểu mới: type multiple_files và media là JSON) */}
+                            {msg.type === "multiple_files" && msg.media && (() => {
+                              let files = [];
+                              try {
+                                files = JSON.parse(msg.media);
+                              } catch (e) {
+                                files = [];
+                              }
+                              return (
+                                <div style={{ display: "flex", flexWrap: "wrap", marginBottom: 4, alignItems: "center", gap: 8, justifyContent: "center" }}>
+                                  {files
+                                    .filter(f => f.fileType === "image")
+                                    .map((img, idx) => (
+                                      <Image
+                                        key={idx}
+                                        src={img.fileUrl}
+                                        alt={img.fileName || `image-${idx}`}
+                                        style={{
+                                          maxWidth: 246,
+                                          maxHeight: 200,
+                                          borderRadius: 8,
+                                          objectFit: "cover",
+                                        }}
+                                      />
+                                    ))}
+                                </div>
+                              );
+                            })()}
+                            {/* Hiển thị 1 ảnh cũ nếu có */}
+                            {msg.type === "image" && msg.media && (() => {
+                              try {
+                                const files = JSON.parse(msg.media);
+                                if (Array.isArray(files) && files.length === 1 && files[0].fileType === "image") {
+                                  return (
+                                    <Image
+                                      src={files[0].fileUrl}
+                                      alt={files[0].fileName || "image"}
+                                      style={{
+                                        maxWidth: 500,
+                                        maxHeight: "auto",
+                                        borderRadius: 8,
+                                        objectFit: "cover",
+                                      }}
+                                    />
+                                  );
+                                }
+                              } catch (e) { }
+                              return null;
+                            })()}
+                          </>
+                          {msg.media && (() => {
+                            try {
+                              const files = JSON.parse(msg.media);
+                              if (Array.isArray(files) && files.length === 1) {
+                                const file = files[0];
+                                if (file.fileType === "video") {
+                                  return (
+                                    <video
+                                      src={file.fileUrl}
+                                      controls
+                                      style={{
+                                        maxWidth: "100%",
+                                        borderRadius: "8px",
+                                        background: "#000",
+                                      }}
+                                    />
+                                  );
+                                }
+                                if (file.fileType === "document") {
+                                  return (
+                                    <a
+                                      href={file.fileUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      style={{
+                                        display: "block",
+                                        color: "#007bff",
+                                        textDecoration: "underline",
+                                      }}
+                                    >
+                                      {file.fileName}
+                                    </a>
+                                  );
+                                }
+                              }
+                            } catch (e) { }
+                            // Nếu không phải JSON, fallback về kiểu cũ
+                            if (msg.type === "video" && msg.media) {
+                              return (
+                                <video
+                                  src={msg.media}
+                                  controls
+                                  style={{
+                                    maxWidth: "100%",
+                                    borderRadius: "8px",
+                                    background: "#000",
+                                  }}
+                                />
+                              );
+                            }
+                            if (msg.type === "document" && msg.file_name) {
+                              return (
+                                <a
+                                  href={msg.media || "#"}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    display: "block",
+                                    color: "#007bff",
+                                    textDecoration: "underline",
+                                  }}
+                                >
+                                  {msg.file_name}
+                                </a>
+                              );
+                            }
+                            return null;
+                          })()}
+                          {msg?.text && (
+                            <p
                               style={{
-                                maxWidth: "100%",
-                                borderRadius: "8px",
-                              }}
-                            />
-                          )}
-                          {msg.type === "video" && msg.media && (
-                            <video
-                              src={msg.media}
-                              controls
-                              style={{
-                                maxWidth: "100%",
-                                borderRadius: "8px",
-                              }}
-                            />
-                          )}
-                          {msg.type === "document" && msg.file_name && (
-                            <a
-                              href={msg.media || "#"}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{
-                                display: "block",
-                                color: "#007bff",
-                                textDecoration: "underline",
+                                wordBreak: "break-word",
+                                whiteSpace: "pre-line",
+                                fontSize: 20,
+                                lineHeight: "1.2"
                               }}
                             >
-                              {msg.file_name}
-                            </a>
+                              {msg.text}
+                            </p>
                           )}
-                          {msg?.text && <p>{msg.text}</p>}
                         </>
                       )}
                     </div>
@@ -282,8 +380,8 @@ const MessageList = ({
                         triggerNode.parentNode
                       }
                       overlayStyle={{
-                        width: "200px",
-                        maxWidth: "300px",
+                        width: "500px",
+                        maxWidth: "500px",
                         wordWrap: "break-word",
                       }}
                     >
