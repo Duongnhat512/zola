@@ -445,7 +445,9 @@ MessageController.forwardMessage = async (socket, data) => {
  * Ghim tin nhắn trong cuộc hội thoại
  */
 MessageController.pinMessage = async (socket, data) => {
-  const { message_id, conversation_id, message_text } = data;
+  const { message_id, conversation_id, message_text, message_type } = data;
+  console.log(message_type, "message_type");
+  
   const user_id = socket.user.id;
 
   if (!message_id) {
@@ -475,7 +477,8 @@ MessageController.pinMessage = async (socket, data) => {
       message: "Ghim tin nhắn thành công",
       pinned_message: result,
       conversation_id,
-      message_text
+      message_text,
+      message_type
     });
 
     // Thông báo cho các thành viên khác trong cuộc trò chuyện
@@ -505,7 +508,7 @@ MessageController.pinMessage = async (socket, data) => {
  * Bỏ ghim tin nhắn
  */
 MessageController.unpinMessage = async (socket, data) => {
-  const { message_id, conversation_id, message_text } = data;
+  const { message_id, conversation_id, message_text, message_type } = data;
   const user_id = socket.user.id;
 
   if (!message_id) {
@@ -542,7 +545,8 @@ MessageController.unpinMessage = async (socket, data) => {
       message: "Bỏ ghim tin nhắn thành công",
       message_id,
       conversation_id,
-      message_text
+      message_text,
+      message_type
     });
     const members = await redisClient.smembers(`group:${conversation_id}`);
     // Thông báo cho các thành viên khác trong cuộc trò chuyện
