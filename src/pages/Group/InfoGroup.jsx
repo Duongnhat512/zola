@@ -561,30 +561,52 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
                 </span>
               }
               key="2"
-
             >
               <div className="grid grid-cols-3 gap-2 px-2 py-2">
-                {(imageAndVideo?.images?.slice(0, 6) || []).map((img, idx) => (
-                  <Image
-                    key={img.id || idx}
-                    src={img.media}
-                    alt="img"
-                    className="object-cover rounded-md border-2 border-gray-300 cursor-pointer"
-                  />
-                ))}
+                {(imageAndVideo?.images?.slice(0, 6) || []).map((img, idx) => {
+                  let url = "";
+                  try {
+                    const arr = JSON.parse(img.media);
+                    if (Array.isArray(arr) && arr[0]?.fileUrl) url = arr[0].fileUrl;
+                  } catch {
+                    url = img.media;
+                  }
+                  return (
+                    <Image
+                      key={img.id || idx}
+                      src={url}
+                      alt="img"
+                      className="object-cover rounded-md border-2 border-gray-300 cursor-pointer"
+                    />
+                  );
+                })}
 
-                {(imageAndVideo?.videos?.slice(0, 6 - (imageAndVideo?.images?.length || 0)) || []).map((vid, idx) => (
-                  <video
-                    key={vid.id || idx}
-                    src={vid.media || vid}
-                    className="w-14 h-14 object-cover rounded-md border-2 border-gray-300 cursor-pointer"
-                    style={{ background: '#f3f4f6' }}
-                  />
-                ))}
-
+                {(imageAndVideo?.videos?.slice(0, 6 - (imageAndVideo?.images?.length || 0)) || []).map((vid, idx) => {
+                  let url = "";
+                  try {
+                    const arr = JSON.parse(vid.media);
+                    if (Array.isArray(arr) && arr[0]?.fileUrl) url = arr[0].fileUrl;
+                  } catch {
+                    url = vid.media;
+                  }
+                  return (
+                    <div
+                      key={vid.id || idx}
+                      className="relative w-28 h-28 rounded-md border-2 border-gray-300 cursor-pointer overflow-hidden"
+                      style={{ background: '#f3f4f6' }}
+                    >
+                      <video
+                        src={url}
+                        className="w-full h-full object-cover pointer-events-none"
+                        controls
+                        preload="metadata"
+                      />
+                    </div>
+                  );
+                })}
               </div>
               <div className="flex justify-center pb-2">
-                <Button onClick={() => handleOpenMediaLibrary("files")} type="text" className="bg-slate-300 w-full text-gray-600 font-medium">Xem tất cả</Button>
+                <Button onClick={() => handleOpenMediaLibrary("images")} type="text" className="bg-slate-300 w-full text-gray-600 font-medium">Xem tất cả</Button>
               </div>
             </Collapse.Panel>
             <Collapse.Panel
@@ -801,30 +823,47 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
 
             >
               <div className="grid grid-cols-3 gap-2 px-2 py-2">
-                {(imageAndVideo?.images?.slice(0, 6) || []).map((img, idx) => (
-                  <Image
-                    key={img.id || idx}
-                    src={img.media}
-                    alt="img"
-                    className="object-cover rounded-md border-2 border-gray-300 cursor-pointer"
-                  />
-                ))}
-
-                {(imageAndVideo?.videos?.slice(0, 6 - (imageAndVideo?.images?.length || 0)) || []).map((vid, idx) => (
-                  <div
-                    key={vid.id || idx}
-                    className="relative w-28 h-28 rounded-md border-2 border-gray-300 cursor-pointer overflow-hidden"
-                    style={{ background: '#f3f4f6' }}
-                  >
-                    <video
-                      src={vid.media || vid}
-                      className="w-full h-full object-cover pointer-events-none" // pointer-events-none để tránh auto play khi click
-                      controls
-                      preload="metadata"
+                {(imageAndVideo?.images?.slice(0, 6) || []).map((img, idx) => {
+                  let url = "";
+                  try {
+                    const arr = JSON.parse(img.media);
+                    if (Array.isArray(arr) && arr[0]?.fileUrl) url = arr[0].fileUrl;
+                  } catch {
+                    url = img.media;
+                  }
+                  return (
+                    <Image
+                      key={img.id || idx}
+                      src={url}
+                      alt="img"
+                      className="object-cover rounded-md border-2 border-gray-300 cursor-pointer"
                     />
-                  </div>
-                ))}
+                  );
+                })}
 
+                {(imageAndVideo?.videos?.slice(0, 6 - (imageAndVideo?.images?.length || 0)) || []).map((vid, idx) => {
+                  let url = "";
+                  try {
+                    const arr = JSON.parse(vid.media);
+                    if (Array.isArray(arr) && arr[0]?.fileUrl) url = arr[0].fileUrl;
+                  } catch {
+                    url = vid.media;
+                  }
+                  return (
+                    <div
+                      key={vid.id || idx}
+                      className="relative w-28 h-28 rounded-md border-2 border-gray-300 cursor-pointer overflow-hidden"
+                      style={{ background: '#f3f4f6' }}
+                    >
+                      <video
+                        src={url}
+                        className="w-full h-full object-cover pointer-events-none"
+                        controls
+                        preload="metadata"
+                      />
+                    </div>
+                  );
+                })}
               </div>
               <div className="flex justify-center pb-2">
                 <Button onClick={() => handleOpenMediaLibrary("images")} type="text" className="bg-slate-300 w-full text-gray-600 font-medium">Xem tất cả</Button>
