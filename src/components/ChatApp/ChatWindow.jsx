@@ -409,11 +409,28 @@ const ChatWindow = ({
   };
 
   const handlePinMessage = (msg) => {
-    const payload = {
-      conversation_id: selectedChat.conversation_id,
-      message_id: msg.id,
-      message_text: msg.text
-    };
+    let payload = {};
+    const files = JSON.parse(msg.media);
+    console.log(msg);
+
+    if (msg.type === "video" || msg.type === "image") {
+      payload = {
+        conversation_id: selectedChat.conversation_id,
+        message_id: msg.id,
+        message_text: files[0].fileUrl,
+        message_type: msg.type
+      };
+    }
+    else {
+      payload = {
+        conversation_id: selectedChat.conversation_id,
+        message_id: msg.id,
+        message_text: msg.text,
+        message_type: msg.type
+      };
+    }
+
+
     socket.emit("pin_message", payload);
     setMessages((prev) =>
       prev.map((m) =>
@@ -425,10 +442,24 @@ const ChatWindow = ({
     setPinnedMessageNew(msg);
   }
   const handleUnPinMessage = async (msg) => {
-    const payload = {
-      conversation_id: selectedChat.conversation_id,
-      message_id: msg.id,
-      message_text: msg.text
+    let payload = {};
+    const files = JSON.parse(msg.media);
+
+    if (msg.type === "video" || msg.type === "image") {
+      payload = {
+        conversation_id: selectedChat.conversation_id,
+        message_id: msg.id,
+        message_text: files[0].fileUrl,
+        message_type: msg.type
+      };
+    }
+    else {
+      payload = {
+        conversation_id: selectedChat.conversation_id,
+        message_id: msg.id,
+        message_text: msg.text,
+        message_type: msg.type
+      };
     }
     socket.emit("unpin_message", payload);
     setMessages((prev) =>

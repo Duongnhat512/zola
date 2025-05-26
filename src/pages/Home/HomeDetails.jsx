@@ -715,10 +715,14 @@ const HomeDetails = () => {
   }, [socket, selectedChat]);
   useEffect(() => {
     const handlePinMessage = (data) => {
-      if (data.status === "success") {
+      if (data.status === "success" && data.message_type === "image") {
+        sendMessage(null, true, `Ảnh đã được ghim!`);
+      }
+      if (data.status === "success" && data.message_type === "video") {
+        sendMessage(null, true, `Video đã được ghim!`);
+      }
+      if (data.status === "success" && data.message_type === "text") {
         sendMessage(null, true, `Tin nhắn ${data.message_text} đã được ghim!`);
-      } else {
-        toast.error("Không thể ghim tin nhắn.");
       }
     };
 
@@ -766,8 +770,14 @@ const HomeDetails = () => {
 
   useEffect(() => {
     const handleUnPinMessage = async (data) => {
-      if (data.status === "success") {
-        sendMessage(null, true, `Tin nhắn ` + data.message_text + " đã được bỏ ghim!");
+      if (data.status === "success" && data.message_type === "image") {
+        sendMessage(null, true, `Ảnh đã được bỏ ghim!`);
+      }
+      if (data.status === "success" && data.message_type === "video") {
+        sendMessage(null, true, `Video đã được bỏ ghim!`);
+      }
+      if (data.status === "success" && data.message_type === "text") {
+        sendMessage(null, true, `Tin nhắn ${data.message_text} đã được bỏ ghim!`);
       }
     }
     socket.on("unpin_message_success", handleUnPinMessage);

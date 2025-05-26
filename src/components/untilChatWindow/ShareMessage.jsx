@@ -194,7 +194,33 @@ const PinnedListBlock = ({
                                     }}
                                 >
                                     {item.senderName ? `${item.senderName}: ` : ""}
-                                    {item.text}
+                                    {(() => {
+                                        let files = [];
+                                        try {
+                                            if (item.media) {
+                                                files = JSON.parse(item.media);
+                                            }
+                                        } catch (error) {
+                                            console.error("Lỗi parse media:", error);
+                                        }
+                                        const isURL = /^https?:\/\/.+/i.test(files[0]?.fileUrl);
+                                        const isImage = /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(files[0]?.fileUrl);
+                                        const isVideo = /\.(mp4|webm|ogg|mov)$/i.test(files[0]?.fileUrl);
+
+                                        if (isURL && isImage) {
+                                            return <img src={files[0].fileUrl} alt="Hình ảnh" className="w-14 rounded-md" />;
+                                        } else if (isURL && isVideo) {
+                                            return (
+                                                <video controls className="w-20 rounded-md">
+                                                    <source src={files[0].fileUrl} type="video/mp4" />
+                                                    Trình duyệt không hỗ trợ video.
+                                                </video>
+                                            );
+                                        } else {
+                                            return <span>{item.text}</span>;
+                                        }
+                                    })()}
+
                                 </div>
                             </div>
                         </div>
