@@ -77,21 +77,8 @@ const ChatRoomScreen = ({ route, navigation }) => {
         socketInstance.on("list_messages", handleListMessages);
 
         socketInstance.on("new_message", async (data) => {
-      
+          console.log("New message received:", data);
           const isMe = data.sender_id === currentUser.id;
-          const newMessage = {
-            id: data.id,
-            sender: isMe ? "me" : "other",
-            senderName: isMe ? currentUser.fullname : data.sender_name,
-            text: data.is_deleted ? "Tin nhắn đã thu hồi" : data.message,
-            avatar: isMe ? currentUser.avt : data.sender_avatar,
-            time: dayjs(data.created_at).fromNow(),
-            type: data.is_deleted ? "deleted" : data.type,
-            file: data.media
-              ? { uri: data.media, name: data.media.split("/").pop() }
-              : undefined,
-            status: "sent",
-          };
           if (data.conversation_id === chats.conversation_id) {
             socketInstance.emit("get_messages", { conversation_id: chats.conversation_id });
           }
@@ -238,10 +225,10 @@ const ChatRoomScreen = ({ route, navigation }) => {
   };
   const handleListMessages = (data) => {
   const sortedData = data.sort((a, b) => a.created_at.localeCompare(b.created_at));
-  
+  console.log("Received messages:", sortedData);
   const formatted1 = sortedData.map((msg) => {
     const isMe = msg.sender_id === currentUser.id;
-
+    
     // Parse media nếu có
     let files = [];
     if (msg.media) {
@@ -274,7 +261,6 @@ const ChatRoomScreen = ({ route, navigation }) => {
       pinned: msg.pinned,
     };
   });
-  console.log("Formatted messages:", formatted1);
   const formatted2 = JSON.parse(JSON.stringify(formatted1));
   setMessages(formatted1);
   setPinnedMessages(formatted2.filter((msg) => msg.pinned === true));
