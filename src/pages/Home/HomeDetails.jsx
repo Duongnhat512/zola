@@ -16,7 +16,7 @@ const HomeDetails = () => {
   const [chats, setChats] = useState([]);
   const user = useSelector((state) => state.user.user);
   const [userMain, setUserMain] = useState(null);
-  
+
   // Sử dụng hook để cập nhật title với số tin nhắn chưa đọc
   const totalUnreadCount = useTotalUnreadCount(chats);
   useNotificationTitle(totalUnreadCount);
@@ -142,20 +142,6 @@ const HomeDetails = () => {
     notify = false,
     messageNotify = "Đã được phân quyền ",
   ) => {
-
-    let selectedChat = localStorage.getItem("selectedChat");
-
-    if (selectedChat) {
-      try {
-        selectedChat = JSON.parse(selectedChat);
-      } catch (error) {
-        console.error("Lỗi khi parse selectedChat từ localStorage:", error);
-        selectedChat = null;
-      }
-    } else {
-      selectedChat = null;
-    }
-
     if (
       !notify &&
       !input.trim() &&
@@ -428,7 +414,7 @@ const HomeDetails = () => {
 
     socket.on("new_group", handleNewGroup);
     return () => socket.off("new_group", handleNewGroup);
-  }, [socket]);
+  }, [socket, selectedChat]);
 
   // Thành viên bị xóa khỏi nhóm
   useEffect(() => {
@@ -646,7 +632,7 @@ const HomeDetails = () => {
 
     socket.on("remove_member", handleRemoveMember);
     return () => socket.off("remove_member", handleRemoveMember);
-  }, [socket]);
+  }, [socket, selectedChat]);
   useEffect(() => {
     const handleUploadGroupAvt = async (data) => {
       const avatar = data.result.avatar;
@@ -677,7 +663,7 @@ const HomeDetails = () => {
     return () => {
       socket.off("update_avt_group", handleUploadGroupAvt);
     };
-  }, [socket]);
+  }, [socket, selectedChat]);
   useEffect(() => {
     const handleUpdateNameGroup = async (data) => {
       if (data.status === "success") {
@@ -706,7 +692,7 @@ const HomeDetails = () => {
     return () => {
       socket.off("update_name_group", handleUpdateNameGroup);
     };
-  }, [socket]);
+  }, [socket, selectedChat]);
 
 
   useEffect(() => {
@@ -724,7 +710,7 @@ const HomeDetails = () => {
     return () => {
       socket.off("message_forwarded", handleForwardMessage);
     };
-  }, [socket]);
+  }, [socket, selectedChat]);
   useEffect(() => {
     const handlePinMessage = (data) => {
       if (data.status === "success") {
@@ -738,7 +724,7 @@ const HomeDetails = () => {
     return () => {
       socket.off("pin_message_success", handlePinMessage);
     };
-  }, [socket]);
+  }, [socket, selectedChat]);
 
   useEffect(() => {
     const handleError = async (data) => {
@@ -774,7 +760,7 @@ const HomeDetails = () => {
     return () => {
       socket.off("message_pinned", handlePinMessageClient);
     };
-  }, [socket])
+  }, [socket, selectedChat])
 
   useEffect(() => {
     const handleUnPinMessage = async (data) => {
@@ -788,7 +774,7 @@ const HomeDetails = () => {
       socket.off("unpin_message_success", handleUnPinMessage);
     };
 
-  }, [socket])
+  }, [socket, selectedChat])
 
   useEffect(() => {
     const handleUnPinMessageClient = async (data) => {
@@ -810,7 +796,7 @@ const HomeDetails = () => {
       socket.off("message_unpinned", handleUnPinMessageClient);
     };
 
-  }, [socket])
+  }, [socket, selectedChat])
 
 
   return (
