@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert,Image } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import styles from '../styles/WelcomeScreen.styles';
+import { qrLogin } from '../services/UserService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Add navigation types
 type WelcomeScreenProps = {
   navigation: any;
 };
@@ -13,23 +14,33 @@ type WelcomeScreenProps = {
 const WelcomeScreen = ({ navigation }: WelcomeScreenProps) => {
   const [permission, requestPermission] = useCameraPermissions();
   const [showScanner, setShowScanner] = useState(false);
+  const [scanned, setScanned] = useState(false);
 
-  useEffect(() => {
-    if (showScanner && !permission?.granted) {
-      requestPermission();
+  const handleBarCodeScanned = async ({ data }: { data: string }) => {
+    setScanned(true);
+    try {
+      const token = await AsyncStorage.getItem('accessToken');
+      if (!token) {
+        Alert.alert('Lỗi', 'Bạn chưa đăng nhập!');
+        return;
+      }
+      await qrLogin(data, token);
+      Alert.alert('Thành công', 'Đăng nhập web thành công!');
+      setShowScanner(false);
+      setScanned(false);
+      navigation.goBack();
+    } catch (err: any) {
+      Alert.alert('Lỗi', err?.response?.data?.message || 'Có lỗi xảy ra');
+      setShowScanner(false);
+      setScanned(false);
+      navigation.goBack();
     }
-  }, [showScanner]);
-
-  const handleBarcodeScanned = ({ data, type }: any) => {
-    setShowScanner(false);
-    Alert.alert('Mã đã quét', `Loại: ${type}\nDữ liệu: ${data}`);
   };
 
   return (
     <View style={styles.rootContainer}>
       <StatusBar style="dark" />
       <SafeAreaView style={styles.container}>
-        
         {/* Language Selector */}
         <View style={styles.languageSelector}>
           <TouchableOpacity style={styles.languageButton}>
@@ -37,7 +48,7 @@ const WelcomeScreen = ({ navigation }: WelcomeScreenProps) => {
             <Text style={styles.arrowDown}>▼</Text>
           </TouchableOpacity>
         </View>
-        
+
         {/* Main Content */}
         <View style={styles.mainContent}>
           <View style={styles.illustrationContainer}>
@@ -55,17 +66,17 @@ const WelcomeScreen = ({ navigation }: WelcomeScreenProps) => {
             <View style={[styles.paginationDot, styles.activeDot]} />
           </View>
         </View>
-        
+
         {/* Bottom Buttons */}
         <View style={styles.buttonContainer}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.loginButton}
             onPress={() => navigation.navigate('Login')}
           >
             <Text style={styles.loginButtonText}>Đăng nhập</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.registerButton}
             onPress={() => navigation.navigate('Register')}
           >
@@ -75,7 +86,13 @@ const WelcomeScreen = ({ navigation }: WelcomeScreenProps) => {
           {/* QR Scanner Button */}
           <TouchableOpacity
             style={styles.qrButton}
-            onPress={() => setShowScanner(true)}
+            onPress={async () => {
+              if (!permission?.granted) {
+                await requestPermission();
+              }
+              setShowScanner(true);
+              setScanned(false);
+            }}
           >
             <Image
               source={require('../assets/zalo-icon/qr-code.png')}
@@ -90,11 +107,18 @@ const WelcomeScreen = ({ navigation }: WelcomeScreenProps) => {
       {showScanner && (
         <CameraView
           style={StyleSheet.absoluteFillObject}
-          onBarcodeScanned={handleBarcodeScanned}
+          onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
           barcodeScannerSettings={{
             barcodeTypes: ['qr'],
           }}
-        />
+        >
+          <TouchableOpacity
+            style={{ position: 'absolute', top: 40, right: 20, backgroundColor: '#fff', padding: 10, borderRadius: 20 }}
+            onPress={() => setShowScanner(false)}
+          >
+            <Text style={{ fontSize: 18 }}>Đóng</Text>
+          </TouchableOpacity>
+        </CameraView>
       )}
     </View>
   );

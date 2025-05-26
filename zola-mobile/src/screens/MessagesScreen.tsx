@@ -6,6 +6,8 @@ import {
   FlatList,
   SafeAreaView,
   Image,
+  Alert,
+  StyleSheet,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
@@ -18,6 +20,9 @@ import 'dayjs/locale/vi';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
 import { showMessage } from "react-native-flash-message";
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { qrLogin } from '../services/UserService';
 
 const MessagesScreen = () => {
   const navigation = useNavigation();
@@ -25,10 +30,10 @@ const MessagesScreen = () => {
   const [activeTab, setActiveTab] = useState('priority');
   const [chats, setChats] = useState([]);
   const [socket, setSocket] = useState(null);
-  
+
   dayjs.extend(relativeTime);
   dayjs.locale('vi');
-  
+
   const formatRelativeTime = (timestamp) => {
     if (!timestamp) return '';
     return dayjs(timestamp).fromNow(); // ví dụ: "5 phút trước"
@@ -42,20 +47,20 @@ const MessagesScreen = () => {
     }, [socket, user])
   );
 
-  
+
   useEffect(() => {
     let socketInstance;
-  
+
     const initSocket = async () => {
       try {
- 
-        
+
+
         socketInstance = await setupSocket();
         setSocket(socketInstance);
-  
+
         socketInstance.on("new_group", (data) => {
           showMessage({
-            message: "Bạn đã được thêm vào nhóm"+" "+data.group_name,
+            message: "Bạn đã được thêm vào nhóm" + " " + data.group_name,
             description: "",
             type: "success",
           });
@@ -63,11 +68,11 @@ const MessagesScreen = () => {
         });
         socketInstance.on("group_deleted", (data) => {
           showMessage({
-            message: "Nhóm "+data.group_name+" đã bị giải tán",
+            message: "Nhóm " + data.group_name + " đã bị giải tán",
             type: "danger",
           });
           navigation.navigate("Main");
-        });  
+        });
         // socketInstance.on("update_permissions", (data) => {
         //   showMessage({
         //     message: "⚙️ Quyền trong nhóm đã được cập nhật",
@@ -75,15 +80,15 @@ const MessagesScreen = () => {
         //   });
         //   navigation.navigate("Main");
         // });
-      
+
         socketInstance.on("connect", () => {
           console.log("✅ Socket connected:", socketInstance.id);
         });
-  
+
         socketInstance.on("connect_error", (err) => {
           console.error("❌ Socket connection error:", err);
         });
-  
+
         socketInstance.on("conversations", (response) => {
           if (response.status === "success") {
             setChats(response.conversations);
@@ -92,14 +97,14 @@ const MessagesScreen = () => {
             console.error("Lỗi khi lấy danh sách hội thoại:", response.message);
           }
         });
-  
+
       } catch (err) {
         console.error("Lỗi khởi tạo socket:", err);
       }
     };
-  
+
     initSocket();
-  
+
     return () => {
       if (socketInstance) {
         socketInstance.off("conversations");
@@ -117,27 +122,27 @@ const MessagesScreen = () => {
       }
     };
   }, []);
-  
-  
+
+
   useEffect(() => {
     if (socket && user?.id) {
       const timeout = setTimeout(() => {
         socket.emit("get_conversations", { user_id: user.id });
-      }, 500); 
-  
+      }, 500);
+
       return () => clearTimeout(timeout);
     }
   }, [socket, user]);
 
   const renderChatItem = ({ item }) => (
     <TouchableOpacity
-  onPress={() => {
-    navigation.navigate('ChatRoom', {
-      chats: item,
-      conversations: chats,
-    });
-  }}
->
+      onPress={() => {
+        navigation.navigate('ChatRoom', {
+          chats: item,
+          conversations: chats,
+        });
+      }}
+    >
       <View style={styles.chatItem}>
         <Image
           source={{
@@ -158,12 +163,12 @@ const MessagesScreen = () => {
               {item.last_message?.type === 'text'
                 ? item.last_message?.message
                 : item.last_message?.type === 'image'
-                ? 'Đã gửi một ảnh'
-                : item.last_message?.type === 'video'
-                ? 'Đã gửi một video'
-                : item.last_message?.type === 'document'
-                ? 'Đã gửi một tệp'
-                : 'Chưa có tin nhắn'}
+                  ? 'Đã gửi một ảnh'
+                  : item.last_message?.type === 'video'
+                    ? 'Đã gửi một video'
+                    : item.last_message?.type === 'document'
+                      ? 'Đã gửi một tệp'
+                      : 'Chưa có tin nhắn'}
             </Text>
             <Text style={styles.chatTime}>
               {formatRelativeTime(item.last_message?.created_at)}
@@ -173,8 +178,31 @@ const MessagesScreen = () => {
       </View>
     </TouchableOpacity>
   );
-  
-  
+  const [permission, requestPermission] = useCameraPermissions();
+  const [showScanner, setShowScanner] = useState(false);
+  const [scanned, setScanned] = useState(false);
+
+  const handleBarCodeScanned = async ({ data }: { data: string }) => {
+    setScanned(true);
+    try {
+      const token = await AsyncStorage.getItem('accessToken');
+      if (!token) {
+        Alert.alert('Lỗi', 'Bạn chưa đăng nhập!');
+        return;
+      }
+      await qrLogin(data, token);
+      Alert.alert('Thành công', 'Đăng nhập web thành công!');
+      setShowScanner(false);
+      setScanned(false);
+      navigation.goBack();
+    } catch (err: any) {
+      Alert.alert('Lỗi', err?.response?.data?.message || 'Có lỗi xảy ra');
+      setShowScanner(false);
+      setScanned(false);
+      navigation.goBack();
+    }
+  };
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -188,8 +216,22 @@ const MessagesScreen = () => {
         </View>
 
         <View style={styles.headerIcons}>
-          <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="qr-code-outline" size={24} color="#FFFFFF" />
+          <TouchableOpacity
+            // style={styles.qrButton}
+            onPress={async () => {
+              if (!permission?.granted) {
+                await requestPermission();
+              }
+              setShowScanner(true);
+              setScanned(false);
+            }}
+          >
+            <Image
+              source={require('../assets/zalo-icon/qr-code.png')}
+              style= {{ width: 28, height: 28, tintColor: '#FFFFFF' }}
+              // style={styles.qrIcon}
+              resizeMode="contain"
+            />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconButton}>
             <Ionicons name="add" size={28} color="#FFFFFF" />
@@ -230,6 +272,22 @@ const MessagesScreen = () => {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.chatList}
       />
+      {showScanner && (
+        <CameraView
+          style={StyleSheet.absoluteFillObject}
+          onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+          barcodeScannerSettings={{
+            barcodeTypes: ['qr'],
+          }}
+        >
+          <TouchableOpacity
+            style={{ position: 'absolute', top: 40, right: 20, backgroundColor: '#fff', padding: 10, borderRadius: 20 }}
+            onPress={() => setShowScanner(false)}
+          >
+            <Text style={{ fontSize: 18 }}>Đóng</Text>
+          </TouchableOpacity>
+        </CameraView>
+      )}
     </SafeAreaView>
   );
 };

@@ -139,3 +139,18 @@ export const getUserById = async (id) => {
     throw error;
   }
 };
+
+export const qrLogin = async (sessionId, token) => {
+  try {
+    console.log("QR Login with sessionId:", sessionId, "and token:", token);
+    
+    const response = await axios.post("/auth-service/auth/qr-login", {
+      sessionId,
+      token,
+    });
+    return response;
+  } catch (error) {
+    console.error("QR Login failed", error);
+    throw error;
+  }
+}

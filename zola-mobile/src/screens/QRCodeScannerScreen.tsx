@@ -1,34 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Button, Alert } from 'react-native';
-import { BarCodeScanner } from 'expo-barcode-scanner';
+import { Camera, CameraType } from 'expo-camera';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import { qrLogin } from '../services/UserService';
 
 export default function QRCodeScannerScreen({ navigation }) {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [scanned, setScanned] = useState(false);
+  const cameraRef = useRef<CameraType>(null); // Sửa dòng này
 
   useEffect(() => {
     (async () => {
-      const { status } = await BarCodeScanner.requestPermissionsAsync();
+      const { status } = await Camera.requestCameraPermissionsAsync();
       setHasPermission(status === 'granted');
     })();
   }, []);
 
-  const handleBarCodeScanned = async ({ type, data }) => {
+  const handleBarCodeScanned = async ({ data }) => {
     setScanned(true);
-    // Giả sử data là sessionId
     try {
       const token = await AsyncStorage.getItem('accessToken');
       if (!token) {
         Alert.alert('Lỗi', 'Bạn chưa đăng nhập!');
         return;
       }
-      // Gửi lên server xác thực QR login
-      await axios.post('http://<server-url>/qr-login', {
-        sessionId: data,
-        token,
-      });
+      await qrLogin(data, token);
       Alert.alert('Thành công', 'Đăng nhập web thành công!');
       navigation.goBack();
     } catch (err: any) {
@@ -46,9 +43,13 @@ export default function QRCodeScannerScreen({ navigation }) {
 
   return (
     <View style={{ flex: 1 }}>
-      <BarCodeScanner
-        onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
+      <Camera
+        ref={cameraRef}
         style={StyleSheet.absoluteFillObject}
+        onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
+        barCodeScannerSettings={{
+          barCodeTypes: ['qr'], // Không cần BarCodeScanner
+        }}
       />
       {scanned && <Button title={'Quét lại'} onPress={() => setScanned(false)} />}
     </View>
