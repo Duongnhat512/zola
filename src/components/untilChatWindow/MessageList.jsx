@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Avatar, Image, Dropdown, Spin, Progress, Button } from "antd";
-import { ArrowDownOutlined, PushpinFilled, LinkOutlined, PlayCircleOutlined, GlobalOutlined, YoutubeOutlined, TwitterOutlined, FacebookOutlined, InstagramOutlined } from "@ant-design/icons";
+import { ArrowDownOutlined, PushpinFilled } from "@ant-design/icons";
 import MessageOptions from "./MessageOptions";
 import { PinnedListBlock } from "./ShareMessage";
-import LinkPreview from "./LinkPreview";
-import { processMessageLinks, detectUrls } from "../../utils/linkPreview";
 
 const MessageList = ({
   messages,
@@ -19,7 +17,7 @@ const MessageList = ({
   onScroll,
   isLoading,
   hasMoreMessages,
-  pinnedMessage,
+  pinnedMessage, // <-- add this prop if you have it, or derive below
 }) => {
   // Lấy tin nhắn ghim đầu tiên (nếu chưa truyền prop)
   let pinned;
@@ -53,68 +51,6 @@ const MessageList = ({
 
   }, [messages]); // thay vì [pinned], dùng [messages] để luôn cập nhật khi có thay đổi
   console.log(messages);
-
-  const [linkPreviews, setLinkPreviews] = useState({});
-  const [loadingPreviews, setLoadingPreviews] = useState(new Set());
-
-  // Hàm để ẩn URLs khỏi text message khi có preview
-  const getDisplayText = (text, messageId) => {
-    if (!text) return text;
-    
-    // Nếu có link preview cho message này, loại bỏ URLs khỏi text
-    if (linkPreviews[messageId] && linkPreviews[messageId].length > 0) {
-      const urls = detectUrls(text);
-      let displayText = text;
-      
-      // Loại bỏ tất cả URLs khỏi text
-      urls.forEach(url => {
-        displayText = displayText.replace(url, '').trim();
-      });
-      
-      // Nếu sau khi loại bỏ URL, text rỗng thì không hiển thị text
-      return displayText.trim() || null;
-    }
-    
-    return text;
-  };
-
-  // Xử lý link preview cho tin nhắn
-  useEffect(() => {
-    const processLinks = async () => {
-      const newPreviews = { ...linkPreviews };
-      const newLoading = new Set();
-      
-      for (const msg of messages) {
-        if (msg.type === 'text' && 
-            msg.text && 
-            detectUrls(msg.text).length > 0 && 
-            !linkPreviews[msg.id] && 
-            !loadingPreviews.has(msg.id)) {
-          
-          newLoading.add(msg.id);
-          setLoadingPreviews(new Set(newLoading));
-          
-          try {
-            const previews = await processMessageLinks(msg.text);
-            if (previews.length > 0) {
-              newPreviews[msg.id] = previews;
-            }
-          } catch (error) {
-            console.error('Error processing links for message:', msg.id, error);
-          } finally {
-            newLoading.delete(msg.id);
-            setLoadingPreviews(new Set(newLoading));
-          }
-        }
-      }
-      
-      setLinkPreviews(newPreviews);
-    };
-
-    if (messages.length > 0) {
-      processLinks();
-    }
-  }, [messages]);
 
   return (
     <div className="flex-1 overflow-y-auto py-2 px-4 space-y-4 message-list-container relative">
@@ -157,7 +93,7 @@ const MessageList = ({
               >
                 Xem
               </a>
- 
+
             </div>
           </div>
         </div>
@@ -195,169 +131,293 @@ const MessageList = ({
             msg.file_name ||
             msg.type === "notify"
         )
-        .map((msg) => {
-          const displayText = getDisplayText(msg.text, msg.id);
-          
-          return (
-            <div
-              key={msg.id}
-              id={`msg-${msg.id}`}
-              className={`flex ${msg.type === "notify"
-                ? "justify-center" // Thông báo căn giữa
-                : msg.sender === "me"
-                  ? "justify-end"
-                  : "items-start"
-                } gap-2`}
-            >
-              {msg.type === "notify" ? (
+        .map((msg) => (
+          <div
+            key={msg.id}
+            id={`msg-${msg.id}`}
+            className={`flex ${msg.type === "notify"
+              ? "justify-center" // Thông báo căn giữa
+              : msg.sender === "me"
+                ? "justify-end"
+                : "items-start"
+              } gap-2`}
+          >
+            {msg.type === "notify" ? (
+              <div
+                style={{
+                  backgroundColor: "#f0f0f0",
+                  padding: "8px 12px",
+                  borderRadius: "12px",
+                  textAlign: "center",
+                  fontSize: "14px",
+                  color: "#888",
+                  maxWidth: "80%",
+                  wordBreak: "break-word",
+                }}
+              >
+                {msg.text}
+              </div>
+            ) : (
+              <>
+                {msg.sender !== "me" && (
+                  <Avatar
+                    src={msg.avatar || "/default-avatar.jpg"}
+                    size="small"
+                    className="self-end"
+                  />
+                )}
                 <div
-                  style={{
-                    backgroundColor: "#f0f0f0",
-                    padding: "8px 12px",
-                    borderRadius: "12px",
-                    textAlign: "center",
-                    fontSize: "14px",
-                    color: "#888",
-                    maxWidth: "80%",
-                    wordBreak: "break-word",
-                  }}
+                  className={`flex flex-col items-${msg.sender === "me" ? "end" : "start"
+                    }`}
                 >
-                  {msg.text}
-                </div>
-              ) : (
-                <>
-                  {msg.sender !== "me" && (
-                    <Avatar
-                      src={msg.avatar || "/default-avatar.jpg"}
-                      size="small"
-                      className="self-end"
-                    />
-                  )}
                   <div
-                    className={`flex flex-col items-${msg.sender === "me" ? "end" : "start"}`}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      position: "relative",
+                    }}
                   >
                     <div
                       style={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        position: "relative",
-                        flexDirection: "column",
+                        padding:
+                          msg.type === "text" ||
+                            msg.type === "document" ||
+                            msg.text === "Tin nhắn đã thu hồi"
+                            ? "8px 12px"
+                            : "0",
+                        borderRadius: "12px",
+                        maxWidth: "500px",
+                        backgroundColor:
+                          msg.sender === "me" ? "#d1e7ff" : "#ffffff",
+                        boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                        textAlign: "center",
+                        wordBreak: "break-word",
+
                       }}
                     >
-                      {/* Chỉ hiển thị text bubble nếu có text sau khi loại bỏ URL */}
-                      {displayText && (
+                      {msg.status === "pending" && msg.type != "text" ? (
                         <div
                           style={{
-                            padding: "8px 12px",
-                            borderRadius: "12px",
-                            maxWidth: "500px",
-                            backgroundColor:
-                              msg.sender === "me" ? "#d1e7ff" : "#ffffff",
-                            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexDirection: "column",
+                            height: "100px",
+                            width: "100px",
                             wordBreak: "break-word",
-                            marginBottom: "4px",
                           }}
                         >
+                          <Progress
+                            type="circle"
+                            percent={msg.uploadProgress || 0} // Hiển thị phần trăm tải lên
+                            width={50}
+                            strokeColor="#007bff"
+                          />
                           <p
                             style={{
-                              wordBreak: "break-word",
-                              whiteSpace: "pre-line",
-                              fontSize: 16,
-                              lineHeight: "1.4",
-                              margin: 0,
+                              fontSize: "12px",
+                              color: "#888",
+                              marginTop: "8px",
                             }}
                           >
-                            {displayText}
+                            Đang tải...
                           </p>
                         </div>
+                      ) : (
+                        <>
+                          <>
+                            {/* Hiển thị nhiều ảnh nếu có (kiểu mới: type multiple_files và media là JSON) */}
+                            {msg.type === "multiple_files" && msg.media && (() => {
+                              let files = [];
+                              try {
+                                files = JSON.parse(msg.media);
+                              } catch (e) {
+                                files = [];
+                              }
+                              return (
+                                <div style={{ display: "flex", flexWrap: "wrap", marginBottom: 4, alignItems: "center", gap: 8, justifyContent: "center" }}>
+                                  {files
+                                    .filter(f => f.fileType === "image")
+                                    .map((img, idx) => (
+                                      <Image
+                                        key={idx}
+                                        src={img.fileUrl}
+                                        alt={img.fileName || `image-${idx}`}
+                                        style={{
+                                          maxWidth: 246,
+                                          maxHeight: 200,
+                                          borderRadius: 8,
+                                          objectFit: "cover",
+                                        }}
+                                      />
+                                    ))}
+                                </div>
+                              );
+                            })()}
+                            {/* Hiển thị 1 ảnh cũ nếu có */}
+                            {msg.type === "image" && msg.media && (() => {
+                              try {
+                                const files = JSON.parse(msg.media);
+                                if (Array.isArray(files) && files.length === 1 && files[0].fileType === "image") {
+                                  return (
+                                    <Image
+                                      src={files[0].fileUrl}
+                                      alt={files[0].fileName || "image"}
+                                      style={{
+                                        maxWidth: 500,
+                                        maxHeight: "auto",
+                                        borderRadius: 8,
+                                        objectFit: "cover",
+                                      }}
+                                    />
+                                  );
+                                }
+                              } catch (e) { }
+                              return null;
+                            })()}
+                          </>
+                          {msg.media && (() => {
+                            try {
+                              const files = JSON.parse(msg.media);
+                              if (Array.isArray(files) && files.length === 1) {
+                                const file = files[0];
+                                if (file.fileType === "video") {
+                                  return (
+                                    <video
+                                      src={file.fileUrl}
+                                      controls
+                                      style={{
+                                        maxWidth: "100%",
+                                        borderRadius: "8px",
+                                        background: "#000",
+                                      }}
+                                    />
+                                  );
+                                }
+                                if (file.fileType === "document") {
+                                  return (
+                                    <a
+                                      href={file.fileUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      style={{
+                                        display: "block",
+                                        color: "#007bff",
+                                        textDecoration: "underline",
+                                      }}
+                                    >
+                                      {file.fileName}
+                                    </a>
+                                  );
+                                }
+                              }
+                            } catch (e) { }
+                            // Nếu không phải JSON, fallback về kiểu cũ
+                            if (msg.type === "video" && msg.media) {
+                              return (
+                                <video
+                                  src={msg.media}
+                                  controls
+                                  style={{
+                                    maxWidth: "100%",
+                                    borderRadius: "8px",
+                                    background: "#000",
+                                  }}
+                                />
+                              );
+                            }
+                            if (msg.type === "document" && msg.file_name) {
+                              return (
+                                <a
+                                  href={msg.media || "#"}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    display: "block",
+                                    color: "#007bff",
+                                    textDecoration: "underline",
+                                  }}
+                                >
+                                  {msg.file_name}
+                                </a>
+                              );
+                            }
+                            return null;
+                          })()}
+                          {msg?.text && (
+                            <p
+                              style={{
+                                wordBreak: "break-word",
+                                whiteSpace: "pre-line",
+                                fontSize: 20,
+                                lineHeight: "1.2"
+                              }}
+                            >
+                              {msg.text}
+                            </p>
+                          )}
+                        </>
                       )}
-
-                      {/* Loading state cho link preview */}
-                      {loadingPreviews.has(msg.id) && (
-                        <div style={{ 
-                          marginTop: '4px',
-                          padding: '16px',
-                          backgroundColor: '#f5f5f5',
-                          borderRadius: '8px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                        }}>
-                          <Spin size="small" />
-                          <span style={{ fontSize: '12px', color: '#666' }}>
-                            Đang tải link preview...
-                          </span>
-                        </div>
-                      )}
-                      
-                      {/* Link Preview */}
-                      {linkPreviews[msg.id] && linkPreviews[msg.id].map((preview, index) => (
-                        <LinkPreview
-                          key={index}
-                          preview={preview}
-                          sender={msg.sender}
-                        />
-                      ))}
-
-                      {/* Message options dropdown */}
-                      <Dropdown
-                        overlay={
-                          <MessageOptions
-                            msg={msg}
-                            permission={permission}
-                            onCopy={handleCopyMessage}
-                            onDelete={handleDeleteMessage}
-                            onRevoke={handleRevokeMessage}
-                            onForward={() => handleForwardMessage(msg)}
-                            onPinMessage={() => handlePinMessage(msg)}
-                          />
-                        }
-                        trigger={["click"]}
-                        placement={
-                          msg.sender === "me" ? "bottomRight" : "bottomLeft"
-                        }
-                        getPopupContainer={(triggerNode) =>
-                          triggerNode.parentNode
-                        }
-                        overlayStyle={{
-                          width: "500px",
-                          maxWidth: "500px",
-                          wordWrap: "break-word",
-                        }}
-                      >
-                        {msg.text !== "Tin nhắn đã thu hồi" && (
-                          <span
-                            style={{
-                              fontSize: "16px",
-                              marginLeft: msg.sender === "me" ? "-15px" : "0",
-                              right: msg.sender !== "me" && "-15px",
-                              cursor: "pointer",
-                              color: "#888",
-                              position: "absolute",
-                              top: "8px",
-                            }}
-                          >
-                            ⋮
-                          </span>
-                        )}
-                      </Dropdown>
                     </div>
 
-                    <span
-                      style={{
-                        fontSize: "12px",
-                        color: "#888",
-                        marginTop: "4px",
+                    <Dropdown
+                      overlay={
+                        <MessageOptions
+                          msg={msg}
+                          permission={permission}
+                          onCopy={handleCopyMessage}
+                          onDelete={handleDeleteMessage}
+                          onRevoke={handleRevokeMessage}
+                          onForward={() => handleForwardMessage(msg)}
+                          onPinMessage={() => handlePinMessage(msg)}
+                        />
+                      }
+                      trigger={["click"]}
+                      placement={
+                        msg.sender === "me" ? "bottomRight" : "bottomLeft"
+                      }
+                      getPopupContainer={(triggerNode) =>
+                        triggerNode.parentNode
+                      }
+                      overlayStyle={{
+                        width: "500px",
+                        maxWidth: "500px",
+                        wordWrap: "break-word",
                       }}
                     >
-                      {msg.time}
-                    </span>
+                      {msg.text !== "Tin nhắn đã thu hồi" && (
+                        <span
+                          style={{
+                            fontSize: "16px",
+                            marginLeft: msg.sender === "me" ? "-15px" : "0",
+                            right: msg.sender !== "me" && "-15px",
+                            cursor: "pointer",
+                            color: "#888",
+                            position: "absolute",
+                          }}
+                        >
+                          ⋮
+                        </span>
+                      )}
+
+                    </Dropdown>
+
                   </div>
-                </>
-              )}
-            </div>
-          );
-        })}
+
+                  <span
+                    style={{
+                      fontSize: "12px",
+                      color: "#888",
+                      marginTop: "4px",
+                    }}
+                  >
+                    {msg.time}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+        ))}
       <div ref={messagesEndRef} />
     </div>
   );
