@@ -157,6 +157,9 @@ MessageController.sendPrivateMessage = async (socket, data) => {
       MessageModel.sendMessage(message),
       UserCacheService.getUserProfile(socket.user.id),
     ]);
+    
+    console.log("sender: ", sender);
+    
 
     const enhancedMessage = {
       ...savedMessage,

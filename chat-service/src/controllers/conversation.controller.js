@@ -903,7 +903,7 @@ ConversationController.getGroupConversationByUserId = async (req, res) => {
   }
   const conversationIds = await redisClient.zrevrange(`chatlist:${user_id}`, 0, 49);
   if (conversationIds.length === 0) {
-    return socket.emit("conversations", {
+    return res.status(200).json({
       status: "success",
       message: "Không có hội thoại nào",
       conversations: [],
