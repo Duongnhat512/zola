@@ -545,7 +545,7 @@ const renderFriendItem = ({ item }) => (
         {/* Danh sách nè*/}
         { activeTab==='groups'&&
         (<FlatList
-          data={conversation.filter(chat => chat.type === 'group')}
+          data={conversation.filter(chat => chat.type === 'group')||[]}
           keyExtractor={(item) => item.id}
           renderItem={renderChatItem}
           style={{ marginTop: 12 }}
