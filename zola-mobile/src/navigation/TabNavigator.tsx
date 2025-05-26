@@ -28,18 +28,17 @@ const ProfileScreen = () => {
   return (
     <View style={{ gap: 10 }}>
       <View style={styles.row3}>
-        <Image
+        {/* <Image
           source={require("../assets/zalo-icon/search.png")}
           style={styles.icon2}
-        />
+        /> */}
         <View style={styles.middle}>
-          
-          <Text style={styles.text3}>Tìm kiếm</Text>
+          <Text style={styles.text3}>Cài đặt</Text>
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate('Setting')}>
+        <TouchableOpacity onPress={() => navigation.navigate('Setting')} >
           <Image
             source={require("../assets/zalo-icon/setting.png")}
-            style={styles.icon2}
+            style={styles.icon3}
           />
         </TouchableOpacity>
       </View>

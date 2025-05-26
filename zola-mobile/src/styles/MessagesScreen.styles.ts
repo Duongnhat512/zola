@@ -15,6 +15,7 @@ export default StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8, // Nếu bạn dùng React Native >= 0.71
+    justifyContent: 'flex-end',
   },
   searchContainer: {
     flex: 1,

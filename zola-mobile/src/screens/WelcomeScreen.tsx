@@ -84,7 +84,7 @@ const WelcomeScreen = ({ navigation }: WelcomeScreenProps) => {
           </TouchableOpacity>
 
           {/* QR Scanner Button */}
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={styles.qrButton}
             onPress={async () => {
               if (!permission?.granted) {
@@ -99,7 +99,7 @@ const WelcomeScreen = ({ navigation }: WelcomeScreenProps) => {
               style={styles.qrIcon}
               resizeMode="contain"
             />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </SafeAreaView>
 

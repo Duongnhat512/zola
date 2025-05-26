@@ -278,11 +278,11 @@ const MessagesScreen = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.searchContainer}>
-          <Image
-            source={require('../assets/zalo-icon/search.png')}
-            style={styles.icon2}
-          />
-          <Text style={{ color: '#FFFFFF', fontSize: 15 }}>Tìm kiếm</Text>
+
+          <Text style={{ color: '#FFFFFF', fontSize: 20,
+            textAlign: 'center', flex: 1, fontWeight: 'bold'
+
+           }}>Danh sách trò chuyện</Text>
         </View>
 
         <View style={styles.headerIcons}>
@@ -303,14 +303,14 @@ const MessagesScreen = () => {
               resizeMode="contain"
             />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton}>
+          {/* <TouchableOpacity style={styles.iconButton}>
             <Ionicons name="add" size={28} color="#FFFFFF" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </View>
 
       <View style={styles.tabContainer}>
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={[styles.tab, activeTab === 'priority' && styles.activeTab]}
           onPress={() => setActiveTab('priority')}
         >
@@ -327,13 +327,13 @@ const MessagesScreen = () => {
           <Text style={[styles.tabText, activeTab === 'other' && styles.activeTabText]}>
             Khác
           </Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
-        <View style={styles.filterContainer}>
+        {/* <View style={styles.filterContainer}>
           <TouchableOpacity style={styles.filterButton}>
             <MaterialIcons name="filter-list" size={24} color="#333" />
           </TouchableOpacity>
-        </View>
+        </View> */}
       </View>
 
       <FlatList

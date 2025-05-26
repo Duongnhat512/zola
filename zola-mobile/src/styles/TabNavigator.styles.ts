@@ -46,6 +46,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#ccc',
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end',
     gap: 8, // Nếu bạn dùng React Native >= 0.71
   },
     text: {
@@ -58,13 +59,10 @@ const styles = StyleSheet.create({
     textAlignVertical: 'center', // vertical alignment middle
   },
    text3: {
-    fontFamily: 'Roboto',
-    fontWeight: '500',
-    fontSize: 15,
-    lineHeight: 20,
-    letterSpacing: 0,
-    color: '#ffffff',
-    textAlignVertical: 'center', // vertical alignment middle
+      fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: '#FFFFFF',
   },
    text2: {
     fontFamily: 'Roboto',
@@ -80,6 +78,12 @@ const styles = StyleSheet.create({
     height: 18,
     resizeMode: 'contain',
   },
+   icon3: {
+    width: 30,
+    height: 30,
+    resizeMode: 'contain',
+  },
+ 
     avatar: {
     width: 36,
     height: 36,
