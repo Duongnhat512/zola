@@ -188,7 +188,7 @@ const MessageList = ({
                             ? "8px 12px"
                             : "0",
                         borderRadius: "12px",
-                        maxWidth: "500px",
+                        maxWidth: "350",
                         backgroundColor:
                           msg.sender === "me" ? "#d1e7ff" : "#ffffff",
                         boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
@@ -246,7 +246,7 @@ const MessageList = ({
                                         src={img.fileUrl}
                                         alt={img.fileName || `image-${idx}`}
                                         style={{
-                                          maxWidth: 246,
+                                          maxWidth: 121,
                                           maxHeight: 200,
                                           borderRadius: 8,
                                           objectFit: "cover",
@@ -266,7 +266,7 @@ const MessageList = ({
                                       src={files[0].fileUrl}
                                       alt={files[0].fileName || "image"}
                                       style={{
-                                        maxWidth: 500,
+                                        maxWidth: 350,
                                         maxHeight: "auto",
                                         borderRadius: 8,
                                         objectFit: "cover",
@@ -289,7 +289,7 @@ const MessageList = ({
                                       src={file.fileUrl}
                                       controls
                                       style={{
-                                        maxWidth: "100%",
+                                        maxWidth: "350px",
                                         borderRadius: "8px",
                                         background: "#000",
                                       }}
@@ -382,8 +382,8 @@ const MessageList = ({
                         triggerNode.parentNode
                       }
                       overlayStyle={{
-                        width: "500px",
-                        maxWidth: "500px",
+                        width: "350px",
+                        maxWidth: "350px",
                         wordWrap: "break-word",
                       }}
                     >
