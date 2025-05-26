@@ -1,6 +1,6 @@
 import { CalendarOutlined, IdcardOutlined, StopOutlined, TeamOutlined, UserOutlined, WarningOutlined } from '@ant-design/icons'
 import { Avatar, Button, Divider } from 'antd'
-import React, { useEffect, useState } from 'react'
+import React, { use, useEffect, useState } from 'react'
 import { useSelector } from 'react-redux';
 import { cancelFriendRequest, createFriendRequest, deleteFriend, getRequestByUserIdAndUserFriendId } from '../../services/FriendService';
 import { getPrivateConversation } from '../../services/Conversation';
@@ -111,6 +111,11 @@ const InfoFriend = ({ userInfo, handleBack, step, setSelectedChat, setUserInfo }
   };
 
   const handleGetRequestFriendByUserIdAndUserFriendId = async () => {
+    userInfo.id = userInfo.id || userInfo.user_friend_id;
+    if (!userInfo.id) {
+      console.error("User ID is not defined");
+      return;
+    }
     try {
       const response = await getRequestByUserIdAndUserFriendId(user.id, userInfo.id);
       console.log("Received friend requests:", response);
