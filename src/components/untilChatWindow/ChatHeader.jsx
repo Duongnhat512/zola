@@ -134,15 +134,15 @@ const ChatHeader = ({ selectedChat, handleOpen, setIsInfoGroupVisible, messages,
               onClick={handleOpen}
             />          </Tooltip>
         )}
-        {selectedChat.type === 'private' && (
-          <Tooltip title="Cuộc gọi thoại">
-            <Button type="text" icon={<PhoneOutlined style={{ fontSize: '20px' }} />} onClick={handleOpen} />
-          </Tooltip>
-        )}
+        {/* {selectedChat.type === 'private' && (
+          // <Tooltip title="Cuộc gọi thoại">
+          //   <Button type="text" icon={<PhoneOutlined style={{ fontSize: '20px' }} />} onClick={handleOpen} />
+          // </Tooltip>
+        )} */}
 
-        <Tooltip title="Video Call">
+        {/* <Tooltip title="Video Call">
           <Button type="text" icon={<VideoCameraOutlined style={{ fontSize: '20px' }} />} onClick={() => setShowVideoCall(true)} />
-        </Tooltip>
+        </Tooltip> */}
         <Tooltip title="Tìm kiếm tin nhắn">
           <Input.Search
             allowClear
