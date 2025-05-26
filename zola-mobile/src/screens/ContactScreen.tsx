@@ -435,7 +435,7 @@ const FriendRequestModal = ({ visible, onClose }) => {
 
   const renderChatItem = ({ item }) => (
     <TouchableOpacity 
-    // onPress={() => navigation.navigate('ChatRoom', { chats: item })}
+    onPress={() => navigation.navigate('ChatRoom', { chats: item })}
     >
       <View style={styles.chatItem}>
         <Image
@@ -498,9 +498,9 @@ const renderFriendItem = ({ item }) => (
         {/* Thanh tìm kiếm */}
         {/*Tìm kiếm bạn bè*/}
         <View style={styles.searchBar}>
-          <Feather name="search" size={20} color="#BFE6FC" style={styles.iconLeft} />
+          <Feather name="search" size={18} color="#BFE6FC" style={styles.iconLeft} />
           <TextInput
-            placeholder="Tìm bạn bè,tins nhắn...."
+            placeholder="Tìm bạn bè....."
             placeholderTextColor="#D6F0FC"
             style={styles.input}
             onChangeText={setSearchText}
@@ -519,13 +519,13 @@ const renderFriendItem = ({ item }) => (
             style={[styles.tabButton, activeTab === 'friends' && styles.activeTab]}
             onPress={() => setActiveTab('friends')}
           >
-            <Text style={styles.tabText}>Bạn bè</Text>
+          <Text style={[styles.tabText, activeTab === 'friends' && styles.activeTabText]}>Bạn bè</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tabButton, activeTab === 'groups' && styles.activeTab]}
             onPress={() => setActiveTab('groups')}
           >
-            <Text style={styles.tabText}>Nhóm</Text>
+            <Text style={[styles.tabText, activeTab === 'groups' && styles.activeTabText]}>Nhóm</Text>
           </TouchableOpacity>
         </View>
           {/* 2 nút row */}
@@ -587,31 +587,31 @@ const styles = StyleSheet.create({
     paddingTop: 40,
   },
   header: {
-    padding: 5,
     backgroundColor: '#fff',
   },
   header1: {
     padding: 5,
-    backgroundColor: '#50B6F1',
+    backgroundColor: '#006AF5',
   },
   searchBar: {
-    backgroundColor: '#50B6F1',
+    backgroundColor: '#006AF5',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    height: 40,
-    borderRadius: 5,
-  },
+    height: 50,
+    },
   iconLeft: {
     marginRight: 8,
+    marginLeft:15
   },
   input: {
     flex: 1,
     fontSize: 15,
     color: '#fff',
+    fontWeight:500,
   },
   iconRight: {
     marginLeft: 8,
+    marginRight:15
   },
   tabContainer: {
     flexDirection: 'row',
@@ -622,12 +622,19 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     width: '50%',
     backgroundColor: '#eee',
+    
  
   },
   activeTab: {
-    backgroundColor: '#50B6F1',
+    backgroundColor: '#006AF5',
+    color:'#ffffff',
   },
   tabText: {
+    color: '#000',
+    fontWeight: '500',
+       textAlign:'center'
+  },
+   activeTabText: {
     color: '#000',
     fontWeight: '500',
        textAlign:'center'
@@ -683,7 +690,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   containerSearch: {
-    backgroundColor: '#50B6F1',
+    backgroundColor: '#006AF5',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
