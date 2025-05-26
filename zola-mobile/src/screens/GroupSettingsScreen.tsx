@@ -16,6 +16,9 @@ export default function GroupSettingsScreen({ navigation  }) {
     const [friendList, setFriendList] = useState([]);
     const [selectedFriends, setSelectedFriends] = useState([]);
     const { conversation, socket, currentUserId } = route.params || {};
+    const [showAssignModeratorModal, setShowAssignModeratorModal] = useState(false);
+    const [selectedModerator, setSelectedModerator] = useState(null);
+
     console.log(conversation);
     if (!conversation) {
         return (
@@ -52,8 +55,6 @@ export default function GroupSettingsScreen({ navigation  }) {
           console.error('Lỗi khi lấy danh sách lời mời kết bạn:', error);
         }
       };
-
-
   const [groupName, setGroupName] = useState(conversation.name);
   const [avatar, setAvatar] = useState(conversation.avatar);
   const [showTransferModal, setShowTransferModal] = useState(false);
@@ -67,6 +68,37 @@ const [editGroupModalVisible, setEditGroupModalVisible] = useState(false);
 const openEditGroupModal = () => {
   setEditGroupModalVisible(true);
 };
+ const sendMessage = async (text) => {
+ const tempId = `msg-${Date.now()}`;
+    const now = new Date();
+    const isGroup = conversation.type === "group";
+
+      const msg = {
+        conversation_id: conversation.conversation_id,
+        sender_id: user.id,
+        receiver_id: isGroup
+          ? null
+          : Array.isArray(conversation.list_user_id)
+          ? typeof conversation.list_user_id[0] === "string"
+            ? conversation.list_user_id.find((id) => id !== user.id)
+            : conversation.list_user_id?.filter(
+                (u) => u.user_id !== user.id
+              )[0]?.user_id
+          : null,
+        message: text.trim(),
+        type:'notify',
+        status: "pending",
+        created_at: now.toISOString(),
+        is_notify:true
+      };
+      const event = isGroup ? "send_group_message" : "send_private_message";
+      socket.emit(event, msg, () => {});
+      socket.on("message_sent", (msg) => {
+        socket.emit("get_messages", { conversation_id: conversation.conversation_id });
+        console.log("Message sent:", msg);
+      }); 
+  };
+
 
 const closeEditGroupModal = () => {
   setEditGroupModalVisible(false);
@@ -84,11 +116,13 @@ const closeEditGroupModal = () => {
   const handleNameUpdate = (data) => {
     console.log("✅ Tên nhóm đã cập nhật:", data.name);
     Alert.alert("Thành công", data.message || "Tên nhóm và avatar nhóm đã được cập nhật.");
+    sendMessage(data.message);
     navigation.navigate("Main");
   };
   const handleAvatarUpdate = (data) => {
     console.log("✅ anh nhóm đã cập nhật:");
     //Alert.alert("Thành công", data.message || "Tên nhóm đã được cập nhật.");
+    sendMessage(data.message);
     navigation.navigate("Main");
   };
   //loaddata
@@ -101,22 +135,65 @@ const closeEditGroupModal = () => {
     socket.on("delete_group",()=>{console.log("delete group thanh cong!");
     navigation.navigate("Main");
     });
-    socket.on("remove_member", ({ user_id }) => {
-      console.log("delete member thanh cong!", user_id);
-    
+    socket.once("remove_member", ({ user_id,message,conversation_id }) => {
+      console.log(message);
       // Cập nhật danh sách member để xoá user bị đá
       setMemberDetails(prev => prev.filter(m => m.user_id !== user_id));
-    
       // Nếu chính mình bị đá thì rời khỏi màn hình
       if (user_id === user.id) {
         Alert.alert("Thông báo", "Bạn đã bị xoá khỏi nhóm.");
         navigation.navigate("Main");
       }
-    });     
-    socket.on("user_removed", ({ removed_user_id }) => {
-      console.log("Ai đó bị kick:", removed_user_id);
-      setMemberDetails(prev => prev.filter(m => m.user_id !== removed_user_id));
+    });    
+   socket.on("add_member", async (data) => {
+  try {
+    const { user_id, message } = data;
+    const userRes = await GetUserById(user_id);
+    const fullname = userRes?.user?.fullname || "Thành viên mới";
+
+    // Gửi message thông báo vào nhóm
+    sendMessage(`${fullname} đã được thêm vào nhóm.`);
+
+    // Cập nhật danh sách thành viên
+    setMemberDetails(prev => {
+      // Nếu user đã có rồi thì không thêm
+      if (prev.some(m => m.user_id === user_id)) return prev;
+      return [
+        ...prev,
+        {
+          user_id,
+          fullname,
+          avatar: userRes?.user?.avt || null,
+          permission: "member"
+        }
+      ];
     });
+  } catch (error) {
+    console.error("❌ Lỗi khi xử lý add_member:", error);
+  }
+});
+
+   socket.on("removed_member", async ({ user_id }) => {
+  try {
+    const userRes = await GetUserById(user_id);
+    const fullname = userRes?.user?.fullname || "Một thành viên";
+
+    // Gửi thông báo vào nhóm
+    sendMessage(`${fullname} đã bị xoá khỏi nhóm.`);
+
+    // Xoá khỏi danh sách hiển thị
+    setMemberDetails(prev => prev.filter(m => m.user_id !== user_id));
+
+    // Nếu chính mình bị đá thì điều hướng
+    if (user_id === user.id) {
+      Alert.alert("Thông báo", "Bạn đã bị xoá khỏi nhóm.");
+      navigation.navigate("Main");
+    }
+  } catch (error) {
+    console.error("❌ Lỗi khi xử lý removed_member:", error);
+  }
+});
+
     socket.on("error", (err) => {
         console.log("❌ Lỗi socket:", err.message);
         Alert.alert("Lỗi", err.message);
@@ -132,7 +209,7 @@ const closeEditGroupModal = () => {
 
   socket.on("your_permission", handlePermission);
     const handleOutGroup = (data) => {
-        console.log("🚪 Rời nhóm:", data.message);
+        sendMessage(user.fullname+" "+data.message);
         // Ví dụ: quay lại màn hình danh sách chat
         navigation.navigate("Main");
         // Hoặc điều hướng về Home:
@@ -148,6 +225,7 @@ const closeEditGroupModal = () => {
         socket.off("update_avt_group");
         socket.off("delete_group");
         socket.off("user_removed");
+        socket.off("add_member");
 
       };
   }, []);
@@ -224,27 +302,25 @@ const closeEditGroupModal = () => {
 
   }
   const handleKickMember = (userId) => {
-    console.log(userId);
-    socket.emit("remove_member", {
-      conversation_id: conversation.conversation_id,
-      user_id: userId,
-    });
-    Alert.alert(
-      "Xác nhận",
-      "Bạn có chắc muốn xoá thành viên này khỏi nhóm?",
-      [
-        { text: "Huỷ" },
-        {
-          text: "Xoá",
-          style: "destructive",
-          onPress: () => {
-          
-          },
+  Alert.alert(
+    "Xác nhận",
+    "Bạn có chắc muốn xoá thành viên này khỏi nhóm?",
+    [
+      { text: "Huỷ", style: "cancel" },
+      {
+        text: "Xoá",
+        style: "destructive",
+        onPress: () => {
+          socket.emit("remove_member", {
+            conversation_id: conversation.conversation_id,
+            user_id: userId,
+          });
         },
-      ]
-    );
-  };
-  
+      },
+    ]
+  );
+};
+
   const fetchMemberDetails = async () => {
     if (!conversation?.list_user_id) return;
   
@@ -308,12 +384,15 @@ const closeEditGroupModal = () => {
 
       <View style={styles.options}>
         
-        <TouchableOpacity onPress={openEditGroupModal} style={styles.option}>
-           <View style={{flexDirection:'row'}}> 
-                  <Feather name="edit" size={20} color="#ff" style={{marginRight:10}} />           
-                      <Text>Chỉnh sửa tên và ảnh nhóm</Text>
-                    </View>    
-        </TouchableOpacity>
+        {permissions !== 'member' && (
+          <TouchableOpacity onPress={openEditGroupModal} style={styles.option}>
+            <View style={{ flexDirection: 'row' }}>
+              <Feather name="edit" size={20} color="#ff" style={{ marginRight: 10 }} />
+              <Text>Chỉnh sửa tên và ảnh nhóm</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+
 
         <TouchableOpacity onPress={openAddMemberModal} style={styles.option}>
            <View style={{flexDirection:'row'}}> 
@@ -363,6 +442,12 @@ const closeEditGroupModal = () => {
       <Text style={styles.transferButtonText}>🔁 Chuyển quyền nhóm trưởng</Text>
     </TouchableOpacity>
   )}
+  {permissions === 'owner' && (
+  <TouchableOpacity onPress={() => setShowAssignModeratorModal(true)} style={styles.transferButton}>
+    <Text style={styles.transferButtonText}>👑 Phân quyền phó nhóm</Text>
+  </TouchableOpacity>
+)}
+
 </View>
 <Modal visible={showTransferModal} animationType="slide">
   <View style={styles.modal}>
@@ -534,6 +619,56 @@ console.log("Emit add_member:", {
     </TouchableOpacity>
 
     <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeModal}>
+      <Text style={styles.closeText}>Đóng</Text>
+    </TouchableOpacity>
+  </View>
+</Modal>
+<Modal visible={showAssignModeratorModal} animationType="slide">
+  <View style={styles.modal}>
+    <Text style={styles.modalTitle}>Chọn thành viên để phân quyền phó nhóm</Text>
+
+    <FlatList
+      data={memberDetails.filter(m => m.user_id !== user.id)}
+      keyExtractor={(item) => item.user_id}
+      renderItem={({ item }) => (
+        <TouchableOpacity
+          style={[
+            styles.transferItem,
+            selectedModerator === item.user_id && styles.selectedTransferItem,
+          ]}
+          onPress={() => setSelectedModerator(item.user_id)}
+        >
+          <Image
+            source={item.avatar ? { uri: item.avatar } : require('../assets/icon.png')}
+            style={styles.friendAvatar}
+          />
+          <Text style={{ flex: 1 }}>{item.fullname}</Text>
+          <View style={styles.radioCircle}>
+            {selectedModerator === item.user_id && <View style={styles.radioDot} />}
+          </View>
+        </TouchableOpacity>
+      )}
+    />
+
+    <TouchableOpacity
+      onPress={() => {
+        if (selectedModerator) {
+          socket.emit("set_permissions", {
+            conversation_id: conversation.conversation_id,
+            user_id: selectedModerator,
+            permissions: "moderator",
+          });
+          setShowAssignModeratorModal(false);
+          setSelectedModerator(null);
+          Alert.alert("✅ Thành công", "Đã phân quyền phó nhóm.");
+        }
+      }}
+      style={styles.confirmAdd}
+    >
+      <Text style={styles.confirmAddText}>Xác nhận phân quyền</Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity onPress={() => setShowAssignModeratorModal(false)} style={styles.closeModal}>
       <Text style={styles.closeText}>Đóng</Text>
     </TouchableOpacity>
   </View>
