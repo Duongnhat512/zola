@@ -330,6 +330,7 @@ MessageController.setHiddenMessage = async (socket, data) => {
     socket.emit("error", { message: "Lỗi khi đánh dấu ẩn" });
   }
 };
+
 MessageController.forwardMessage = async (socket, data) => {
   const { message_id, to_conversation_ids } = data;
   const user_id = socket.user.id;

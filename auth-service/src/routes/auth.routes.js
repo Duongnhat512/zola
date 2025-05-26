@@ -3,9 +3,12 @@ const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const authController = require('../controllers/auth.controller');
 const { isAuth } = require('../middlewares/auth.middlewares');
+const validationMiddleware = require('../middlewares/validation.middlewares');
 const qrSessions = new Map();
-router.post('/register', authController.register);
-router.post('/login', authController.login);
+
+
+router.post('/register', validationMiddleware.validateRegistration, authController.register);
+router.post('/login', validationMiddleware.validateLogin, authController.login);
 router.post('/refresh-token', authController.refreshToken);
 router.post('/logout', isAuth, authController.logout);
 router.post('/change-password', isAuth, authController.changePassword);
