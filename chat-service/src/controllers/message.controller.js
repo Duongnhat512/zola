@@ -51,32 +51,59 @@ MessageController.sendGroupMessage = async (socket, data) => {
   }
 
   try {
-    let fileUrl = "";
-    let fileType = "text";
+    // Xử lý nhiều file
+    let processedFiles = [];
+    let messageType = "text";
 
-    if (data.file_data) {
+    // Kiểm tra nếu có nhiều file
+    if (data.files && Array.isArray(data.files) && data.files.length > 0) {
+      // Xử lý từng file
+      for (const file of data.files) {
+        const result = await processFileUploadMessage(
+          file.file_data,
+          file.file_name,
+          file.file_type,
+          file.file_size
+        );
+        processedFiles.push({
+          fileUrl: result.fileUrl,
+          fileName: file.file_name,
+          fileType: result.fileType,
+          fileSize: file.file_size
+        });
+      }
+      messageType = "multiple_files";
+    } 
+    // Xử lý file đơn (backward compatibility)
+    else if (data.file_data) {
       const result = await processFileUploadMessage(
         data.file_data,
         data.file_name,
         data.file_type,
         data.file_size
       );
-      fileUrl = result.fileUrl;
-      fileType = result.fileType;
+      processedFiles.push({
+        fileUrl: result.fileUrl,
+        fileName: data.file_name,
+        fileType: result.fileType,
+        fileSize: data.file_size
+      });
+      messageType = result.fileType;
     }
 
     const fileMessage = {
       conversation_id: data.conversation_id,
       sender_id: data.sender_id,
       user_target: data.receiver_id || null,
-      type: data.is_notify ? "notify" : fileType,
+      type: data.is_notify ? "notify" : messageType,
       message: data.message || null,
-      media: fileUrl,
-      file_name: data.file_name,
+      media: processedFiles.length > 0 ? JSON.stringify(processedFiles) : null,
+      file_name: processedFiles.length > 0 ? processedFiles.map(f => f.fileName).join(', ') : null,
+      files_count: processedFiles.length
     };
     
     console.log('====================================');
-    console.log(fileMessage, "Hehehehe");
+    console.log(fileMessage);
     console.log('====================================');
 
     const [savedMessage, sender, members] = await Promise.all([
@@ -89,6 +116,7 @@ MessageController.sendGroupMessage = async (socket, data) => {
       ...savedMessage,
       sender_name: sender?.fullname,
       sender_avatar: sender?.avt,
+      processed_files: processedFiles // Thêm thông tin file đã xử lý
     };
 
     await Promise.all([
@@ -104,7 +132,7 @@ MessageController.sendGroupMessage = async (socket, data) => {
 
     return {
       ...fileMessage,
-      file_url: fileUrl,
+      processed_files: processedFiles,
     };
   } catch (error) {
     notifySendMessageError(socket, error);
