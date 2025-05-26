@@ -24,7 +24,7 @@ const setupSocket = async () => {
       throw new Error("Access Token is missing");
     }
 
-    const socket = io("http://192.168.1.227:5002", { // Fixed the cursor position
+    const socket = io("http://192.168.2.42:5002", { // Fixed the cursor position
       transportOptions: {
         polling: {
           extraHeaders: {

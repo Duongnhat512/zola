@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState , useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import styles from '../styles/MessagesScreen.styles';
 import { useSelector } from 'react-redux';
@@ -23,14 +24,15 @@ import { showMessage } from "react-native-flash-message";
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { qrLogin } from '../services/UserService';
-
+import {checkIsGroup}  from '../services/ConversationService';
 const MessagesScreen = () => {
   const navigation = useNavigation();
   const user = useSelector((state) => state.user.user);
   const [activeTab, setActiveTab] = useState('priority');
   const [chats, setChats] = useState([]);
   const [socket, setSocket] = useState(null);
-
+  const latestChats = useRef([]);
+  
   dayjs.extend(relativeTime);
   dayjs.locale('vi');
 
@@ -92,17 +94,86 @@ const MessagesScreen = () => {
         socketInstance.on("conversations", (response) => {
           if (response.status === "success") {
             setChats(response.conversations);
-            // console.log("🗨️ Danh sách hội thoại:", response.conversations);
+            latestChats.current = response.conversations;
           } else {
             console.error("Lỗi khi lấy danh sách hội thoại:", response.message);
           }
         });
+        
+
+         const loadConversations = () => {
+             socketInstance.emit('get_conversations'); 
+          };
+        socketInstance.on('new_message', async (data) => {
+  
+                try {
+                  const res = await checkIsGroup(data.conversation_id);
+                  const resConversation = res.conversation;
+                  let prefix = '';
+                  if (resConversation) {
+                    prefix = resConversation.type === 'group'
+                      ? `${resConversation.name} (Nhóm)  `
+                      : `${data.sender_name} (Riêng tư) `;
+                  }
+                  const isText = data.type === "text" && !data.is_deleted;
+                  const messageContent = isText
+                    ? `${data.sender_name}: ${data.message}`
+                    : `${data.sender_name} đã gửi một ${data.type === "image" ? "ảnh" : data.type === "file" ? "file" : "nội dung"}`;
+        
+                  showMessage({
+                    message: prefix,
+                    type: "info",
+                    duration: 3000,
+                    position: "top",
+                    floating: true,
+                    hideOnPress: true,
+                    style: { alignSelf: 'center', backgroundColor: '#33FFFF', width: '100%' },
+                    titleStyle: { color: '#000', fontWeight: 'bold' },
+                    textStyle: { color: '#000' },
+                    onPress: () => {
+                   
+                      navigation.navigate('ChatRoom', {
+                        chats: latestChats.current.find(
+                          (chat) => chat.conversation_id === data.conversation_id
+                        ),
+                        conversations: latestChats.current,
+                      });
+                    
+                    },
+                    renderCustomContent: () => (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', padding: 8 }}>
+                        <Image
+                          source={{ uri: data.sender_avatar }}
+                          style={{ width: 32, height: 32, borderRadius: 16, marginRight: 8 }}
+                        />
+                        <Text style={{ color: '#000', fontWeight: 'bold', flexShrink: 1 }}>
+                              {isText
+                                ? `${data.sender_name}: ${data.message.length > 20
+                                    ? data.message.substring(0, 20) + '...'
+                                    : data.message}`
+                                : messageContent}
+                            </Text>
+                          </View>
+                      ),
+
+                  });
+                  loadConversations();
+                } catch (error) {
+                  console.error('Lỗi khi lấy thông tin conversation:', error);
+                }
+              }
+          );
+           
+  
 
       } catch (err) {
         console.error("Lỗi khởi tạo socket:", err);
       }
     };
 
+    
+
+    
     initSocket();
 
     return () => {
