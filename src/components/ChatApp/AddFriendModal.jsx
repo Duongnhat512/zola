@@ -33,9 +33,7 @@ const AddFriendModal = ({ onClose, visible = true, isModalVisible }) => {
   const [input, setInput] = useState("");
   const [changeButton, setchangeButton] = useState("");
   const suggestedFriends = [
-    { name: "Cường Repair", source: "Từ số điện thoại" },
-    { name: "Minh Thư", source: "Từ số điện thoại" },
-    { name: "Quang Hải", source: "Từ số điện thoại" },
+
   ];
   const handleSearch = () => {
     const phoneRegex = /^(0|\+84)[1-9][0-9]{8}$/;
@@ -71,8 +69,8 @@ const AddFriendModal = ({ onClose, visible = true, isModalVisible }) => {
   const handleBack = () => {
     setStep("search");
   };
-  
-  
+
+
   return (
     <div>
       <Modal

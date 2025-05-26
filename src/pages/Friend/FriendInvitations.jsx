@@ -187,9 +187,12 @@ const FriendInvitations = () => {
   }, [socket]);
 
   const handleAccept = async (id) => {
+    const user_friend = await getUserById(id);
+    console.log(user_friend);
+
     socket.emit("accept_friend_request", {
-      user_id: user.id,
-      user_friend_id: id
+      user: user,
+      user_friend: user_friend.user
     });
   };
   useEffect(() => {

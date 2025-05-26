@@ -13,6 +13,7 @@ import {
   Alert,
   Upload,
   Image,
+  message,
 } from "antd";
 import {
   BellOutlined,
@@ -235,14 +236,11 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
     const fetchMessageType = async () => {
       const response = await getMessageTypeImageAndVideo(selectedChat?.conversation_id);
       if (response.status === "success") {
-        console.log('====================================');
-        console.log(response);
-        console.log('====================================');
         setImageAndVideo(response);
       }
     };
     fetchMessageType();
-  }, [selectedChat]);
+  }, [selectedChat, message]);
   const out_group = async () => {
     const confirmLeave = await Swal.fire({
       title: "Bạn có chắc chắn muốn rời nhóm?",

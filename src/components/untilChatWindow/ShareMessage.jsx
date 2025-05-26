@@ -206,15 +206,26 @@ const PinnedListBlock = ({
                                         const isURL = /^https?:\/\/.+/i.test(files[0]?.fileUrl);
                                         const isImage = /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(files[0]?.fileUrl);
                                         const isVideo = /\.(mp4|webm|ogg|mov)$/i.test(files[0]?.fileUrl);
-
+                                        const isFile = /\.(pdf|docx|xlsx|pptx|txt)$/i.test(files[0]?.fileUrl);
+                                        if (isFile) {
+                                            return (
+                                                <a
+                                                    href={files[0].fileUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-blue-500 hover:underline"
+                                                >
+                                                    {files[0].fileName || "Tệp đính kèm"}
+                                                </a>
+                                            );
+                                        }
                                         if (isURL && isImage) {
                                             return <img src={files[0].fileUrl} alt="Hình ảnh" className="w-14 rounded-md" />;
                                         } else if (isURL && isVideo) {
                                             return (
-                                                <video controls className="w-20 rounded-md">
-                                                    <source src={files[0].fileUrl} type="video/mp4" />
-                                                    Trình duyệt không hỗ trợ video.
-                                                </video>
+                                                <div controls className="max-w-full rounded-md">
+                                                    {files[0].fileName}
+                                                </div>
                                             );
                                         } else {
                                             return <span>{item.text}</span>;

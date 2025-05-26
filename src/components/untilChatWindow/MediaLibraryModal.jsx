@@ -35,11 +35,18 @@ const MediaLibraryModal = ({ visible, onClose, mediaData }) => {
     };
 
     const renderImageVideo = (item) => {
+        let url = "";
+        try {
+            const arr = JSON.parse(item.media);
+            if (Array.isArray(arr) && arr[0]?.fileUrl) url = arr[0].fileUrl;
+        } catch {
+            url = item.media;
+        }
         if (item.type?.includes('video') || item.file_type?.includes('video')) {
             return (
                 <div className="relative">
                     <video
-                        src={item.media}
+                        src={url}
                         controls
                         style={{
                             maxWidth: "100%",
@@ -53,7 +60,7 @@ const MediaLibraryModal = ({ visible, onClose, mediaData }) => {
 
         return (
             <Image
-                src={item.media}
+                src={url}
                 alt="Media"
                 className="w-full h-full object-cover rounded-md"
                 preview={true}

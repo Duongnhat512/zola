@@ -75,16 +75,16 @@ const Home = () => {
         setLayout("mainlayout");
       },
     },
-    { label: "Files", key: "3", icon: <FileOutlined /> },
+    // { label: "Files", key: "3", icon: <FileOutlined /> },
   ];
 
   const menuItemsBottom = [
-    { label: "Zola Cloud", key: "1", icon: <CloudSyncOutlined /> },
-    { label: "Cloud của tôi", key: "2", icon: <CloudFilled /> },
-    { label: "Công cụ", key: "3", icon: <ToolFilled /> },
-    { 
-      label: "Cài đặt", 
-      key: "4", 
+    // { label: "Zola Cloud", key: "1", icon: <CloudSyncOutlined /> },
+    // { label: "Cloud của tôi", key: "2", icon: <CloudFilled /> },
+    // { label: "Công cụ", key: "3", icon: <ToolFilled /> },
+    {
+      label: "Cài đặt",
+      key: "4",
       icon: <SettingFilled />,
       onClick: () => {
         navigate("/settings");
@@ -103,8 +103,8 @@ const Home = () => {
         showModal();
       },
     },
-    { 
-      label: "Cài đặt", 
+    {
+      label: "Cài đặt",
       key: "3",
       onClick: () => {
         navigate("/settings");

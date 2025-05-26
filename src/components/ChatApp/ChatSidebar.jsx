@@ -76,7 +76,7 @@ const ChatSidebar = ({
   useEffect(() => {
     // Cập nhật lại danh sách mỗi khi `chats` từ props thay đổi (ví dụ do socket)
     setFilteredChats(chats);
-  }, [chats]);
+  }, [chats, user.id]);
 
   useEffect(() => {
     if (!search.trim()) {

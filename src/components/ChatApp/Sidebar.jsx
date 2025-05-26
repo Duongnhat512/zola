@@ -17,21 +17,19 @@ const Sidebar = () => {
   const menuItemsTop = [
     { label: "Tin nhắn", key: "1", icon: <MessageOutlined /> },
     { label: "Team", key: "2", icon: <TeamOutlined /> },
-    { label: "Files", key: "3", icon: <FileOutlined /> },
   ];
 
   const menuItemsBottom = [
-    { label: "Zola Cloud", key: "4", icon: <CloudSyncOutlined /> },
-    { label: "Cloud của tôi", key: "5", icon: <CloudFilled /> },
-    { label: "Công cụ", key: "6", icon: <ToolFilled /> },
+    // { label: "Zola Cloud", key: "4", icon: <CloudSyncOutlined /> },
+    // { label: "Cloud của tôi", key: "5", icon: <CloudFilled /> },
+    // { label: "Công cụ", key: "6", icon: <ToolFilled /> },
     { label: "Cài đặt", key: "7", icon: <SettingFilled /> },
   ];
 
   return (
     <div
-      className={`h-screen bg-blue-600 text-white flex flex-col ${
-        collapsed ? "w-16" : "w-64"
-      } transition-all duration-300`}
+      className={`h-screen bg-blue-600 text-white flex flex-col ${collapsed ? "w-16" : "w-64"
+        } transition-all duration-300`}
     >
       <div className="flex items-center justify-center py-4">
         <UserOutlined className="text-3xl" />

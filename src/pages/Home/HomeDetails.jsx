@@ -715,14 +715,20 @@ const HomeDetails = () => {
   }, [socket, selectedChat]);
   useEffect(() => {
     const handlePinMessage = (data) => {
+      if (data.status === "success" && data.message_type === "multiple_files") {
+        sendMessage(null, true, `${user.fullname} đã ghim nhiều ảnh!`);
+      }
       if (data.status === "success" && data.message_type === "image") {
-        sendMessage(null, true, `Ảnh đã được ghim!`);
+        sendMessage(null, true, `${user.fullname} đã ghim một ảnh!`);
       }
       if (data.status === "success" && data.message_type === "video") {
-        sendMessage(null, true, `Video đã được ghim!`);
+        sendMessage(null, true, `${user.fullname} đã ghim một video!`);
       }
       if (data.status === "success" && data.message_type === "text") {
-        sendMessage(null, true, `Tin nhắn ${data.message_text} đã được ghim!`);
+        sendMessage(null, true, `${user.fullname} đã ghim một tin nhắn!`);
+      }
+      if (data.status === "success" && data.message_type === "document") {
+        sendMessage(null, true, `${user.fullname} đã ghim một tài liệu!`);
       }
     };
 
@@ -770,14 +776,20 @@ const HomeDetails = () => {
 
   useEffect(() => {
     const handleUnPinMessage = async (data) => {
+      if (data.status === "success" && data.message_type === "multiple_files") {
+        sendMessage(null, true, `${user.fullname} đã bỏ ghim nhiều ảnh!`);
+      }
       if (data.status === "success" && data.message_type === "image") {
-        sendMessage(null, true, `Ảnh đã được bỏ ghim!`);
+        sendMessage(null, true, `${user.fullname} đã bỏ ghim một ảnh!`);
       }
       if (data.status === "success" && data.message_type === "video") {
-        sendMessage(null, true, `Video đã được bỏ ghim!`);
+        sendMessage(null, true, `${user.fullname} đã bỏ ghim một video!`);
       }
       if (data.status === "success" && data.message_type === "text") {
-        sendMessage(null, true, `Tin nhắn ${data.message_text} đã được bỏ ghim!`);
+        sendMessage(null, true, `${user.fullname} đã bỏ ghim một tin nhắn!`);
+      }
+      if (data.status === "success" && data.message_type === "document") {
+        sendMessage(null, true, `${user.fullname} đã bỏ ghim một tài liệu!`);
       }
     }
     socket.on("unpin_message_success", handleUnPinMessage);
