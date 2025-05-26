@@ -32,7 +32,12 @@ function Login() {
         dispatch(login(res.user)); // Lưu thông tin người dùng vào Redux
         localStorage.setItem("accessToken", res.accessToken);
         localStorage.setItem("refreshToken", res.refreshToken);
+        if (socket && res.user?.id) {
+          window.socket.emit("get_conversations", { user_id: res.user.id });
+        }
         // navigate("/"); // Chuyển hướng về trang Home
+        navigate("/"); // Chuyển về Home
+        window.location.reload();
       } else {
         setError("Đăng nhập thất bại. Vui lòng thử lại sau.");
       }
