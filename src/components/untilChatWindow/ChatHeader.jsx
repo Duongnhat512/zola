@@ -97,7 +97,7 @@ const ChatHeader = ({ selectedChat, handleOpen, setIsInfoGroupVisible, messages,
         <div className="ml-3">
           <div className="flex items-center">
             <h2 className="font-medium text-base mr-2">{selectedChat?.name}</h2>
-            {selectedChat?.type === "group" && (userMainPermission === "owner" || userMainPermission === "moderator") && (
+            {selectedChat?.type === "group" && (userMainPermission && userMainPermission === "owner" || userMainPermission === "moderator") && (
               <Tooltip title="Đổi tên nhóm">
                 <EditTwoTone onClick={handleUpdateNameGroup} className="cursor-pointer" />
               </Tooltip>
