@@ -308,6 +308,27 @@ const ChatRoomScreen = ({ route, navigation }) => {
       setFile(result.assets);
     }
   };
+  const pickImageOnly = async () => {
+  const result = await DocumentPicker.getDocumentAsync({
+    type: ["image/*"],
+    copyToCacheDirectory: true,
+    multiple: true,
+  });
+  if (!result.canceled && result.assets?.length > 0) {
+    setFile(result.assets);
+  }
+};
+
+const pickVideoOnly = async () => {
+  const result = await DocumentPicker.getDocumentAsync({
+    type: ["video/*"],
+    copyToCacheDirectory: true,
+    multiple: true,
+  });
+  if (!result.canceled && result.assets?.length > 0) {
+    setFile(result.assets);
+  }
+};
   const getOriginalFileName = (fileName) => {
     if (!fileName) return "";
     const parts = fileName.split("-");
@@ -769,24 +790,24 @@ const ChatRoomScreen = ({ route, navigation }) => {
 )}
           </View>
           <View style={styles.footerWrapper}>
-            <TouchableOpacity
-              onPress={() => setShowEmojiPicker(!showEmojiPicker)}
-            >
-              <Feather
-                name="smile"
-                size={30}
-                color="#000000"
-                style={{ paddingRight: 10 }}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={pickFile} style={styles.fileButton}>
-              <Feather
-                name="paperclip"
-                size={30}
-                color="#000000"
-                style={{ paddingRight: 10 }}
-              />
-            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowEmojiPicker(!showEmojiPicker)}>
+    <Feather name="smile" size={20} color="#000000" style={{ paddingRight: 10 }} />
+  </TouchableOpacity>
+
+  {/* Icon chọn ảnh */}
+  <TouchableOpacity onPress={pickImageOnly} style={styles.fileButton}>
+    <Feather name="image" size={20} color="#007BFF"/>
+  </TouchableOpacity>
+
+  {/* Icon chọn video */}
+  <TouchableOpacity onPress={pickVideoOnly} style={styles.fileButton}>
+    <Feather name="video" size={20} color="#FF3333"/>
+  </TouchableOpacity>
+
+  {/* Icon kẹp giấy: chọn mọi loại file */}
+  <TouchableOpacity onPress={pickFile} style={styles.fileButton}>
+    <Feather name="paperclip" size={20} color="#000000"/>
+  </TouchableOpacity>
 
             <View style={styles.footerContainer}>
               <TextInput
