@@ -177,10 +177,10 @@ const HomeDetails = () => {
       },
     ]);
 
-
+    console.log(userMain.id);
     const msg = {
       conversation_id: selectedChat?.conversation_id || null,
-      receiver_id: selectedChat?.list_user_id?.find((user) => user.user_id !== user.id)
+      receiver_id: selectedChat?.list_user_id?.find((userMain) => userMain.user_id !== user.id)
         .user_id || null,
       message: notify ? messageNotify : input || null,
       file_name:

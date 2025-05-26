@@ -291,6 +291,7 @@ const ChatWindow = ({
         uploadProgress: notify ? null : 0, // Notify không cần uploadProgress
       },
     ]);
+    console.log(userMain.id);
     const msg = {
       conversation_id: selectedChat?.conversation_id || null,
       receiver_id:
