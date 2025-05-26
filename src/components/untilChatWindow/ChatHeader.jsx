@@ -16,7 +16,7 @@ import { useSelector } from "react-redux";
 import socket from "../../services/Socket";
 import VideoCall from "../ChatApp/VideoCall";
 
-const ChatHeader = ({ selectedChat, handleOpen, setIsInfoGroupVisible, messages,setActiveMessageId }) => {
+const ChatHeader = ({ selectedChat, handleOpen, setIsInfoGroupVisible, messages, setActiveMessageId }) => {
   const userMain = useSelector((state) => state.user.user);
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [isRenameModalVisible, setIsRenameModalVisible] = useState(false);
@@ -29,6 +29,9 @@ const ChatHeader = ({ selectedChat, handleOpen, setIsInfoGroupVisible, messages,
     setNewGroupName(selectedChat?.name || "");
     setIsRenameModalVisible(true);
   };
+
+  const [userMainPermission, setUserMainPermission] = useState("member");
+
   const handleSearch = (value) => {
     setSearchValue(value);
     if (!value.trim()) {
@@ -89,7 +92,7 @@ const ChatHeader = ({ selectedChat, handleOpen, setIsInfoGroupVisible, messages,
         setUserMainPermission("member");
       }
     }
-  }, [userMain, selectedChat]) 
+  }, [userMain, selectedChat])
   return (
     <div className="bg-white px-4 py-3 shadow-sm flex items-center justify-between border-b">
       <div className="flex items-center">
