@@ -9,7 +9,7 @@ const MessageOptions = ({ msg, permission, onCopy, onDelete, onRevoke, onForward
         Chuyển tiếp
       </Menu.Item>
 
-      {permission !== "member" && (msg.pinned === false || msg.pinned == null) && (
+      {(msg.pinned === false || msg.pinned == null) && (
         <Menu.Item key="pin" icon={<PushpinOutlined />} onClick={onPinMessage}>
           Ghim tin nhắn
         </Menu.Item>

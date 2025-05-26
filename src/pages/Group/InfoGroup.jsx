@@ -526,20 +526,7 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
           </div>
         </div>
 
-        <div className="flex items-start gap-3">
-          <LinkOutlined className="text-green-500 text-lg mt-1" />
-          <div>
-            <h3 className="font-semibold text-gray-800">Link tham gia nhóm</h3>
-            <a
-              href={selectedChat.inviteLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-500 hover:underline break-all"
-            >
-              {selectedChat.inviteLink}
-            </a>
-          </div>
-        </div>
+
         <div >
           <Collapse ghost className="text-sm" defaultActiveKey={['1', '2', '3']}>
             <Collapse.Panel
@@ -562,52 +549,58 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
               }
               key="2"
             >
-              <div className="grid grid-cols-3 gap-2 px-2 py-2">
-                {(imageAndVideo?.images?.slice(0, 6) || []).map((img, idx) => {
-                  let url = "";
-                  try {
-                    const arr = JSON.parse(img.media);
-                    if (Array.isArray(arr) && arr[0]?.fileUrl) url = arr[0].fileUrl;
-                  } catch {
-                    url = img.media;
-                  }
-                  return (
-                    <Image
-                      key={img.id || idx}
-                      src={url}
-                      alt="img"
-                      className="object-cover rounded-md border-2 border-gray-300 cursor-pointer"
-                    />
-                  );
-                })}
+              {((imageAndVideo?.images?.length || 0) + (imageAndVideo?.videos?.length || 0)) === 0 ? (
+                <div className="text-center text-gray-500 italic py-4">Chưa có ảnh hoặc video</div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-3 gap-2 px-2 py-2">
+                    {(imageAndVideo?.images?.slice(0, 6) || []).map((img, idx) => {
+                      let url = "";
+                      try {
+                        const arr = JSON.parse(img.media);
+                        if (Array.isArray(arr) && arr[0]?.fileUrl) url = arr[0].fileUrl;
+                      } catch {
+                        url = img.media;
+                      }
+                      return (
+                        <Image
+                          key={img.id || idx}
+                          src={url}
+                          alt="img"
+                          className="object-cover rounded-md border-2 border-gray-300 cursor-pointer"
+                        />
+                      );
+                    })}
 
-                {(imageAndVideo?.videos?.slice(0, 6 - (imageAndVideo?.images?.length || 0)) || []).map((vid, idx) => {
-                  let url = "";
-                  try {
-                    const arr = JSON.parse(vid.media);
-                    if (Array.isArray(arr) && arr[0]?.fileUrl) url = arr[0].fileUrl;
-                  } catch {
-                    url = vid.media;
-                  }
-                  return (
-                    <div
-                      key={vid.id || idx}
-                      className="relative w-28 h-28 rounded-md border-2 border-gray-300 cursor-pointer overflow-hidden"
-                      style={{ background: '#f3f4f6' }}
-                    >
-                      <video
-                        src={url}
-                        className="w-full h-full object-cover pointer-events-none"
-                        controls
-                        preload="metadata"
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="flex justify-center pb-2">
-                <Button onClick={() => handleOpenMediaLibrary("images")} type="text" className="bg-slate-300 w-full text-gray-600 font-medium">Xem tất cả</Button>
-              </div>
+                    {(imageAndVideo?.videos?.slice(0, 6 - (imageAndVideo?.images?.length || 0)) || []).map((vid, idx) => {
+                      let url = "";
+                      try {
+                        const arr = JSON.parse(vid.media);
+                        if (Array.isArray(arr) && arr[0]?.fileUrl) url = arr[0].fileUrl;
+                      } catch {
+                        url = vid.media;
+                      }
+                      return (
+                        <div
+                          key={vid.id || idx}
+                          className="relative w-28 h-28 rounded-md border-2 border-gray-300 cursor-pointer overflow-hidden"
+                          style={{ background: '#f3f4f6' }}
+                        >
+                          <video
+                            src={url}
+                            className="w-full h-full object-cover pointer-events-none"
+                            controls
+                            preload="metadata"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="flex justify-center pb-2">
+                    <Button onClick={() => handleOpenMediaLibrary("images")} type="text" className="bg-slate-300 w-full text-gray-600 font-medium">Xem tất cả</Button>
+                  </div>
+                </>
+              )}
             </Collapse.Panel>
             <Collapse.Panel
               header={
@@ -617,24 +610,29 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
               }
               key="3"
             >
-              <div className="divide-y divide-gray-100">
-                {(imageAndVideo?.files?.slice(0, 3) || []).map((file, idx) => (
-                  <div key={file.id || idx} className="flex items-center px-2 py-2 gap-3">
-                    <FileOutlined ></FileOutlined>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-gray-800 truncate">{file.name || file.file_name}</div>
-                      <div className="text-xs text-gray-500 flex gap-2">
-                        <span>{file.date || file.created_at ? new Date(file.date || file.created_at).toLocaleDateString() : ''}</span>
+              {(imageAndVideo?.files?.length || 0) === 0 ? (
+                <div className="text-center text-gray-500 italic py-4">Chưa có file nào</div>
+              ) : (
+                <>
+                  <div className="divide-y divide-gray-100">
+                    {(imageAndVideo?.files?.slice(0, 3) || []).map((file, idx) => (
+                      <div key={file.id || idx} className="flex items-center px-2 py-2 gap-3">
+                        <FileOutlined ></FileOutlined>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-gray-800 truncate">{file.name || file.file_name}</div>
+                          <div className="text-xs text-gray-500 flex gap-2">
+                            <span>{file.date || file.created_at ? new Date(file.date || file.created_at).toLocaleDateString() : ''}</span>
+                          </div>
+                        </div>
+                        <span className="bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded">{(file.type || file.file_type || '').split('/').pop().toUpperCase()}</span>
                       </div>
-                    </div>
-                    <span className="bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded">{(file.type || file.file_type || '').split('/').pop().toUpperCase()}</span>
+                    ))}
                   </div>
-                ))}
-              </div>
-              <div className="flex justify-center pb-2">
-                <Button onClick={() => handleOpenMediaLibrary("files")} type="text" className="bg-slate-300 w-full text-gray-600 font-medium">Xem tất cả</Button>
-              </div>
-
+                  <div className="flex justify-center pb-2">
+                    <Button onClick={() => handleOpenMediaLibrary("files")} type="text" className="bg-slate-300 w-full text-gray-600 font-medium">Xem tất cả</Button>
+                  </div>
+                </>
+              )}
             </Collapse.Panel>
           </Collapse>
 
@@ -820,54 +818,59 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
                 </span>
               }
               key="2"
-
             >
-              <div className="grid grid-cols-3 gap-2 px-2 py-2">
-                {(imageAndVideo?.images?.slice(0, 6) || []).map((img, idx) => {
-                  let url = "";
-                  try {
-                    const arr = JSON.parse(img.media);
-                    if (Array.isArray(arr) && arr[0]?.fileUrl) url = arr[0].fileUrl;
-                  } catch {
-                    url = img.media;
-                  }
-                  return (
-                    <Image
-                      key={img.id || idx}
-                      src={url}
-                      alt="img"
-                      className="object-cover rounded-md border-2 border-gray-300 cursor-pointer"
-                    />
-                  );
-                })}
+              {((imageAndVideo?.images?.length || 0) + (imageAndVideo?.videos?.length || 0)) === 0 ? (
+                <div className="text-center text-gray-500 italic py-4">Chưa có ảnh hoặc video</div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-3 gap-2 px-2 py-2">
+                    {(imageAndVideo?.images?.slice(0, 6) || []).map((img, idx) => {
+                      let url = "";
+                      try {
+                        const arr = JSON.parse(img.media);
+                        if (Array.isArray(arr) && arr[0]?.fileUrl) url = arr[0].fileUrl;
+                      } catch {
+                        url = img.media;
+                      }
+                      return (
+                        <Image
+                          key={img.id || idx}
+                          src={url}
+                          alt="img"
+                          className="object-cover rounded-md border-2 border-gray-300 cursor-pointer"
+                        />
+                      );
+                    })}
 
-                {(imageAndVideo?.videos?.slice(0, 6 - (imageAndVideo?.images?.length || 0)) || []).map((vid, idx) => {
-                  let url = "";
-                  try {
-                    const arr = JSON.parse(vid.media);
-                    if (Array.isArray(arr) && arr[0]?.fileUrl) url = arr[0].fileUrl;
-                  } catch {
-                    url = vid.media;
-                  }
-                  return (
-                    <div
-                      key={vid.id || idx}
-                      className="relative w-28 h-28 rounded-md border-2 border-gray-300 cursor-pointer overflow-hidden"
-                      style={{ background: '#f3f4f6' }}
-                    >
-                      <video
-                        src={url}
-                        className="w-full h-full object-cover pointer-events-none"
-                        controls
-                        preload="metadata"
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="flex justify-center pb-2">
-                <Button onClick={() => handleOpenMediaLibrary("images")} type="text" className="bg-slate-300 w-full text-gray-600 font-medium">Xem tất cả</Button>
-              </div>
+                    {(imageAndVideo?.videos?.slice(0, 6 - (imageAndVideo?.images?.length || 0)) || []).map((vid, idx) => {
+                      let url = "";
+                      try {
+                        const arr = JSON.parse(vid.media);
+                        if (Array.isArray(arr) && arr[0]?.fileUrl) url = arr[0].fileUrl;
+                      } catch {
+                        url = vid.media;
+                      }
+                      return (
+                        <div
+                          key={vid.id || idx}
+                          className="relative w-28 h-28 rounded-md border-2 border-gray-300 cursor-pointer overflow-hidden"
+                          style={{ background: '#f3f4f6' }}
+                        >
+                          <video
+                            src={url}
+                            className="w-full h-full object-cover pointer-events-none"
+                            controls
+                            preload="metadata"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="flex justify-center pb-2">
+                    <Button onClick={() => handleOpenMediaLibrary("images")} type="text" className="bg-slate-300 w-full text-gray-600 font-medium">Xem tất cả</Button>
+                  </div>
+                </>
+              )}
             </Collapse.Panel>
             <Collapse.Panel
               header={
@@ -877,24 +880,29 @@ const InfoGroup = ({ sendMessage, getProfile, userProfile, selectedChat,
               }
               key="3"
             >
-              <div className="divide-y divide-gray-100">
-                {(imageAndVideo?.files?.slice(0, 3) || []).map((file, idx) => (
-                  <div key={file.id || idx} className="flex items-center px-2 py-2 gap-3">
-                    <FileOutlined ></FileOutlined>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-gray-800 truncate">{file.name || file.file_name}</div>
-                      <div className="text-xs text-gray-500 flex gap-2">
-                        <span>{file.date || file.created_at ? new Date(file.date || file.created_at).toLocaleDateString() : ''}</span>
+              {(imageAndVideo?.files?.length || 0) === 0 ? (
+                <div className="text-center text-gray-500 italic py-4">Chưa có file nào</div>
+              ) : (
+                <>
+                  <div className="divide-y divide-gray-100">
+                    {(imageAndVideo?.files?.slice(0, 3) || []).map((file, idx) => (
+                      <div key={file.id || idx} className="flex items-center px-2 py-2 gap-3">
+                        <FileOutlined ></FileOutlined>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-gray-800 truncate">{file.name || file.file_name}</div>
+                          <div className="text-xs text-gray-500 flex gap-2">
+                            <span>{file.date || file.created_at ? new Date(file.date || file.created_at).toLocaleDateString() : ''}</span>
+                          </div>
+                        </div>
+                        <span className="bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded">{(file.type || file.file_type || '').split('/').pop().toUpperCase()}</span>
                       </div>
-                    </div>
-                    <span className="bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded">{(file.type || file.file_type || '').split('/').pop().toUpperCase()}</span>
+                    ))}
                   </div>
-                ))}
-              </div>
-              <div className="flex justify-center pb-2">
-                <Button onClick={() => handleOpenMediaLibrary("files")} type="text" className="bg-slate-300 w-full text-gray-600 font-medium">Xem tất cả</Button>
-              </div>
-
+                  <div className="flex justify-center pb-2">
+                    <Button onClick={() => handleOpenMediaLibrary("files")} type="text" className="bg-slate-300 w-full text-gray-600 font-medium">Xem tất cả</Button>
+                  </div>
+                </>
+              )}
             </Collapse.Panel>
           </Collapse>
 

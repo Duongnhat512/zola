@@ -23,6 +23,8 @@ const ChatSidebar = ({
   setSelectedChat
 }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [search, setSearch] = useState('');
+  const [filteredChats, setFilteredChats] = useState(chats); // danh sách hiển thị
   const [hoveredId, setHoveredId] = useState(null);
   const user = useSelector(state => state.user.user); // Lấy user từ redux
 
@@ -70,6 +72,24 @@ const ChatSidebar = ({
     </Menu>
   );
 
+
+  useEffect(() => {
+    // Cập nhật lại danh sách mỗi khi `chats` từ props thay đổi (ví dụ do socket)
+    setFilteredChats(chats);
+  }, [chats]);
+
+  useEffect(() => {
+    if (!search.trim()) {
+      setFilteredChats(chats);
+    } else {
+      const filtered = chats.filter(chat =>
+        chat.name.toLowerCase().includes(search.toLowerCase())
+      );
+      setFilteredChats(filtered);
+    }
+  }, [search, chats]);
+
+
   return (
     <div
       className="w-1/4 border-r border-gray-300 flex flex-col bg-white shadow-lg "
@@ -78,10 +98,13 @@ const ChatSidebar = ({
       {/* Header */}
       <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
         <Input
+          onChange={(e) => setSearch(e.target.value)}
+          value={search}
           prefix={<SearchOutlined />}
           placeholder="Tìm kiếm"
           className="rounded-md"
         />
+
         <div className="flex gap-2 ml-2">
           <UserOutlined
             onClick={openModal}
@@ -107,7 +130,7 @@ const ChatSidebar = ({
 
       {/* Chat List */}
       <div className="overflow-y-auto flex-1">
-        {chats.map((chat) => (
+        {filteredChats.map((chat) => (
           <div
             key={chat.conversation_id}
             className={`px-4 py-3 border-b border-gray-100 cursor-pointer transition-all duration-200

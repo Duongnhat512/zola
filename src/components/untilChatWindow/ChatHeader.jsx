@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Avatar, Button, Modal, Input, Tooltip } from "antd";
 import {
   UserOutlined,
@@ -22,6 +22,7 @@ const ChatHeader = ({ selectedChat, handleOpen, setIsInfoGroupVisible }) => {
   const [isRenameModalVisible, setIsRenameModalVisible] = useState(false);
   const [newGroupName, setNewGroupName] = useState(selectedChat?.name || "");
   const [loading, setLoading] = useState(false);
+  const [userMainPermission, setUserMainPermission] = useState("");
 
   const handleUpdateNameGroup = () => {
     setNewGroupName(selectedChat?.name || "");
@@ -41,7 +42,18 @@ const ChatHeader = ({ selectedChat, handleOpen, setIsInfoGroupVisible }) => {
     setLoading(false);
     setIsRenameModalVisible(false);
   };
-
+  useEffect(() => {
+    if (userMain && selectedChat) {
+      const findPermission = selectedChat.list_user_id.find(
+        (user) => user.user_id === userMain.id
+      );
+      if (findPermission) {
+        setUserMainPermission(findPermission.permission);
+      } else {
+        setUserMainPermission("member");
+      }
+    }
+  }, [userMain, selectedChat]) 
   return (
     <div className="bg-white px-4 py-3 shadow-sm flex items-center justify-between border-b">
       <div className="flex items-center">
@@ -49,7 +61,7 @@ const ChatHeader = ({ selectedChat, handleOpen, setIsInfoGroupVisible }) => {
         <div className="ml-3">
           <div className="flex items-center">
             <h2 className="font-medium text-base mr-2">{selectedChat?.name}</h2>
-            {selectedChat?.type === "group" && (
+            {selectedChat?.type === "group" && (userMainPermission === "owner" || userMainPermission === "moderator") && (
               <Tooltip title="Đổi tên nhóm">
                 <EditTwoTone onClick={handleUpdateNameGroup} className="cursor-pointer" />
               </Tooltip>
