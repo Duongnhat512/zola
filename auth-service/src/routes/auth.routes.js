@@ -25,17 +25,26 @@ router.post("/qr-session", (req, res) => {
     }
 });
 
+const jwt = require("jsonwebtoken");
+const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
+
 // Mobile xác thực QR
 router.post("/qr-login", (req, res) => {
     const { sessionId, token } = req.body;
-    // TODO: verify token, lấy user info từ token
     if (!qrSessions.has(sessionId)) return res.status(400).json({ message: "Invalid session" });
-    // Giả sử đã verify token, lấy user info
-    const user = { id: "userIdFromToken", username: "usernameFromToken" }; // Thay bằng decode token thực tế
-    qrSessions.set(sessionId, { status: "authenticated", user });
+    qrSessions.set(sessionId, { status: "authenticated", token });
     res.json({ success: true });
 });
-
+// // Mobile xác thực QR
+// router.post("/qr-login", (req, res) => {
+//     const { sessionId, token } = req.body;
+//     // TODO: verify token, lấy user info từ token
+//     if (!qrSessions.has(sessionId)) return res.status(400).json({ message: "Invalid session" });
+//     // Giả sử đã verify token, lấy user info
+//     const user = { id: "userIdFromToken", username: "usernameFromToken" }; // Thay bằng decode token thực tế
+//     qrSessions.set(sessionId, { status: "authenticated", user });
+//     res.json({ success: true });
+// });
 // Web polling kiểm tra trạng thái
 router.get("/qr-session/:sessionId", (req, res) => {
     const session = qrSessions.get(req.params.sessionId);
