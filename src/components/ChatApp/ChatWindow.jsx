@@ -64,7 +64,6 @@ const ChatWindow = ({
   const [permission, setPermission] = useState(null);
   const [pinnedMessageNew, setPinnedMessageNew] = useState(null);
   const userMain = useSelector((state) => state.user.user);
-  console.log("Selected chat:", selectedChat);
 
   useEffect(() => {
     selectedChatRef.current = selectedChat;
@@ -82,8 +81,6 @@ const ChatWindow = ({
 
 
   useEffect(() => {
-    console.log("conversaton", selectedChat?.conversation_id);
-
     if (!selectedChat?.conversation_id) {
       setMessages([]);
       return;
@@ -95,8 +92,6 @@ const ChatWindow = ({
     });
 
     socket.on("list_messages", (data) => {
-      // console.log("List messages event received:", data);
-
       const dataSort = data.sort(
         (a, b) => new Date(a.created_at) - new Date(b.created_at)
       );
@@ -129,7 +124,6 @@ const ChatWindow = ({
   useEffect(() => {
     const handleSocketNewMessage = (msg) => {
       // Chỉ xử lý nếu đúng conversation đang mở
-      console.log("New message event received:", msg);
       handleNewMessage(
         msg,
         selectedChatRef,
@@ -156,8 +150,6 @@ const ChatWindow = ({
   }, [messages]);
   useEffect(() => {
     if (selectedChat?.conversation_id) {
-      console.log("Marking messages as read");
-
       markAsRead(socket, selectedChat.conversation_id, userMain.id, setChats);
     }
   }, [selectedChat]);
@@ -178,8 +170,6 @@ const ChatWindow = ({
   useEffect(() => {
     socket.on("message_deleted", (msg) => {
       const currentChat = selectedChatRef.current;
-      console.log("Message deleted event received:", msg);
-
       if (currentChat?.conversation_id === msg.conversation_id) {
         setMessages((prev) =>
           prev.map((m) =>
@@ -278,7 +268,9 @@ const ChatWindow = ({
     }
     const tempId = `msg-${Date.now()}`;
     const isGroup = selectedChat?.type === "group"
-
+    if (selectedFile || selectedImage?.length > 0 || selectedVideo || fileData) {
+      setIsLoading(true);
+    }
     setMessages((prev) => [
       ...prev,
       {
@@ -342,8 +334,7 @@ const ChatWindow = ({
 
     socket.emit(event, msg, () => { });
     socket.on("message_sent", (msg) => {
-      console.log(msg);
-
+      setIsLoading(false);
       setMessages((prev) =>
         prev.map((m) =>
           m.id === tempId
@@ -396,6 +387,7 @@ const ChatWindow = ({
             : msg
         )
       );
+
     }, 3000); // Giả lập tải lên hoàn tất sau 3 giây
   };
   const handleForwardMessage = (msg) => {
@@ -460,7 +452,6 @@ const ChatWindow = ({
       </div>
     );
   }
-  console.log("previewImage:", selectedImage);
 
   return (
     <div className="flex-1 flex flex-col bg-white">

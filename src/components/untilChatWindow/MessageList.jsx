@@ -50,7 +50,9 @@ const MessageList = ({
     }
 
   }, [messages]); // thay vì [pinned], dùng [messages] để luôn cập nhật khi có thay đổi
-  console.log(messages);
+  console.log("messages", messages);
+  // console.log("loading", isLoading);
+  
 
   return (
     <div className="flex-1 overflow-y-auto py-2 px-4 space-y-4 message-list-container relative">
@@ -116,8 +118,8 @@ const MessageList = ({
         <div className="text-center text-gray-500 mb-4">
           Đã ở tin nhắn đầu tiên
         </div>
-      )}
-      {isLoading && ( 
+      )} */}
+      {/* {isLoading && ( 
         <div className="flex justify-center items-center mb-4">
           <Spin size="small" tip="Đang tải..." />
         </div>
@@ -195,7 +197,7 @@ const MessageList = ({
 
                       }}
                     >
-                      {msg.status === "pending" && msg.type != "text" ? (
+                      {msg.status === "pending" ? (
                         <div
                           style={{
                             display: "flex",
