@@ -9,13 +9,17 @@ import { toast } from "react-toastify"; // Import react-toastify
 import InfoGroup from "../Group/InfoGroup";
 import { getUserById } from "../../services/UserService";
 import Swal from "sweetalert2";
+import { useNotificationTitle, useTotalUnreadCount } from "../../hooks/useNotificationTitle";
 const HomeDetails = () => {
   const [selectedChat, setSelectedChat] = useState(null);
   const chatRef = useRef(null);
   const [chats, setChats] = useState([]);
   const user = useSelector((state) => state.user.user);
-  const [isLoading, setIsLoading] = useState(false);
   const [userMain, setUserMain] = useState(null);
+  
+  // Sử dụng hook để cập nhật title với số tin nhắn chưa đọc
+  const totalUnreadCount = useTotalUnreadCount(chats);
+  useNotificationTitle(totalUnreadCount);
   const [isInfoGroupVisible, setIsInfoGroupVisible] = useState(false);
   const [isModalGroupVisible, setIsModalGroupVisible] = useState(false);
   const [IsGroupSettingsVisible, setIsGroupSettingsVisible] = useState(false)
@@ -71,11 +75,7 @@ const HomeDetails = () => {
 
     const handleConversations = (response) => {
       if (response.status === "success") {
-        const sortedConversations = response.conversations.sort((a, b) => {
-          // const dateA = new Date(a.last_message?.updated_at || a.last_message?.created_at || 0);
-          // const dateB = new Date(b.last_message?.updated_at || b.last_message?.created_at || 0);
-          // return dateB - dateA;
-        });
+        const sortedConversations = response.conversations;
         console.log("Sorted conversations:", sortedConversations);
 
         setChats(sortedConversations);
@@ -813,14 +813,7 @@ const HomeDetails = () => {
   }, [socket])
 
 
-  return isLoading ? (
-    <div className="flex h-screen w-full bg-gray-100">
-      <Spin
-        size="large"
-        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
-      />
-    </div>
-  ) : (
+  return (
     <div className="flex h-screen w-full bg-gray-100">
       <ChatSidebar
         chats={chats}

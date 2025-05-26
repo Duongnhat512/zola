@@ -35,6 +35,41 @@ export const handleNewMessage = (
 ) => {
   const currentChat = selectedChatRef.current;
 
+  // Import notification helpers
+  import("./notificationHelpers").then(({ 
+    shouldShowNotification, 
+    showNewMessageNotification, 
+    playNotificationSound 
+  }) => {
+    // Kiểm tra xem có nên hiển thị thông báo không
+    if (shouldShowNotification(msg, userMain.id, currentChat?.conversation_id)) {
+      // Tìm thông tin cuộc trò chuyện từ state hiện tại
+      setChats(prevChats => {
+        const chat = prevChats.find(c => c.conversation_id === msg.conversation_id);
+        
+        if (chat) {
+          // Xác định tên người gửi và tên nhóm
+          let senderName = msg.sender_name || "Người dùng";
+          let isGroup = chat.type === "group";
+          let groupName = isGroup ? chat.name : null;
+          
+          // Hiển thị thông báo trình duyệt
+          showNewMessageNotification(
+            msg.message || "Đã gửi một tệp",
+            senderName,
+            isGroup,
+            groupName
+          );
+          
+          // Phát âm thanh thông báo
+          playNotificationSound();
+        }
+        
+        return prevChats; // Không thay đổi state
+      });
+    }
+  });
+
   if (currentChat?.conversation_id === msg.conversation_id) {
     markAsRead(msg.conversation_id);
     setMessages((prev) => [
