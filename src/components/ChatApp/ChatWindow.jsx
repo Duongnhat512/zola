@@ -63,6 +63,8 @@ const ChatWindow = ({
   const [messageShare, setMessageShare] = useState(null);
   const [permission, setPermission] = useState(null);
   const [pinnedMessageNew, setPinnedMessageNew] = useState(null);
+  const [activeMessageId, setActiveMessageId] = useState(null);
+
   const userMain = useSelector((state) => state.user.user);
 
   useEffect(() => {
@@ -97,7 +99,7 @@ const ChatWindow = ({
       );
       const formattedMessages = dataSort.map((msg) => ({
         id: msg.id,
-        sender: msg.sender_id === userMain.id ? "me" : "other",
+        sender: msg.sender_id === userMain.id ? "me" : msg.sender_name,
         avatar:
           msg.sender_id === userMain.id
             ? userMain.avatar || "/default-avatar.jpg"
@@ -460,6 +462,8 @@ const ChatWindow = ({
         selectedChat={selectedChat}
         handleOpen={handleOpen}
         setIsInfoGroupVisible={setIsInfoGroupVisible}
+        messages={messages}
+        setActiveMessageId={setActiveMessageId}
       />
       <MessageList
         // messages={visibleMessages}
@@ -476,6 +480,7 @@ const ChatWindow = ({
         onScroll={handleScroll}
         isLoading={isLoading}
         hasMoreMessages={hasMoreMessages}
+        activeMessageId={activeMessageId}
       />
       {isModalVisible && (
         <AddMember

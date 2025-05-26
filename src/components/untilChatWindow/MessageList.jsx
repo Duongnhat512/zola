@@ -18,6 +18,7 @@ const MessageList = ({
   isLoading,
   hasMoreMessages,
   pinnedMessage, // <-- add this prop if you have it, or derive below
+  activeMessageId
 }) => {
   // Lấy tin nhắn ghim đầu tiên (nếu chưa truyền prop)
   let pinned;
@@ -52,7 +53,7 @@ const MessageList = ({
   }, [messages]); // thay vì [pinned], dùng [messages] để luôn cập nhật khi có thay đổi
   console.log("messages", messages);
   // console.log("loading", isLoading);
-  
+
 
   return (
     <div className="flex-1 overflow-y-auto py-2 px-4 space-y-4 message-list-container relative">
@@ -138,11 +139,13 @@ const MessageList = ({
             key={msg.id}
             id={`msg-${msg.id}`}
             className={`flex ${msg.type === "notify"
-              ? "justify-center" // Thông báo căn giữa
+              ? "justify-center"
               : msg.sender === "me"
                 ? "justify-end"
                 : "items-start"
-              } gap-2`}
+              } gap-2
+      }
+    `}
           >
             {msg.type === "notify" ? (
               <div
@@ -162,11 +165,15 @@ const MessageList = ({
             ) : (
               <>
                 {msg.sender !== "me" && (
-                  <Avatar
-                    src={msg.avatar || "/default-avatar.jpg"}
-                    size="small"
-                    className="self-end"
-                  />
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+
+                    <Avatar
+                      src={msg.avatar || "/default-avatar.jpg"}
+                      size="small"
+                      className="self-end"
+                    />
+
+                  </div>
                 )}
                 <div
                   className={`flex flex-col items-${msg.sender === "me" ? "end" : "start"
@@ -197,6 +204,18 @@ const MessageList = ({
 
                       }}
                     >
+                      {msg.sender !== "me" && (<span
+                        style={{
+                          fontSize: 12,
+                          marginBottom: 4,
+                          color: "#888",
+                          alignSelf: "left",
+                          display: "block",
+                          textAlign: msg.sender === "me" ? "right" : "left",
+                        }}
+                      >
+                        {msg.sender_name || msg.sender}
+                      </span>)}
                       {msg.status === "pending" ? (
                         <div
                           style={{
@@ -352,12 +371,19 @@ const MessageList = ({
                                 wordBreak: "break-word",
                                 whiteSpace: "pre-line",
                                 fontSize: 20,
-                                lineHeight: "1.2"
+                                lineHeight: "1.2",
+                                backgroundColor: msg.id === activeMessageId ? "#fee2e2" : undefined, // đỏ nhạt
+                                color: msg.id === activeMessageId ? "#dc2626" : undefined, // chữ đỏ
+                                borderRadius: msg.id === activeMessageId ? "6px" : undefined,
+                                padding: msg.id === activeMessageId ? "4px 8px" : undefined,
+                                transition: "background 0.2s,color 0.2s"
                               }}
                             >
                               {msg.text}
                             </p>
+
                           )}
+
                         </>
                       )}
                     </div>
@@ -419,9 +445,10 @@ const MessageList = ({
               </>
             )}
           </div>
-        ))}
+        ))
+      }
       <div ref={messagesEndRef} />
-    </div>
+    </div >
   );
 };
 

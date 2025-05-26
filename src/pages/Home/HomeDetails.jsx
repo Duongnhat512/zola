@@ -67,6 +67,8 @@ const HomeDetails = () => {
     );
   };
   const fetchConversations = () => {
+    console.log(1);
+    
     if (!socket || !user?.id) return;
     socket.emit("get_conversations", { user_id: user.id });
   };
@@ -74,6 +76,8 @@ const HomeDetails = () => {
     if (!socket || !user?.id) return;
 
     const handleConversations = (response) => {
+      console.log(2);
+      
       if (response.status === "success") {
         const sortedConversations = response.conversations;
         console.log("Sorted conversations:", sortedConversations);
@@ -89,7 +93,7 @@ const HomeDetails = () => {
     return () => {
       socket.off("conversations", handleConversations);
     };
-  }, [socket]);
+  }, [socket, user?.id]);
 
   useEffect(() => {
     if (!socket) return;

@@ -18,6 +18,7 @@ function Register() {
   const handleSendOtp = async () => {
     try {
       let res = await sendOtp(phoneNumber);
+      console.log("Send OTP response:", res);
 
       if (res && res.status === "success") {
         setFormMessage("OTP đã được gửi thành công!");
@@ -70,7 +71,7 @@ function Register() {
       phone: phoneNumber,
       password,
       fullname,
-      dob: dob.format("DD/MM/YYYY"),
+      dob: typeof dob.format === "function" ? dob.format("DD/MM/YYYY") : dob,
       gender,
       status: "Online",
     };
@@ -87,6 +88,8 @@ function Register() {
     } catch (error) {
       setFormMessage("Đăng ký thất bại. Vui lòng thử lại.");
       setMessageType("error");
+      // Log lỗi chi tiết để debug
+      console.error(error?.response?.data || error);
     }
   };
 
@@ -141,8 +144,8 @@ function Register() {
               {formMessage && (
                 <p
                   className={`mt-2 text-center ${messageType === "success"
-                      ? "text-green-600"
-                      : "text-red-600"
+                    ? "text-green-600"
+                    : "text-red-600"
                     }`}
                 >
                   {formMessage}
@@ -201,8 +204,8 @@ function Register() {
               {formMessage && (
                 <p
                   className={`mt-2 text-center ${messageType === "success"
-                      ? "text-green-600"
-                      : "text-red-600"
+                    ? "text-green-600"
+                    : "text-red-600"
                     }`}
                 >
                   {formMessage}
@@ -272,8 +275,8 @@ function Register() {
               {formMessage && (
                 <p
                   className={`mt-2 text-center ${messageType === "success"
-                      ? "text-green-600"
-                      : "text-red-600"
+                    ? "text-green-600"
+                    : "text-red-600"
                     }`}
                 >
                   {formMessage}

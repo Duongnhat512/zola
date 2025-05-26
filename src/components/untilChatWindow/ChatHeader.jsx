@@ -16,19 +16,55 @@ import { useSelector } from "react-redux";
 import socket from "../../services/Socket";
 import VideoCall from "../ChatApp/VideoCall";
 
-const ChatHeader = ({ selectedChat, handleOpen, setIsInfoGroupVisible }) => {
+const ChatHeader = ({ selectedChat, handleOpen, setIsInfoGroupVisible, messages,setActiveMessageId }) => {
   const userMain = useSelector((state) => state.user.user);
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [isRenameModalVisible, setIsRenameModalVisible] = useState(false);
   const [newGroupName, setNewGroupName] = useState(selectedChat?.name || "");
   const [loading, setLoading] = useState(false);
-  const [userMainPermission, setUserMainPermission] = useState("");
-
+  const [searchValue, setSearchValue] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [currentResult, setCurrentResult] = useState(0);
   const handleUpdateNameGroup = () => {
     setNewGroupName(selectedChat?.name || "");
     setIsRenameModalVisible(true);
   };
+  const handleSearch = (value) => {
+    setSearchValue(value);
+    if (!value.trim()) {
+      setSearchResults([]);
+      setCurrentResult(0);
+      setActiveMessageId(null);
+      return;
+    }
+    const results = messages
+      .filter(
+        (msg) =>
+          msg.type === "text" &&
+          msg.text &&
+          msg.text.toLowerCase().includes(value.toLowerCase())
+      )
+      .map((msg) => msg.id);
+    setSearchResults(results);
+    setCurrentResult(0);
+    setActiveMessageId(results[0] || null);
 
+    if (results.length > 0) {
+      setTimeout(() => {
+        const el = document.getElementById(`msg-${results[0]}`);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
+    }
+  };
+
+  const gotoResult = (index) => {
+    if (searchResults.length === 0) return;
+    const newIndex = (index + searchResults.length) % searchResults.length;
+    setCurrentResult(newIndex);
+    setActiveMessageId(searchResults[newIndex]);
+    const el = document.getElementById(`msg-${searchResults[newIndex]}`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
   const handleRenameConfirm = async () => {
     setLoading(true);
     try {
@@ -105,9 +141,38 @@ const ChatHeader = ({ selectedChat, handleOpen, setIsInfoGroupVisible }) => {
         <Tooltip title="Video Call">
           <Button type="text" icon={<VideoCameraOutlined style={{ fontSize: '20px' }} />} onClick={() => setShowVideoCall(true)} />
         </Tooltip>
-        <Tooltip title="Tìm kiếm">
-          <Button type="text" icon={<SearchOutlined style={{ fontSize: '20px' }} />} />
+        <Tooltip title="Tìm kiếm tin nhắn">
+          <Input.Search
+            allowClear
+            placeholder="Tìm tin nhắn"
+            value={searchValue}
+            onChange={(e) => handleSearch(e.target.value)}
+            style={{ width: 180 }}
+          />
         </Tooltip>
+        {searchResults.length > 0 && (
+          <div className="flex items-center ml-2">
+            <Button
+              size="small"
+              onClick={() => gotoResult(currentResult - 1)}
+              disabled={searchResults.length === 0}
+              style={{ marginRight: 4 }}
+            >
+              {"<"}
+            </Button>
+            <span style={{ minWidth: 40, textAlign: "center" }}>
+              {currentResult + 1}/{searchResults.length}
+            </span>
+            <Button
+              size="small"
+              onClick={() => gotoResult(currentResult + 1)}
+              disabled={searchResults.length === 0}
+              style={{ marginLeft: 4 }}
+            >
+              {">"}
+            </Button>
+          </div>
+        )}
         <Tooltip title="Thông tin hội thoại">
           <Button type="text" icon={<InfoCircleOutlined style={{ fontSize: '20px' }} />} onClick={() => setIsInfoGroupVisible((prev) => !prev)} />
         </Tooltip>
