@@ -36,4 +36,12 @@ router.get(
 );
 router.get("/get-common-conversation", isAuthExpress, ConversationController.getCommonGroups);
 router.get("/get-messages-type-image-or-video", isAuthExpress, ConversationController.getMessageTypeImageAndVideo);
+
+
+
+router.get(
+  "/check-is-group/:conversation_id",
+  isAuthExpress,
+  ConversationController.checkIsGroup
+);
 module.exports = router;

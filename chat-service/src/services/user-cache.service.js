@@ -30,7 +30,7 @@ const UserCacheService = {
                 
                 if (response.data && response.data.user) {
                     user = JSON.stringify(response.data.user);
-                    await redis.set(key, userData, 'EX', 4 * 3600);
+                    await redis.set(key, user, 'EX', 4 * 3600);
                 } else {
                     console.error("Invalid response format:", response);
                 }
