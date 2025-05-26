@@ -146,6 +146,25 @@ const conversationSocket = (io, socket) => {
             socket.emit("error", { message: "Lỗi khi xóa redis" });
         }
     });
+    // Ghim hội thoại
+    socket.on("pin_conversation", async (data) => {
+        console.log("Nhận yêu cầu ghim hội thoại từ client:", data);
+        try {
+            await conversationController.pinConversation(socket, data);
+        } catch (error) {
+            console.error("Lỗi khi ghim hội thoại:", error);
+            socket.emit("error", { message: "Lỗi khi ghim hội thoại" });
+        }
+    });
+    socket.on("unpin_conversation", async (data) => {
+        console.log("Nhận yêu cầu bỏ ghim hội thoại từ client:", data);
+        try {
+            await conversationController.unpinConversation(socket, data);
+        } catch (error) {
+            console.error("Lỗi khi bỏ ghim hội thoại:", error);
+            socket.emit("error", { message: "Lỗi khi bỏ ghim hội thoại" });
+        }
+    });
 };
 
 module.exports = conversationSocket;

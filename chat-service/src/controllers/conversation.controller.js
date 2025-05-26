@@ -370,6 +370,9 @@ ConversationController.findPrivateConversation = async (req, res) => {
 
       await redisClient.sadd(`group:${newConversation.id}`, user_id);
       await redisClient.sadd(`group:${newConversation.id}`, friend_id);
+      console.log('====================================');
+      console.log(user_friend);
+      console.log('====================================');
 
       newConversation.name = user_friend.fullname;
       newConversation.avatar = user_friend.avt;
@@ -563,6 +566,7 @@ ConversationController.getConversations = async (socket, data) => {
     ]);
 
     const unreadSet = new Set(unreadConversations);
+    const pinned_conversations = await redisClient.zrevrange(`pinned:${user_id}`, 0, -1);
 
     const result = conversations.map((conversation, index) => {
       const conversationId = conversation.id;
@@ -578,7 +582,10 @@ ConversationController.getConversations = async (socket, data) => {
         name = friendProfile.fullname || "";
         avatar = friendProfile.avt || "";
       }
-
+      let pinned = false;
+      if (pinned_conversations && pinned_conversations.includes(conversationId)) {
+        pinned = true;
+      }
       return {
         conversation_id: conversationId,
         name,
@@ -588,8 +595,21 @@ ConversationController.getConversations = async (socket, data) => {
         is_unread: unreadSet.has(conversationId),
         unread_count: unreadCount,
         type: conversation.type,
+        pinned: pinned
       };
     });
+    result.sort((a, b) => {
+  // Ưu tiên hội thoại được ghim
+  if (a.pinned && !b.pinned) return -1;
+  if (!a.pinned && b.pinned) return 1;
+
+  // Nếu cả hai đều ghim hoặc đều không ghim, sắp xếp theo thời gian tin nhắn cuối cùng
+  const dateA = new Date(a.last_message?.updated_at || a.last_message?.created_at || 0);
+  const dateB = new Date(b.last_message?.updated_at || b.last_message?.created_at || 0);
+
+  return dateB - dateA; // Tin nhắn mới nhất lên trước
+});
+
 
     socket.emit("conversations", {
       status: "success",
@@ -1027,5 +1047,150 @@ ConversationController.getConversationsRecent = async (req, res) => {
     res.status(500).json({ message: "Có lỗi khi lấy danh sách hội thoại gần đây" });
   }
 }
+  //Tính số lượng nhóm chung
+ConversationController.getCommonGroups = async (req, res) => {
+    const { user_id, friend_id } = req.query;
+
+    if (!user_id || !friend_id) {
+      return res.status(400).json({ message: "Thiếu user_id hoặc friend_id" });
+    }
+
+    try {
+      // Lấy danh sách group của từng user
+      const userGroups = await redisClient.zrevrange(`chatlist:${user_id}`, 0, -1);
+      const friendGroups = await redisClient.zrevrange(`chatlist:${friend_id}`, 0, -1);
+
+      // Lấy các group chung (loại bỏ hội thoại private)
+      const commonGroup = [];
+      for (const groupId of userGroups) {
+        if (friendGroups.includes(groupId)) {
+          const conversation = await ConversationModel.getConversationById(groupId);
+          if (conversation && conversation.type === "group") {
+            commonGroup.push(conversation);
+          }
+        }
+      }
+
+      res.status(200).json({
+        status: "success",
+        message: "Lấy số lượng nhóm chung thành công",
+        count: commonGroup.length,
+        group: commonGroup,
+      });
+    } catch (error) {
+      console.error("Có lỗi khi lấy số lượng nhóm chung:", error);
+      res.status(500).json({ message: "Có lỗi khi lấy số lượng nhóm chung" });
+    }
+}
+ConversationController.getMessageTypeImageAndVideo = async (req, res) => {
+  const { conversation_id } = req.query;
+
+  if (!conversation_id) {
+    return res.status(400).json({ message: "Thiếu conversation_id" });
+  }
+
+  try {
+    const messages = await MessageModel.getMessagesByConversationId(conversation_id);
+
+    const imageMessages = messages.filter(msg => msg.type === 'image');
+    const videoMessages = messages.filter(msg => msg.type === 'video');
+    const fileMessages = messages.filter(msg => msg.type === 'document');
+
+    res.status(200).json({
+      status: "success",
+      message: "Lấy danh sách tin nhắn hình ảnh và video thành công",
+      images: imageMessages,
+      videos: videoMessages,
+      files: fileMessages,
+
+    });
+  } catch (error) {
+    console.error("Có lỗi khi lấy danh sách tin nhắn hình ảnh và video:", error);
+    res.status(500).json({ message: "Có lỗi khi lấy danh sách tin nhắn hình ảnh và video" });
+  }
+}
+ConversationController.pinConversation = async (socket, data) => {
+  const { conversation_id, user_id } = data;
+
+  if (!conversation_id) {
+    return socket.emit("error", { message: "Thiếu conversation_id" });
+  }
+
+  try {
+    const result = await ConversationModel.pinConversation(user_id,conversation_id);
+
+    if (result) {
+      await redisClient.zadd(`pinned:${user_id}`, Date.now(), conversation_id);
+      socket.emit("pin_conversation", {
+        status: "success",
+        message: "Đã ghim hội thoại",
+        conversation_id: conversation_id,
+      });
+    } else {
+      socket.emit("error", { message: "Không thể ghim hội thoại" });
+    }
+  } catch (error) {
+    console.error("Có lỗi khi ghim hội thoại:", error);
+    socket.emit("error", { message: "Có lỗi khi ghim hội thoại" });
+  }
+}
+
+ConversationController.unpinConversation = async (socket, data) => {
+  const { conversation_id, user_id } = data;
+
+  if (!conversation_id) {
+    return socket.emit("error", { message: "Thiếu conversation_id" });
+  }
+
+  try {
+    const result = await ConversationModel.unpinConversation(user_id, conversation_id);
+
+    if (result) {
+      await redisClient.zrem(`pinned:${user_id}`, conversation_id);
+      socket.emit("unpin_conversation", {
+        status: "success",
+        message: "Đã bỏ ghim hội thoại",
+        conversation_id: conversation_id,
+      });
+    } else {
+      socket.emit("error", { message: "Không thể bỏ ghim hội thoại" });
+    }
+  } catch (error) {
+    console.error("Có lỗi khi bỏ ghim hội thoại:", error);
+    socket.emit("error", { message: "Có lỗi khi bỏ ghim hội thoại" });
+  }
+}
+
+ConversationController.checkIsGroup = async (req, res) => {
+  const { conversation_id } = req.params;
+
+  try {
+    const conversation = await ConversationModel.getConversationById(conversation_id);
+    if (!conversation) {
+      return res.status(404).json({
+        status: "error",
+        message: "Không tìm thấy hội thoại",
+        isGroup: false,
+      });
+    }
+
+    const isGroup = conversation.type === "group";
+
+    return res.status(200).json({
+      status: "success",
+      message: "Kiểm tra thành công",
+      isGroup,
+      conversation,
+    });
+  } catch (error) {
+    console.error("Có lỗi khi kiểm tra hội thoại nhóm:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Có lỗi khi kiểm tra hội thoại nhóm",
+      isGroup: false,
+    });
+  }
+};
+
 
 module.exports = ConversationController;

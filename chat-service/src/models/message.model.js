@@ -30,6 +30,9 @@ const MessageModel = {
                 is_deleted: false,
             },
         };
+        console.log('====================================');
+        console.log("hehe", params);
+        console.log('====================================');
         try {
             const data = await dynamodb.put(params).promise();
             return {

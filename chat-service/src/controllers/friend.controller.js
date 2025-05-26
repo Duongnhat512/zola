@@ -434,6 +434,7 @@ rejectFriendRequest: async (socket, data) => {
     }
   },
   
+  
 };
 
 module.exports = FriendController;
