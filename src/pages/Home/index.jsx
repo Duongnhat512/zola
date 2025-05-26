@@ -17,7 +17,7 @@ import { Avatar, Button, Dropdown, Layout, Menu } from "antd";
 import Profile from "../Profile/Profile";
 import HomeDetails from "./HomeDetails";
 import { logoutUser } from "../../services/UserService";
-import { toast, ToastContainer } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 import { logout } from "../../redux/UserSlice";
 import MainLayout from "../../components/ChatApp/MainLayout";
 
@@ -82,7 +82,14 @@ const Home = () => {
     { label: "Zola Cloud", key: "1", icon: <CloudSyncOutlined /> },
     { label: "Cloud của tôi", key: "2", icon: <CloudFilled /> },
     { label: "Công cụ", key: "3", icon: <ToolFilled /> },
-    { label: "Cài đặt", key: "4", icon: <SettingFilled /> },
+    { 
+      label: "Cài đặt", 
+      key: "4", 
+      icon: <SettingFilled />,
+      onClick: () => {
+        navigate("/settings");
+      }
+    },
   ];
 
   const dropdownItems = [
@@ -96,7 +103,13 @@ const Home = () => {
         showModal();
       },
     },
-    { label: "Cài đặt", key: "3" },
+    { 
+      label: "Cài đặt", 
+      key: "3",
+      onClick: () => {
+        navigate("/settings");
+      }
+    },
     { type: "divider" },
     { label: "Đăng xuất", key: "4", onClick: handleLogout },
   ];

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile/Profile";
+import Settings from "./pages/Settings/Settings";
 import { decodedToken } from "./services/UserService";
 import { useDispatch, useSelector } from "react-redux";
 import { login, setLoading } from "./redux/UserSlice";
@@ -26,8 +27,8 @@ function App() {
           if (res?.user) {
             dispatch(login(res.user));
           }
-        } catch (err) {
-          console.error("Token không hợp lệ hoặc đã hết hạn.");
+        } catch (error) {
+          console.error("Token không hợp lệ hoặc đã hết hạn:", error);
           localStorage.removeItem("accessToken");
           localStorage.removeItem("refreshToken");
         }
@@ -53,6 +54,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/settings" element={<Settings />} />
       </Routes>
     </Router>
   );

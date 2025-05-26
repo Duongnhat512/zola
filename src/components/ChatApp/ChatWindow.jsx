@@ -39,7 +39,7 @@ const ChatWindow = ({
   isModalAddMemberVisible,
   setIsModalAddMemberVisible,
   messages,
-  setMessages
+  setMessages,
 }) => {
   const [showVideoCall, setShowVideoCall] = useState(false);
   const selectedChatRef = useRef();
@@ -47,8 +47,8 @@ const ChatWindow = ({
   const [isEmojiPickerVisible, setIsEmojiPickerVisible] = useState(false);
   const [input, setInput] = useState("");
   // const [messages, setMessages] = useState([]);
-  const [previewImage, setPreviewImage] = useState(null);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [previewImage, setPreviewImage] = useState([]);
+  const [selectedImage, setSelectedImage] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState(null);
@@ -64,6 +64,7 @@ const ChatWindow = ({
   const [permission, setPermission] = useState(null);
   const [pinnedMessageNew, setPinnedMessageNew] = useState(null);
   const userMain = useSelector((state) => state.user.user);
+  console.log("Selected chat:", selectedChat);
 
   useEffect(() => {
     selectedChatRef.current = selectedChat;
@@ -156,7 +157,7 @@ const ChatWindow = ({
   useEffect(() => {
     if (selectedChat?.conversation_id) {
       console.log("Marking messages as read");
-      
+
       markAsRead(socket, selectedChat.conversation_id, userMain.id, setChats);
     }
   }, [selectedChat]);
@@ -302,33 +303,39 @@ const ChatWindow = ({
       conversation_id: selectedChat?.conversation_id || null,
       receiver_id:
         selectedChat?.list_user_id?.find((user) => user.user_id !== userMain.id)
-          .user_id || null,
+          ?.user_id || null,
       message: notify ? messageNotify : input || null,
-      file_name:
-        selectedVideo?.file_name ||
-        selectedImage?.file_name ||
-        selectedFile?.file_name ||
-        fileData?.file_name ||
-        null,
-      file_type:
-        selectedVideo?.file_name ||
-        selectedImage?.file_type ||
-        selectedFile?.file_type ||
-        fileData?.file_type ||
-        null,
-      file_size:
-        selectedVideo?.file_name ||
-        selectedImage?.file_size ||
-        selectedFile?.file_size ||
-        fileData?.file_size ||
-        null,
-      file_data:
-        selectedVideo?.file_name ||
-        selectedImage?.file_data ||
-        selectedFile?.file_data ||
-        fileData?.file_data ||
-        null,
       is_notify: notify,
+      // Nếu là nhiều ảnh
+      ...(Array.isArray(selectedImage) && selectedImage.length > 1
+        ? { files: selectedImage }
+        : {
+          // Nếu chỉ 1 ảnh hoặc là file/video
+          file_name:
+            selectedVideo?.file_name ||
+            selectedImage?.[0]?.file_name ||
+            selectedFile?.file_name ||
+            fileData?.file_name ||
+            null,
+          file_type:
+            selectedVideo?.file_type ||
+            selectedImage?.[0]?.file_type ||
+            selectedFile?.file_type ||
+            fileData?.file_type ||
+            null,
+          file_size:
+            selectedVideo?.file_size ||
+            selectedImage?.[0]?.file_size ||
+            selectedFile?.file_size ||
+            fileData?.file_size ||
+            null,
+          file_data:
+            selectedVideo?.file_data ||
+            selectedImage?.[0]?.file_data ||
+            selectedFile?.file_data ||
+            fileData?.file_data ||
+            null,
+        }),
     };
 
     const event = isGroup ? "send_group_message" : "send_private_message";
@@ -360,9 +367,9 @@ const ChatWindow = ({
     });
 
     setInput("");
-    setPreviewImage(null);
+    setPreviewImage([]);
+    setSelectedImage([]);
     setSelectedFile(null);
-    setSelectedImage(null);
     setSelectedVideo(null);
     if (!notify) simulateUpload(tempId);
   };
@@ -453,6 +460,7 @@ const ChatWindow = ({
       </div>
     );
   }
+  console.log("previewImage:", selectedImage);
 
   return (
     <div className="flex-1 flex flex-col bg-white">
@@ -492,13 +500,65 @@ const ChatWindow = ({
         />
       )}
       <div className="p-4 bg-white border-t">
-        {previewImage && (
-          <div className="mb-4">
-            <img
-              src={previewImage}
-              alt="Preview"
-              className="max-w-xs rounded-lg"
-            />
+        {previewImage && previewImage.length > 0 && (
+          <div
+            className="mb-4"
+            style={{
+              maxWidth: 1400,
+              overflowX: "auto",
+              whiteSpace: "nowrap",
+              paddingBottom: 8,
+            }}
+          >
+            <Image.PreviewGroup>
+              {previewImage.map((img, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    display: "inline-block",
+                    position: "relative",
+                    marginRight: 12,
+                  }}
+                >
+                  <Image
+                    src={img}
+                    alt={`Preview ${idx + 1}`}
+                    width={150}
+                    height={"auto"}
+                    style={{ borderRadius: 8, objectFit: "cover" }}
+                  />
+                  <button
+                    onClick={() => {
+                      const newPreview = [...previewImage];
+                      newPreview.splice(idx, 1);
+                      setPreviewImage(newPreview);
+
+                      if (Array.isArray(selectedImage)) {
+                        const newSelected = [...selectedImage];
+                        newSelected.splice(idx, 1);
+                        setSelectedImage(newSelected);
+                      }
+                    }}
+                    style={{
+                      position: "absolute",
+                      top: 4,
+                      right: 4,
+                      background: "#eee",
+                      borderRadius: "50%",
+                      border: "none",
+                      width: 24,
+                      height: 24,
+                      cursor: "pointer",
+                      zIndex: 2,
+                    }}
+                    title="Xóa ảnh"
+                    type="button"
+                  >
+                    <span style={{ fontSize: 18, color: "#888" }}>×</span>
+                  </button>
+                </div>
+              ))}
+            </Image.PreviewGroup>
           </div>
         )}
         {selectedFile && (
@@ -515,6 +575,7 @@ const ChatWindow = ({
             }
             style={{ display: "none" }}
             id="image-upload"
+            multiple
           />
           <label htmlFor="image-upload" className="cursor-pointer">
             <PictureOutlined style={{ fontSize: "20px" }} />

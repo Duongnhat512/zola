@@ -35,6 +35,41 @@ export const handleNewMessage = (
 ) => {
   const currentChat = selectedChatRef.current;
 
+  // Import notification helpers
+  import("./notificationHelpers").then(({
+    shouldShowNotification,
+    showNewMessageNotification,
+    playNotificationSound
+  }) => {
+    // Kiểm tra xem có nên hiển thị thông báo không
+    if (shouldShowNotification(msg, userMain.id, currentChat?.conversation_id)) {
+      // Tìm thông tin cuộc trò chuyện từ state hiện tại
+      setChats(prevChats => {
+        const chat = prevChats.find(c => c.conversation_id === msg.conversation_id);
+
+        if (chat) {
+          // Xác định tên người gửi và tên nhóm
+          let senderName = msg.sender_name || "Người dùng";
+          let isGroup = chat.type === "group";
+          let groupName = isGroup ? chat.name : null;
+
+          // Hiển thị thông báo trình duyệt
+          showNewMessageNotification(
+            msg.message || "Đã gửi một tệp",
+            senderName,
+            isGroup,
+            groupName
+          );
+
+          // Phát âm thanh thông báo
+          playNotificationSound();
+        }
+
+        return prevChats; // Không thay đổi state
+      });
+    }
+  });
+
   if (currentChat?.conversation_id === msg.conversation_id) {
     markAsRead(msg.conversation_id);
     setMessages((prev) => [
@@ -138,25 +173,35 @@ export const scrollToBottom = (messagesEndRef) => {
   }
 };
 
-// Hàm xử lý thay đổi hình ảnh
 export const handleImageChange = (e, setPreviewImage, setSelectedImage) => {
-  const file = e.target.files[0];
-  if (file) {
+  const files = Array.from(e.target.files);
+  if (files.length === 0) return;
+
+  let previewList = [];
+  let selectedList = [];
+  let loaded = 0;
+
+  files.forEach((file, idx) => {
     const reader = new FileReader();
     reader.onload = () => {
-      setPreviewImage(reader.result); // Lưu ảnh xem trước vào state
-      setSelectedImage({
+      previewList[idx] = reader.result;
+      selectedList[idx] = {
         file_name: file.name,
         file_type: file.type,
         file_size: file.size,
-        file_data: reader.result, // Base64 của ảnh
-      }); // Lưu thông tin file vào state
+        file_data: reader.result,
+      };
+      loaded++;
+      if (loaded === files.length) {
+        // Cộng dồn với state cũ
+        setPreviewImage(prev => [...(prev || []), ...previewList]);
+        setSelectedImage(prev => [...(prev || []), ...selectedList]);
+      }
     };
-    reader.readAsDataURL(file); // Đọc file dưới dạng Base64
-  }
+    reader.readAsDataURL(file);
+  });
   e.target.value = "";
 };
-
 // Hàm xử lý thay đổi tệp
 export const handleFileChange = (e, setSelectedFile, sendMessageCallback) => {
   const file = e.target.files[0];
