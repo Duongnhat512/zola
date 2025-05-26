@@ -43,6 +43,7 @@ const FriendScreen = () => {
   const [searchText, setSearchText] = useState('');
   const [modalVisibleFriend, setModalVisibleFriend] = useState(false);
   const [conversation,setConversation]= useState(null);
+  const [conversationGroup,setconversationGroup] = useState([]);
   const user = useSelector((state: any) => state.user.user);
   const socket = useSocket();
   const [chats, setChats] = useState([]);
@@ -109,7 +110,11 @@ const handleFindConversation = async (userId, friend) => {
       socket.on("conversations", (response) => {
           if (response.status === "success") {
             setConversation(response.conversations);
-            console.log("🗨️ Danh sách hội thoại:", response.conversations);
+            if(conversation!=undefined)
+            {
+             setconversationGroup(conversation.filter(chat => chat.type === 'group')||[]);
+            }
+        console.log("🗨️ Danh sách hội thoại:", response.conversations);
           } else {
             console.error("Lỗi khi lấy danh sách hội thoại:", response.message);
           }
@@ -246,8 +251,8 @@ const handleFindConversation = async (userId, friend) => {
     }
 
     socket.emit("send_friend_request", {
-      user_id:friend_user_id ,
-      user_friend_id: user.id
+      user_id:user.id ,
+      user_friend_id:  friend_user_id
     });
 
     socket.once("friend_request_sent", () => {
@@ -271,8 +276,8 @@ const handleFindConversation = async (userId, friend) => {
     {/*từ chối nè*/}
    const handleRejectRequest = async (user_friend_id: string) => {
   socket.emit("reject_friend_request", {
-    user_id:user_friend_id,
-    user_friend_id:user.id
+    user_id:user.id,
+    user_friend_id: user_friend_id
   });
 
   socket.once("friend_request_rejected", () => {
@@ -286,11 +291,12 @@ const handleFindConversation = async (userId, friend) => {
 
     {/*đồng ý nè*/}
       const handleAcceptRequest = async (user_friend_id: string) => {
-  socket.emit("accept_friend_request", {
-    user_id: user.id,
-    user_friend_id: user_friend_id
-  });
-
+        // Alert.alert("user ne"+user.id);
+        // Alert.alert("ban ne"+user_friend_id);
+socket.emit("accept_friend_request", {
+  user: { id: user.id },
+  user_friend: { id: user_friend_id }
+});
   socket.once("friend_request_accepted", () => {
     Alert.alert("Thành công", "Đã chấp nhận lời mời.");
     fetchFriendsRequestWithDetails();
@@ -298,7 +304,7 @@ const handleFindConversation = async (userId, friend) => {
   });
 
   socket.once("friend_request_accept_error", (err) => {
-    Alert.alert("Lỗi", err.message || "Không thể chấp nhận.");
+   Alert.alert("Lỗi", err.message || "Không thể chấp nhận.");
   });
 };
 
@@ -381,7 +387,7 @@ const FriendRequestModal = ({ visible, onClose }) => {
     </View>
     
   );
-  const data = activeTab === 'received' ? friendRequests :sentRequests;
+  const data = activeTab === 'received' ?  sentRequests:friendRequests;
 
   return (
     <Modal visible={visible} animationType="slide">
@@ -545,7 +551,7 @@ const renderFriendItem = ({ item }) => (
         {/* Danh sách nè*/}
         { activeTab==='groups'&&
         (<FlatList
-          data={conversation.filter(chat => chat.type === 'group')||[]}
+          data={conversationGroup}
           keyExtractor={(item) => item.id}
           renderItem={renderChatItem}
           style={{ marginTop: 12 }}
