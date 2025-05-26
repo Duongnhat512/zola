@@ -5,7 +5,7 @@ const ImagePreviewModal = ({ visible, imageUri, onClose, styles }) => {
   return (
     <Modal visible={visible} transparent animationType="fade">
       <TouchableOpacity onPress={onClose} style={styles.modalVideoContainer}>
-        <View style={styles.previewVideoContainer}>
+        <View >
           <TouchableOpacity activeOpacity={1}>
             <Image
               source={{ uri: imageUri }}

@@ -42,7 +42,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
   const flatListRef = useRef(null);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
-  const [file, setFile] = useState(null);
+  const [file, setFile] = useState([]);
   const [socket, setSocket] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState(null);
@@ -69,78 +69,15 @@ const ChatRoomScreen = ({ route, navigation }) => {
           }); // Lấy danh sách tin nhắn ghim
         });
 
-        socketInstance.on("list_messages", (data) => {
-          const sortedData = data.sort((a, b) =>
-            a.created_at.localeCompare(b.created_at)
-          );
-          const formatted1 = sortedData.map((msg) => {
-            const isMe = msg.sender_id === currentUser.id;
-            return {
-              id: msg.id,
-              sender: isMe ? "me" : "other",
-              senderName: isMe ? currentUser.fullname : msg.sender_name,
-              text: msg.is_deleted ? "Tin nhắn đã thu hồi" : msg.message,
-              avatar: isMe ? currentUser.avt : msg.sender_avatar,
-              time: dayjs(msg.created_at).fromNow(),
-              type: msg.is_deleted ? "deleted" : msg.type,
-              file: msg.media
-                ? { uri: msg.media, name: msg.media.split("/").pop() }
-                : undefined,
-              status: "sent",
-              pinned: msg.pinned,
-            };
+        socketInstance.on("message_sent", (msg) => {
+            console.log("Message sent:", msg);
+            socketInstance.emit("get_messages", { conversation_id: chats.conversation_id });
           });
-          const formatted2 = JSON.parse(JSON.stringify(formatted1));
-          setMessages(formatted1);
-          setPinnedMessages(formatted2.filter((msg) => msg.pinned === true));
-        });
-        socketInstance.on("list_messages", (data) => {
-          const sortedData = data.sort((a, b) =>
-            a.created_at.localeCompare(b.created_at)
-          );
-          const formatted = sortedData.map((msg) => {
-            const isMe = msg.sender_id === currentUser.id;
-            return {
-              id: msg.id,
-              sender: isMe ? "me" : "other",
-              senderName: isMe ? currentUser.fullname : msg.sender_name,
-              text: msg.is_deleted ? "Tin nhắn đã thu hồi" : msg.message,
-              avatar: isMe ? currentUser.avt : msg.sender_avatar,
-              time: dayjs(msg.created_at).fromNow(),
-              type: msg.is_deleted ? "deleted" : msg.type,
-              file: msg.media
-                ? { uri: msg.media, name: msg.media.split("/").pop() }
-                : undefined,
-              status: "sent",
-              pinned: msg.pinned || false,
-            };
-          });
-          setMessages(formatted);
-        });
 
-        socketInstance.on("hidden_message", (data) => {
-          setMessages((prev) =>
-            prev.filter((msg) => msg.id !== data.message_id)
-          );
-        });
-
-        socketInstance.on("message_deleted", async (data) => {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === data.message_id
-                ? {
-                    ...msg,
-                    text: "Tin nhắn đã thu hồi",
-                    file: null,
-                    type: "deleted",
-                  }
-                : msg
-            )
-          );
-        });
+        socketInstance.on("list_messages", handleListMessages);
 
         socketInstance.on("new_message", async (data) => {
-          console.log("New message received:", data);
+      
           const isMe = data.sender_id === currentUser.id;
           const newMessage = {
             id: data.id,
@@ -156,7 +93,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
             status: "sent",
           };
           if (data.conversation_id === chats.conversation_id) {
-            setMessages((prev) => [...prev, newMessage]);
+            socketInstance.emit("get_messages", { conversation_id: chats.conversation_id });
           }
           if (!isMe) {
             try {
@@ -172,12 +109,15 @@ const ChatRoomScreen = ({ route, navigation }) => {
               const isText = data.type === "text" && !data.is_deleted;
               const messageContent = isText
                 ? `${data.sender_name}: ${data.message}`
-                : `${data.sender_name} đã gửi một ${
+                : `${data.sender_name} đã gửi ${
                     data.type === "image"
-                      ? "ảnh"
-                      : data.type === "file"
-                      ? "file"
-                      : "nội dung"
+                      ? "một ảnh"
+                      : data.type === "video"
+                      ? "một video"
+                      : data.type === "document"
+                      ? "một tài liệu"
+                      : "nhiều ảnh"
+
                   }`;
 
               showMessage({
@@ -260,6 +200,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
           socketInstance.off("hidden_message");
           socketInstance.off("message_deleted");
           socketInstance.off("new_message");
+          socketInstance.off("message_sent");
         };
       } catch (error) {
         console.error("Socket init error:", error);
@@ -295,6 +236,49 @@ const ChatRoomScreen = ({ route, navigation }) => {
       },
     ]);
   };
+  const handleListMessages = (data) => {
+  const sortedData = data.sort((a, b) => a.created_at.localeCompare(b.created_at));
+  
+  const formatted1 = sortedData.map((msg) => {
+    const isMe = msg.sender_id === currentUser.id;
+
+    // Parse media nếu có
+    let files = [];
+    if (msg.media) {
+      try {
+        const mediaArray = JSON.parse(msg.media);
+        if (Array.isArray(mediaArray) && mediaArray.length > 0) {
+          files = mediaArray.map((media) => ({
+            uri: media.fileUrl,
+            name: media.fileName,
+            type: media.fileType,
+            size: media.fileSize,
+          }));
+        }
+      } catch (e) {
+        console.error("Parse media error:", e);
+        files = [];
+      }
+    }
+
+    return {
+      id: msg.id,
+      sender: isMe ? "me" : "other",
+      senderName: isMe ? currentUser.fullname : msg.sender_name,
+      text: msg.is_deleted ? "Tin nhắn đã thu hồi" : msg.message,
+      avatar: isMe ? currentUser.avt : msg.sender_avatar,
+      time: dayjs(msg.created_at).fromNow(),
+      type: msg.is_deleted ? "deleted" : msg.type,
+      files,
+      status: "sent",
+      pinned: msg.pinned,
+    };
+  });
+  console.log("Formatted messages:", formatted1);
+  const formatted2 = JSON.parse(JSON.stringify(formatted1));
+  setMessages(formatted1);
+  setPinnedMessages(formatted2.filter((msg) => msg.pinned === true));
+};
 
   // Hàm xử lý bỏ ghim tin nhắn
   const handleUnpinMessage = (messageId) => {
@@ -331,11 +315,11 @@ const ChatRoomScreen = ({ route, navigation }) => {
         "*/*", // Cho phép tất cả các loại file
       ],
       copyToCacheDirectory: true,
-      multiple: false,
+      multiple: true, // Cho phép chọn nhiều file
     });
 
     if (!result.canceled && result.assets?.length > 0) {
-      setFile(result.assets[0]);
+      setFile(result.assets);
     }
   };
   const getOriginalFileName = (fileName) => {
@@ -364,72 +348,86 @@ const ChatRoomScreen = ({ route, navigation }) => {
     const isGroup = chats.type === "group";
 
     setMessages((prev) => [
-      ...prev,
-      {
-        id: tempId,
-        text: inputText.trim(),
-        type: file ? file.type : "text",
-        sender: "me",
-        senderName: currentUser.fullname,
-        file_name: file?.name,
-        avatar: currentUser.avt,
-        time: now.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        status: "pending",
-        file: file ? { uri: file.uri, name: file.name } : null,
-      },
-    ]);
+  ...prev,
+  {
+    id: tempId,
+    text: inputText.trim(),
+    type: file && file.length > 0 ? "media" : "text",
+    sender: "me",
+    senderName: currentUser.fullname,
+    avatar: currentUser.avt,
+    time: now.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+    status: "pending",
+    files: file && file.length > 0
+      ? file.map(f => ({ 
+          uri: f.uri,
+          name: f.name,
+          type: f.mimeType,
+          size: f.size,
+        }))
+      : [],
+  },
+]);
 
-    if (file) {
-      try {
-        const response = await fetch(file.uri);
+    if (file && file.length !== 0)
+
+  try {
+    // Đọc tất cả file thành base64 và gom vào mảng filesData
+    const filesData = await Promise.all(
+      file.map(async (f) => {
+        const response = await fetch(f.uri);
         const blob = await response.blob();
 
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64Data = reader.result.split(",")[1];
-
-          const msg = {
-            conversation_id: chats.conversation_id,
-            sender_id: currentUser.id,
-            receiver_id: isGroup
-              ? null
-              : Array.isArray(chats.list_user_id)
-              ? typeof chats.list_user_id[0] === "string"
-                ? chats.list_user_id.find((id) => id !== currentUser.id)
-                : chats.list_user_id?.filter(
-                    (user) => user.user_id !== currentUser.id
-                  )[0]?.user_id
-              : null,
-            message: inputText.trim(),
-            file_name: file.name,
-            file_type: file.mimeType,
-            file_size: file.size,
-            file_data: `data:${file.mimeType};base64,${base64Data}`,
-            status: "pending",
-            created_at: now.toISOString(),
+        const base64Data = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const base64 = reader.result.split(",")[1];
+            resolve(base64);
           };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
 
-          const event = isGroup ? "send_group_message" : "send_private_message";
-          socket.emit(event, msg, () => {});
-          socket.on("message_sent", (msg) => {
-            socket.emit("get_messages", {
-              conversation_id: chats.conversation_id,
-            });
-          });
+        return {
+          file_name: f.name,
+          file_type: f.mimeType,
+          file_size: f.size,
+          file_data: `data:${f.mimeType};base64,${base64Data}`,
         };
-        reader.onerror = (error) => {
-          console.error("Lỗi đọc tệp:", error);
-        };
-        reader.readAsDataURL(blob);
-        setInputText("");
-        setFile(null);
-      } catch (error) {
-        console.error("Lỗi tải tệp:", error);
-      }
-    } else {
+      })
+    );
+
+    const msg = {
+      conversation_id: chats.conversation_id,
+      sender_id: currentUser.id,
+      receiver_id: isGroup
+        ? null
+        : Array.isArray(chats.list_user_id)
+        ? typeof chats.list_user_id[0] === "string"
+          ? chats.list_user_id.find((id) => id !== currentUser.id)
+          : chats.list_user_id?.filter(
+              (user) => user.user_id !== currentUser.id
+            )[0]?.user_id
+        : null,
+      message: inputText.trim(), // hoặc "" nếu không có text
+      files: filesData, // gửi mảng files
+      status: "pending",
+      created_at: new Date().toISOString(),
+    };
+
+    const event = isGroup ? "send_group_message" : "send_private_message";
+
+    socket.emit(event, msg, () => {
+      socket.emit("get_messages", { conversation_id: chats.conversation_id });
+    });
+    setInputText("");
+    setFile([]); // Xóa file sau khi gửi
+  } catch (error) {
+    console.error("Lỗi gửi nhiều file:", error);
+  } else {
       const msg = {
         conversation_id: chats.conversation_id,
         sender_id: currentUser.id,
@@ -450,8 +448,11 @@ const ChatRoomScreen = ({ route, navigation }) => {
       socket.emit(event, msg, () => {});
       socket.on("message_sent", (msg) => {
         socket.emit("get_messages", { conversation_id: chats.conversation_id });
+        console.log("Message sent:", msg);
       });
       setInputText("");
+      setFile([]);
+
     }
   };
 
@@ -506,82 +507,126 @@ const ChatRoomScreen = ({ route, navigation }) => {
               <Text style={styles.senderName}>{item.senderName}</Text>
             </View>
 
-            <View
-              style={[
-                item.type === "deleted"
-                  ? styles.deletedMessage
-                  : styles.messageBubble,
-                item.sender === "me" ? styles.myMessage : styles.theirMessage,
-              ]}
-            >
-              {item.pinned && (
-                <Text style={{ fontSize: 12, color: "#ff9900" }}>📌</Text>
-              )}
-              {item.file && item.type !== "deleted" && (
-                <TouchableOpacity
-                  onPress={() => {
-                    if (item.type === "image") {
-                      setSelectedImage(item.file.uri);
-                      setImagePreviewVisible(true);
-                    } else if (item.type === "video") {
-                      setSelectedVideo(item.file.uri);
-                      setVideoPreviewVisible(true);
-                    } else {
-                      Alert.alert("File", `Tên file: ${item.file.name}`);
-                    }
-                  }}
-                >
-                  {item.type === "image" ? (
-                    <Image
-                      source={{ uri: item.file.uri }}
-                      style={styles.mediaPreview}
-                    />
-                  ) : item.type === "video" ? (
-                    <Video
-                      source={{ uri: item.file.uri }}
-                      rate={1.0}
-                      volume={1.0}
-                      isMuted={false}
-                      resizeMode="contain"
-                      useNativeControls
-                      style={styles.mediaPreview}
-                    />
-                  ) : (
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        padding: 8,
-                      }}
-                    >
-                      <Feather
-                        name="file"
-                        size={20}
-                        color="#007BFF"
-                        style={{ marginRight: 6 }}
-                      />
-                      <Text>{getOriginalFileName(item.file.name)}</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              )}
-              <Text
-                style={[
-                  styles.messageText,
-                  item.type === "deleted" && styles.deletedText,
-                ]}
-              >
-                {item.text}
-              </Text>
-              <Text style={styles.messageTime}>
-                {item.time}{" "}
-                {item.status === "pending"
-                  ? "🕓"
-                  : item.status === "sent"
-                  ? "✅"
-                  : "❌"}
-              </Text>
-            </View>
+           <View
+  style={[
+    item.type === "deleted"
+      ? styles.deletedMessage
+      : styles.messageBubble,
+    item.sender === "me" ? styles.myMessage : styles.theirMessage,
+  ]}
+>
+  {item.pinned && (
+    <Text style={{ fontSize: 12, color: "#ff9900" }}>📌</Text>
+  )}
+
+ {/* Hiển thị nhiều ảnh nếu có */}
+{item.files && item.files.length > 1 && item.type !== "deleted" && (
+  <View style={{ flexDirection: "row", flexWrap: "wrap", marginBottom: 6 }}>
+    {item.files.map((f, idx) =>
+      f.type === "image" && f.uri ? (
+        <TouchableOpacity
+          key={idx}
+          onPress={() => {
+            setSelectedImage(f.uri);
+            setImagePreviewVisible(true);
+          }}
+        >
+          <Image
+            source={{ uri: f.uri }}
+            style={{
+              width: 70,
+              height: 70,
+              borderRadius: 10,
+              borderWidth: 1,
+              borderColor: "#ddd",
+              marginRight: 6,
+              marginBottom: 6,
+            }}
+          />
+        </TouchableOpacity>
+      ) : null
+    )}
+  </View>
+)}
+
+{/* Nếu chỉ có 1 file (ảnh, video, hoặc file tài liệu) */}
+{item.files && item.files.length === 1 && item.type !== "deleted" && (() => {
+  const f = item.files[0];
+  if (f.type === "image" && f.uri) {
+    return (
+      <TouchableOpacity
+        onPress={() => {
+          setSelectedImage(f.uri);
+          setImagePreviewVisible(true);
+        }}
+      >
+        <Image source={{ uri: f.uri }} style={styles.mediaPreview} />
+      </TouchableOpacity>
+    );
+  }
+  if (f.type?.startsWith("video") && f.uri) {
+    return (
+      <TouchableOpacity
+        onPress={() => {
+          setSelectedVideo(f.uri);
+          setVideoPreviewVisible(true);
+        }}
+      >
+        <Video
+          source={{ uri: f.uri }}
+          rate={1.0}
+          volume={1.0}
+          isMuted={false}
+          resizeMode="contain"
+          useNativeControls
+          style={styles.mediaPreview}
+        />
+      </TouchableOpacity>
+    );
+  }
+  // File tài liệu
+  if (f.uri) {
+    return (
+      <TouchableOpacity
+        onPress={() => Alert.alert("File", `Tên file: ${f.name}`)}
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          padding: 8,
+        }}
+      >
+        <Feather
+          name="file"
+          size={20}
+          color="#007BFF"
+          style={{ marginRight: 6 }}
+        />
+        <Text>{getOriginalFileName(f.name)}</Text>
+      </TouchableOpacity>
+    );
+  }
+  return null;
+})()}
+
+
+
+  <Text
+    style={[
+      styles.messageText,
+      item.type === "deleted" && styles.deletedText,
+    ]}
+  >
+    {item.text}
+  </Text>
+  <Text style={styles.messageTime}>
+    {item.time}{" "}
+    {item.status === "pending"
+      ? "🕓"
+      : item.status === "sent"
+      ? "✅"
+      : "❌"}
+  </Text>
+</View>
           </View>
         )}
       </View>
@@ -651,75 +696,91 @@ const ChatRoomScreen = ({ route, navigation }) => {
                 flatListRef.current?.scrollToEnd({ animated: true })
               }
             />
+{file.length > 0 && (
+  <View style={{ marginVertical: 8 }}>
+    <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center" }}>
+      {file.map((f, idx) =>
+        f?.mimeType?.startsWith("image") && f.uri ? (
+          <View key={idx} style={[styles.previewContainer, { position: "relative" }]}>
+            <Image source={{ uri: f.uri }} style={styles.previewImageBeforeSend} />
+            <TouchableOpacity
+              onPress={() => setFile(file.filter((_, i) => i !== idx))}
+              style={{
+                position: "absolute",
+                top: 4,
+                right: 4,
+                backgroundColor: "#fff",
+                borderRadius: 12,
+                padding: 2,
+                elevation: 2,
+                zIndex: 10,
+              }}
+            >
+              <Text style={{ color: "#ff3333", fontWeight: "bold", fontSize: 16 }}>❌</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null
+      )}
+    </View>
+  </View>
+)}
 
-            {file?.mimeType?.startsWith("image") && file.uri && (
-              <View style={styles.previewContainer}>
-                <Image source={{ uri: file.uri }} style={styles.previewImage} />
-                <TouchableOpacity
-                  onPress={() => setFile(null)}
-                  style={styles.cancelPreviewButton}
-                >
-                  <Text style={styles.cancelPreviewText}>Hủy chọn ảnh</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {file?.mimeType?.startsWith("video") && file.uri && (
-              <View style={styles.previewContainer}>
-                <Video
-                  source={{ uri: file.uri }}
-                  rate={1.0}
-                  volume={1.0}
-                  isMuted={false}
-                  resizeMode="contain"
-                  useNativeControls
-                  style={styles.previewImage}
-                />
-                <TouchableOpacity
-                  onPress={() => setFile(null)}
-                  style={styles.cancelPreviewButton}
-                >
-                  <Text style={styles.cancelPreviewText}>Hủy chọn video</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+           {file.length === 1 && file[0]?.mimeType?.startsWith("video") && (
+  <View style={styles.previewContainer}>
+    <Video
+      source={{ uri: file[0].uri }}
+      rate={1.0}
+      volume={1.0}
+      isMuted={false}
+      resizeMode="contain"
+      useNativeControls
+      style={styles.previewImage}
+    />
+    <TouchableOpacity
+      onPress={() => setFile([])}
+      style={styles.cancelPreviewButton}
+    >
+      <Text style={styles.cancelPreviewText}>Hủy chọn video</Text>
+    </TouchableOpacity>
+  </View>
+)}
             {/* Xem trước file document (Word, Excel, PDF, ZIP, ...) */}
-            {file &&
-              !file?.mimeType?.startsWith("image") &&
-              !file?.mimeType?.startsWith("video") &&
-              file.uri && (
-                <View style={styles.previewContainer}>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      marginBottom: 8,
-                    }}
-                  >
-                    <Feather
-                      name="file"
-                      size={32}
-                      color="#007BFF"
-                      style={{ marginRight: 10 }}
-                    />
-                    <Text style={{ fontSize: 16, fontWeight: "bold" }}>
-                      {getOriginalFileName(file.name)}
-                    </Text>
-                  </View>
-                  <Text style={{ color: "#555", marginBottom: 8 }}>
-                    Dung lượng:{" "}
-                    {file.size
-                      ? (file.size / 1024).toFixed(1) + " KB"
-                      : "Không rõ"}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => setFile(null)}
-                    style={styles.cancelPreviewButton}
-                  >
-                    <Text style={styles.cancelPreviewText}>Hủy chọn file</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+           {file.length === 1 &&
+  !file[0]?.mimeType?.startsWith("image") &&
+  !file[0]?.mimeType?.startsWith("video") &&
+  file[0].uri && (
+    <View style={styles.previewContainer}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          marginBottom: 8,
+        }}
+      >
+        <Feather
+          name="file"
+          size={32}
+          color="#007BFF"
+          style={{ marginRight: 10 }}
+        />
+        <Text style={{ fontSize: 16, fontWeight: "bold" }}>
+          {getOriginalFileName(file[0].name)}
+        </Text>
+      </View>
+      <Text style={{ color: "#555", marginBottom: 8 }}>
+        Dung lượng:{" "}
+        {file[0].size
+          ? (file[0].size / 1024).toFixed(1) + " KB"
+          : "Không rõ"}
+      </Text>
+      <TouchableOpacity
+        onPress={() => setFile([])}
+        style={styles.cancelPreviewButton}
+      >
+        <Text style={styles.cancelPreviewText}>Hủy chọn file</Text>
+      </TouchableOpacity>
+    </View>
+)}
           </View>
           <View style={styles.footerWrapper}>
             <TouchableOpacity

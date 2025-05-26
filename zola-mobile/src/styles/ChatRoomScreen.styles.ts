@@ -156,11 +156,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   
-  previewImage: {
-    width: '100%',
-    aspectRatio: 1, // để ảnh hiển thị hình vuông
-    borderRadius: 10,
-  },
   
   closeOverlay: {
     position: 'absolute',
@@ -372,7 +367,24 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
   },
-  
+  previewImage: {
+  width: 300,
+  height: 300,
+  borderRadius: 12,
+  borderWidth: 2,
+  backgroundColor: 'black',
+  borderColor: "#33CFFF",
+},
+previewImageBeforeSend: {
+  width: 100,
+  height: 100,
+  borderRadius: 12,
+  borderWidth: 2,
+  backgroundColor: 'black',
+  borderColor: "#33CFFF",
+},
+
+
   
 });
 

@@ -99,10 +99,9 @@ const MessagesScreen = () => {
             console.error("Lỗi khi lấy danh sách hội thoại:", response.message);
           }
         });
-        
 
          const loadConversations = () => {
-             socketInstance.emit('get_conversations'); 
+             socketInstance.emit('get_conversations');
           };
         socketInstance.on('new_message', async (data) => {
   
@@ -118,8 +117,8 @@ const MessagesScreen = () => {
                   const isText = data.type === "text" && !data.is_deleted;
                   const messageContent = isText
                     ? `${data.sender_name}: ${data.message}`
-                    : `${data.sender_name} đã gửi một ${data.type === "image" ? "ảnh" : data.type === "file" ? "file" : "nội dung"}`;
-        
+                    : `${data.sender_name} đã gửi ${data.type === "image" ? "một ảnh" : data.type === "video" ? "một video" : data.type === "document" ? "một tài liệu" : "nhiều ảnh"}`;
+
                   showMessage({
                     message: prefix,
                     type: "info",
