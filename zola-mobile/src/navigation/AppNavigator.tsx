@@ -25,6 +25,8 @@ import GroupSettingsScreen from '../screens/GroupSettingsScreen';
 import FlashMessage from "react-native-flash-message";
 import PrivateChatSettingsScreen from '../screens/PrivateChatSettingsScreen';
 import ForwardScreen from '../screens/ForwardScreen';
+import QRCodeScannerScreen from '../screens/QRCodeScannerScreen';
+
 // Define navigation types
 export type RootStackParamList = {
   Welcome: undefined;
@@ -123,6 +125,8 @@ const AppNavigator: React.FC = () => {
           <Stack.Screen name="Main" component={TabNavigator} />
           <Stack.Screen name="ProfileScreen" component={Profile} 
           />
+          <Stack.Screen name="QRCodeScanner" component={QRCodeScannerScreen} />
+
           <Stack.Screen name="Edit" component={EditProfile} />
           <Stack.Screen name="Setting" component={Setting} />
           <Stack.Screen name="Welcome" component={WelcomeScreen} />
