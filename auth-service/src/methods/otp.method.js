@@ -10,7 +10,7 @@ const otpMethod = {
     sendOTP: async (phoneNumber, otp) => {
 
         const formattedNumber = phoneNumber.startsWith('+') ?
-            phoneNumber : `84${phoneNumber.replace(/^0/, '+84')}`;
+            phoneNumber : `${phoneNumber.replace(/^0/, '+84')}`;
         
         const params = {
             Message: `Mã OTP của bạn là: ${otp}`,

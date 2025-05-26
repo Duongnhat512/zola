@@ -263,6 +263,7 @@ exports.forgotPassword = async (req, res) => {
     status: "success",
     message: "Mã OTP đã được gửi đến số điện thoại của bạn.",
     username,
+    otp
   });
 };
 
