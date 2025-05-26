@@ -54,6 +54,16 @@ const ChatRoomScreen = ({ route, navigation }) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const inputRef = useRef(null);
   const [pinnedMessages, setPinnedMessages] = useState([]);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+
+  const handleScroll = (event) => {
+  const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+  const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
+  
+  setIsAtBottom(distanceFromBottom < 50); // nhỏ hơn 50px coi như đang ở cuối
+};
+
+
   useEffect(() => {
     const initSocket = async () => {
       try {
@@ -64,21 +74,18 @@ const ChatRoomScreen = ({ route, navigation }) => {
           socketInstance.emit("get_messages", {
             conversation_id: chats.conversation_id,
           });
-          socketInstance.emit("get_pinned_messages", {
-            conversation_id: chats.conversation_id,
-          }); // Lấy danh sách tin nhắn ghim
         });
 
         socketInstance.on("message_sent", (msg) => {
-            console.log("Message sent:", msg);
             socketInstance.emit("get_messages", { conversation_id: chats.conversation_id });
           });
 
         socketInstance.on("list_messages", handleListMessages);
 
         socketInstance.on("new_message", async (data) => {
-          console.log("New message received:", data);
           const isMe = data.sender_id === currentUser.id;
+          console.log("data.sender_id:", data.sender_id);
+          console.log("currentUser.id:", currentUser.id);
           if (data.conversation_id === chats.conversation_id) {
             socketInstance.emit("get_messages", { conversation_id: chats.conversation_id });
           }
@@ -103,7 +110,9 @@ const ChatRoomScreen = ({ route, navigation }) => {
                       ? "một video"
                       : data.type === "document"
                       ? "một tài liệu"
-                      : "nhiều ảnh"
+                      : data.type ==="multiple_files"
+                      ? "nhiều ảnh"
+                      : "một thông báo"
 
                   }`;
 
@@ -169,18 +178,21 @@ const ChatRoomScreen = ({ route, navigation }) => {
               console.error("Lỗi khi lấy thông tin conversation:", error);
             }
           }
+          flatListRef.current?.scrollToEnd({ animated: true });
         });
 
-        socketInstance.on("message_pinned", (data) => {
-          if (data.status === "success") {
-            setPinnedMessages((prev) => {
-              const exists = prev.some((msg) => msg.id === data.message_id);
-              if (!exists) return [...prev, data.pinned_message];
-              return prev;
-            });
+        socketInstance.on("pin_message_success", (data) => {
+          if (data.conversation_id === chats.conversation_id) {
+            socketInstance.emit("get_messages", { conversation_id: chats.conversation_id });
+          }
+        });
+        socketInstance.on("unpin_message_success", (data) => {
+          if (data.conversation_id === chats.conversation_id) {
+            socketInstance.emit("get_messages", { conversation_id: chats.conversation_id });
           }
         });
 
+       
         return () => {
           socketInstance.off("connect");
           socketInstance.off("list_messages");
@@ -196,7 +208,6 @@ const ChatRoomScreen = ({ route, navigation }) => {
 
     initSocket();
   }, [chats.conversation_id]);
-
   useEffect(() => {
     if (socket && chats.conversation_id) {
       const timeout = setTimeout(() => {
@@ -208,24 +219,71 @@ const ChatRoomScreen = ({ route, navigation }) => {
   }, [socket, chats.conversation_id]);
 
   const handlePinMessage = () => {
-    if (!selectedMessage) return;
-    socket.emit("pin_message", {
-      message_id: selectedMessage.id,
-      conversation_id: chats.conversation_id,
-      message_text: selectedMessage.text,
-    });
-    setPinnedMessages((prev) => [
-      ...prev,
-      {
-        id: selectedMessage.id,
-        senderName: selectedMessage.senderName,
-        text: selectedMessage.text,
-      },
-    ]);
+  if (!selectedMessage) return;
+
+  // Gửi sự kiện pin lên server
+  socket.emit("pin_message", {
+    message_id: selectedMessage.id,
+    conversation_id: chats.conversation_id,
+    message_text: selectedMessage.text,
+  });
+
+  // Gửi notify message cho mọi người trong phòng
+  const now = new Date();
+  const isGroup = chats.type === "group";
+  const msgType = selectedMessage?.type;
+  let notifyMessage = currentUser.fullname + " đã ghim một tin nhắn";
+  if (
+    msgType === "image" ||
+    (msgType === "media" &&
+      selectedMessage.files?.length === 1 &&
+      selectedMessage.files[0]?.type === "image")
+  ) {
+    notifyMessage = currentUser.fullname + " đã ghim một ảnh";
+  } else if (
+    msgType === "video" ||
+    (msgType === "media" &&
+      selectedMessage.files?.length === 1 &&
+      selectedMessage.files[0]?.type?.startsWith("video"))
+  ) {
+    notifyMessage = currentUser.fullname + " đã ghim một video";
+  } else if (msgType === "multiple_files" && selectedMessage.files?.length > 1) {
+    notifyMessage = currentUser.fullname + " đã ghim nhiều ảnh";
+  } else if (
+    msgType === "document" ||
+    (msgType === "media" &&
+      selectedMessage.files?.length === 1 &&
+      selectedMessage.files[0]?.type &&
+      !selectedMessage.files[0]?.type.startsWith("image") &&
+      !selectedMessage.files[0]?.type.startsWith("video"))
+  ) {
+    notifyMessage = currentUser.fullname + " đã ghim một tài liệu";
+  }
+
+  const msg = {
+    conversation_id: chats.conversation_id,
+    sender_id: currentUser.id,
+    receiver_id: isGroup
+      ? null
+      : Array.isArray(chats.list_user_id)
+      ? typeof chats.list_user_id[0] === "string"
+        ? chats.list_user_id.find((id) => id !== currentUser.id)
+        : chats.list_user_id?.filter(
+            (user) => user.user_id !== currentUser.id
+          )[0]?.user_id
+      : null,
+    message: notifyMessage,
+    status: "pending",
+    created_at: now.toISOString(),
+    is_notify: true,
   };
+
+  const event = isGroup ? "send_group_message" : "send_private_message";
+  socket.emit(event, msg, () => {});
+};
+
   const handleListMessages = (data) => {
   const sortedData = data.sort((a, b) => a.created_at.localeCompare(b.created_at));
-  console.log("Received messages:", sortedData);
   const formatted1 = sortedData.map((msg) => {
     const isMe = msg.sender_id === currentUser.id;
     
@@ -277,6 +335,59 @@ const ChatRoomScreen = ({ route, navigation }) => {
     });
 
     setPinnedMessages((prev) => prev.filter((msg) => msg.id !== messageId));
+
+    const now = new Date();
+    const isGroup = chats.type === "group";
+    const msgType = message?.type;
+    let notifyMessage = currentUser.fullname + " đã gỡ ghim một tin nhắn";
+    if (
+      msgType === "image" ||
+      (msgType === "media" &&
+        message.files?.length === 1 &&
+        message.files[0]?.type === "image"
+    )) {
+      notifyMessage = currentUser.fullname + " đã gỡ ghim một ảnh";
+    } else if (
+      msgType === "video" ||
+      (msgType === "media" &&
+        message.files?.length === 1 &&
+        message.files[0]?.type?.startsWith("video"))
+    ) {
+      notifyMessage = currentUser.fullname + " đã gỡ ghim một video";
+    } else if (msgType === "multiple_files" && message.files?.length > 1) {
+      notifyMessage = currentUser.fullname + " đã gỡ ghim nhiều ảnh";
+    } else if (
+      msgType === "document" ||
+      (msgType === "media" &&
+        message.files?.length === 1 &&
+        message.files[0]?.type &&
+        !message.files[0]?.type.startsWith("image") &&
+        !message.files[0]?.type.startsWith("video"))
+    ) {
+      notifyMessage = currentUser.fullname + " đã gỡ ghim một tài liệu";
+    }
+    const msg = {
+      conversation_id: chats.conversation_id,
+      sender_id: currentUser.id,
+      receiver_id: isGroup
+        ? null
+        : Array.isArray(chats.list_user_id)
+        ? typeof chats.list_user_id[0] === "string"
+          ? chats.list_user_id.find((id) => id !== currentUser.id)
+          : chats.list_user_id?.filter(
+              (user) => user.user_id !== currentUser.id
+            )[0]?.user_id
+        : null,
+      message: notifyMessage,
+      status: "pending",
+      created_at: now.toISOString(),
+      is_notify: true,
+    };
+    const event = isGroup ? "send_group_message" : "send_private_message";
+    socket.emit(event, msg, () => {});
+  
+
+    
   };
 
   const handleEmojiSelect = (emoji) => {
@@ -379,18 +490,18 @@ const pickVideoOnly = async () => {
   },
 ]);
 
-    if (file && file.length !== 0)
+    if (file && file.length > 1) {
+      console.log("Gửi nhiều file:");
+      try {
+        // Đọc tất cả file thành base64 và gom vào mảng filesData
+        const filesData = await Promise.all(
+          file.map(async (f) => {
+            const response = await fetch(f.uri);
+            const blob = await response.blob();
 
-  try {
-    // Đọc tất cả file thành base64 và gom vào mảng filesData
-    const filesData = await Promise.all(
-      file.map(async (f) => {
-        const response = await fetch(f.uri);
-        const blob = await response.blob();
-
-        const base64Data = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
+            const base64Data = await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
             const base64 = reader.result.split(",")[1];
             resolve(base64);
           };
@@ -434,7 +545,58 @@ const pickVideoOnly = async () => {
     setFile([]); // Xóa file sau khi gửi
   } catch (error) {
     console.error("Lỗi gửi nhiều file:", error);
-  } else {
+  } 
+}else if (file && file.length === 1) {
+  console.log("Gửi một file:");
+  try {
+    const f = file[0]; // Lấy file đầu tiên trong mảng
+    const response = await fetch(f.uri);
+    const blob = await response.blob();
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64Data = reader.result.split(",")[1];
+
+      const msg = {
+        conversation_id: chats.conversation_id,
+        sender_id: currentUser.id,
+        receiver_id: isGroup
+          ? null
+          : Array.isArray(chats.list_user_id)
+          ? typeof chats.list_user_id[0] === "string"
+            ? chats.list_user_id.find((id) => id !== currentUser.id)
+            : chats.list_user_id?.filter(
+                (user) => user.user_id !== currentUser.id
+              )[0]?.user_id
+          : null,
+        message: inputText.trim(),
+        file_name: f.name,
+        file_type: f.mimeType,
+        file_size: f.size,
+        file_data: `data:${f.mimeType};base64,${base64Data}`,
+        status: "pending",
+        created_at: now.toISOString(),
+      };
+
+      const event = isGroup ? "send_group_message" : "send_private_message";
+      socket.emit(event, msg, () => {});
+      socket.on("message_sent", (msg) => {
+        socket.emit("get_messages", {
+          conversation_id: chats.conversation_id,
+        });
+      });
+    };
+    reader.onerror = (error) => {
+      console.error("Lỗi đọc tệp:", error);
+    };
+    reader.readAsDataURL(blob);
+    setInputText("");
+    setFile([]);
+  } catch (error) {
+    console.error("Lỗi tải tệp:", error);
+  }
+}
+  else {
       const msg = {
         conversation_id: chats.conversation_id,
         sender_id: currentUser.id,
@@ -455,12 +617,12 @@ const pickVideoOnly = async () => {
       socket.emit(event, msg, () => {});
       socket.on("message_sent", (msg) => {
         socket.emit("get_messages", { conversation_id: chats.conversation_id });
-        console.log("Message sent:", msg);
       });
       setInputText("");
       setFile([]);
 
     }
+    flatListRef.current?.scrollToEnd({ animated: true });
   };
 
   const deleteMessage = (id) => {
@@ -695,14 +857,20 @@ const pickVideoOnly = async () => {
               onUnpinMessage={(id) => handleUnpinMessage(id)}
             />
             <FlatList
-              ref={flatListRef}
-              data={messages}
-              renderItem={renderMessage}
-              keyExtractor={(item) => item.id}
-              onContentSizeChange={() =>
-                flatListRef.current?.scrollToEnd({ animated: true })
-              }
-            />
+  ref={flatListRef}
+  data={messages}
+  renderItem={renderMessage}
+  keyExtractor={(item) => item.id}
+  onScroll={handleScroll}
+  onContentSizeChange={() => {
+  if (isAtBottom) {
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }, 100); // chờ 100ms trước khi scroll
+  }
+}}
+  scrollEventThrottle={100}
+/>
 {file.length > 0 && (
   <View style={{ marginVertical: 8 }}>
     <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center" }}>
@@ -796,12 +964,12 @@ const pickVideoOnly = async () => {
 
   {/* Icon chọn ảnh */}
   <TouchableOpacity onPress={pickImageOnly} style={styles.fileButton}>
-    <Feather name="image" size={20} color="#007BFF"/>
+    <Feather name="image" size={20} color="#000000"/>
   </TouchableOpacity>
 
   {/* Icon chọn video */}
   <TouchableOpacity onPress={pickVideoOnly} style={styles.fileButton}>
-    <Feather name="video" size={20} color="#FF3333"/>
+    <Feather name="video" size={20} color="#000000"/>
   </TouchableOpacity>
 
   {/* Icon kẹp giấy: chọn mọi loại file */}

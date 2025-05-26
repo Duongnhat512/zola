@@ -104,7 +104,7 @@ const MessagesScreen = () => {
              socketInstance.emit('get_conversations');
           };
         socketInstance.on('new_message', async (data) => {
-  
+              console.log("Nhận được tin nhắn mới:", data);
                 try {
                   const res = await checkIsGroup(data.conversation_id);
                   const resConversation = res.conversation;
@@ -117,7 +117,7 @@ const MessagesScreen = () => {
                   const isText = data.type === "text" && !data.is_deleted;
                   const messageContent = isText
                     ? `${data.sender_name}: ${data.message}`
-                    : `${data.sender_name} đã gửi ${data.type === "image" ? "một ảnh" : data.type === "video" ? "một video" : data.type === "document" ? "một tài liệu" : "nhiều ảnh"}`;
+                    : `${data.sender_name} đã gửi ${data.type === "image" ? "một ảnh" : data.type === "video" ? "một video" : data.type === "document" ? "một tài liệu" : data.type === "multiple_files" ? "nhiều ảnh" : "một thông báo"}`;
 
                   showMessage({
                     message: prefix,
