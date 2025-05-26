@@ -13,7 +13,7 @@ export default function QRForm({ setIsQR, isQR }) {
       try {
         const response = await loginQR();
         console.log("QR session response:", response);
-        
+
         if (response.sessionId) {
           setSessionId(response.sessionId);
           setStatus("pending");
@@ -29,22 +29,33 @@ export default function QRForm({ setIsQR, isQR }) {
 
   useEffect(() => {
     if (!sessionId) return;
-    const interval = setInterval(() => {
-      getQrSession(sessionId).then((response) => {
+    let isMounted = true;
+    const interval = setInterval(async () => {
+      try {
+        const response = await getQrSession(sessionId);
+        console.log("QR session status:", response);
+        if (!isMounted) return;
         if (response.status === "authenticated") {
           setStatus("authenticated");
           clearInterval(interval);
+          if (response.token) {
+            localStorage.setItem("accessToken", response.token);
+            window.location.reload();
+          }
         } else if (response.status === "expired") {
           setStatus("expired");
           clearInterval(interval);
         } else {
           setStatus("pending");
         }
-      }).catch((error) => {
+      } catch (error) {
         console.error("Error fetching QR session:", error);
-      });
+      }
     }, 2000);
-    return () => clearInterval(interval);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [sessionId]);
 
   return (
