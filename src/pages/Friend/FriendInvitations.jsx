@@ -286,22 +286,25 @@ const FriendInvitations = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {invitations.map((invitation) => (
           <div
-            onClick={() => openInfoFriend(invitation.id)}
             key={invitation.id}
             className="flex flex-col items-center hover:cursor-pointer bg-white p-4 rounded-lg shadow-sm border border-gray-200"
           >
-            <Avatar
-              size={64}
-              icon={<UserOutlined />}
-              src={invitation.avatar}
-              className="mb-3"
-            />
-            <p className="text-sm font-medium text-gray-800 mb-2">
-              {invitation.fullname}
-            </p>
-            <p className="text-xs text-gray-500 mb-4">
-              {isReceived ? "Đã gửi lời mời cho bạn" : "Bạn đã gửi lời mời"}
-            </p>
+            <div className="flex flex-col items-center hover:cursor-pointer"
+              onClick={() => openInfoFriend(invitation.id)}
+            >
+              <Avatar
+                size={64}
+                icon={<UserOutlined />}
+                src={invitation.avatar}
+                className="mb-3"
+              />
+              <p className="text-sm font-medium text-gray-800 mb-2">
+                {invitation.fullname}
+              </p>
+              <p className="text-xs text-gray-500 mb-4">
+                {isReceived ? "Đã gửi lời mời cho bạn" : "Bạn đã gửi lời mời"}
+              </p>
+            </div>
             {!isReceived ? (
               <Button
                 type="default"

@@ -200,25 +200,9 @@ const GroupSettingsModal = ({ visible, onClose, groupSettings, grantPermission, 
           />
           <span className="ml-2">Cho phép dùng link tham gia nhóm</span>
         </div> */}
-        <div className="flex items-center gap-2 mt-4">
-          <Input value="zalo.me/g/djvuq760" readOnly className="flex-1" />
-          <Tooltip title="Sao chép link">
-            <Button icon={<CopyOutlined />} />
-          </Tooltip>
-          <Tooltip title="Tạo link mới">
-            <Button icon={<ReloadOutlined />} />
-          </Tooltip>
-        </div>
+
         <div className="mt-6">
-          <Button
-            type="primary"
-            danger
-            icon={<UserDeleteOutlined />}
-            block
-            className="mb-2"
-          >
-            Chặn khỏi nhóm
-          </Button>
+
           {userMain?.permission === "owner" && (
             <div>
               <Button

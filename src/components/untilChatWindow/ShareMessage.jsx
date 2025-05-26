@@ -224,7 +224,7 @@ const PinnedListBlock = ({
                                             Xem
                                         </a>
                                     </Menu.Item>
-                                    {permission !== "member" && (
+                                    {(
                                         <Menu.Item key="unpin" onClick={() => onUnpin(item)}>
                                             Bỏ ghim
                                         </Menu.Item>
