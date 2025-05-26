@@ -173,9 +173,8 @@ exports.sendOTP = async (req, res) => {
 
   const otp = otpMethod.generateOTP();
 
-  // await vonageMethod.sendOTP(username, otp);
   try {
-    await vonageMethod.sendOTP(username, otp);
+    await otpMethod.sendOTP(username, otp);
   } catch (error) {
     console.error("Gửi mã OTP không thành công:", error);
     return res.status(500).send({
@@ -210,7 +209,7 @@ exports.verifyOTP = async (req, res) => {
   }
 
   return res.json({
-    status: 200,
+    status: "success",
     message: "Xác thực thành công",
     username,
   });
@@ -234,7 +233,7 @@ exports.changePassword = async (req, res) => {
   await UserModel.updatePassword(user.id, hashPassword);
 
   return res.json({
-    status: 200,
+    status: "success",
     message: "Đổi mật khẩu thành công",
     username,
   });
@@ -252,7 +251,7 @@ exports.forgotPassword = async (req, res) => {
   await UserModel.updateOTP(user.id, otp, expiryTime); // Cập nhật mã OTP và thời gian hết hạn vào database
 
   try {
-    await vonageMethod.sendOTP(username, otp); // Gửi mã OTP đến số điện thoại của người dùng
+    await otpMethod.sendOTP(username, otp);
   } catch (error) {
     console.error("Gửi mã OTP không thành công:", error);
     return res.status(500).send({
