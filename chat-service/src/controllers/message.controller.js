@@ -45,6 +45,9 @@ MessageController.getMessages = async (socket, data) => {
 MessageController.sendGroupMessage = async (socket, data) => {
   data.sender_id = socket.user.id;
 
+  console.log(data.is_notify + " is_notify");
+  
+
   if (!data.conversation_id) {
     socket.emit("error", { message: "Thiếu conversation_id" });
     return;
@@ -140,6 +143,8 @@ MessageController.sendGroupMessage = async (socket, data) => {
 };
 
 MessageController.sendPrivateMessage = async (socket, data) => {
+  console.log(data, "data in sendPrivateMessage");
+  
   if (!data.receiver_id) {
     socket.emit("error", { message: "Thiếu receiver_id" });
     return;
@@ -201,12 +206,14 @@ MessageController.sendPrivateMessage = async (socket, data) => {
       conversation_id: conversation.id,
       sender_id: socket.user.id,
       receiver_id: data.receiver_id || null,
-      type: messageType,
+      type: data.is_notify ? "notify" : messageType,
       message: data.message || null,
       media: processedFiles.length > 0 ? JSON.stringify(processedFiles) : null,
       file_name: processedFiles.length > 0 ? processedFiles.map(f => f.fileName).join(', ') : null,
       files_count: processedFiles.length
     };
+    console.log(message, "message in sendPrivateMessage");
+    
 
     const [savedMessage, sender] = await Promise.all([
       MessageModel.sendMessage(message),
