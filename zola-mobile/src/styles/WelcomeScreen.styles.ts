@@ -10,6 +10,21 @@ const styles = StyleSheet.create({
     height: height,
     backgroundColor: '#fff',
   },
+  qrButton: {
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: '#4caf50',
+  padding: 12,
+  borderRadius: 10,
+  marginTop: 10,
+},
+
+qrIcon: {
+  width: 32,
+  height: 32,
+  tintColor: 'white', // nếu ảnh là đen trắng
+},
+
   container: {
     flex: 1,
   },
